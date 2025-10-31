@@ -1,0 +1,9 @@
+CREATE TABLE StudentClass (
+    student_id TEXT NOT NULL,
+    school_class_id TEXT NOT NULL,
+    valid_from INTEGER NOT NULL,
+    valid_till INTEGER NOT NULL,
+    PRIMARY KEY (student_id, school_class_id),
+    FOREIGN KEY (student_id) REFERENCES Student(id) ON DELETE CASCADE,
+    FOREIGN KEY (school_class_id) REFERENCES SchoolClass(id) ON DELETE CASCADE
+);

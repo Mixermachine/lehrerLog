@@ -1,0 +1,5 @@
+CREATE TABLE student (
+  id TEXT PRIMARY KEY NOT NULL,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL
+);

@@ -8,8 +8,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
-    id("app.cash.sqldelight") version "2.1.0"
-}
+    alias(libs.plugins.sqlDelight)}
 
 kotlin {
     androidTarget {
@@ -30,11 +29,6 @@ kotlin {
 
     jvm()
 
-    js {
-        browser()
-        binaries.executable()
-    }
-
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
@@ -45,6 +39,10 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.sqldelight.android)
+        }
+        iosMain.dependencies {
+            implementation(libs.sqldelight.native)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -57,8 +55,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(projects.shared)
             implementation(libs.navigation.compose)
-
             implementation(libs.material.icons.extended)
+            implementation(libs.sqldelight.coroutines)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -66,7 +64,18 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation(libs.sqldelight.jvm)
         }
+        wasmJsMain.dependencies {
+            implementation("app.cash.sqldelight:web-worker-driver-wasm-js:2.1.0")
+            implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.1.0"))
+            implementation(npm("sql.js", "1.13.0"))
+            implementation(devNpm("copy-webpack-plugin", "13.0.1"))
+        }
+        //implementation(libs.sqldelight.js)
+        //implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.1.0"))
+        //implementation(npm("sql.js", "1.13.0"))
+        //implementation(devNpm("copy-webpack-plugin", "9.1.0"))
     }
 }
 
@@ -74,6 +83,7 @@ sqldelight {
     databases {
         create("lehrerLog") { // IDE displays error but this is fine
             packageName = "de.aarondietz.lehrerlog"
+            generateAsync.set(true)
         }
     }
 }

@@ -1,0 +1,5 @@
+CREATE TABLE schoolClass (
+  id TEXT PRIMARY KEY NOT NULL,
+  name TEXT NOT NULL,
+  alternative_name TEXT
+);
