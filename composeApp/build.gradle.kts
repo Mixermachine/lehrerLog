@@ -36,6 +36,16 @@ kotlin {
     }
 
     sourceSets {
+        val nonWasmMain by creating {
+            dependsOn(commonMain.get())
+        }
+
+        androidMain.get().dependsOn(nonWasmMain)
+        jvmMain.get().dependsOn(nonWasmMain)
+
+        iosArm64Main.get().dependsOn(nonWasmMain)
+        iosSimulatorArm64Main.get().dependsOn(nonWasmMain)
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)

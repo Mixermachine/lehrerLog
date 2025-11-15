@@ -26,6 +26,19 @@ fun App() {
     val navController = rememberNavController()
     val items = listOf(BottomBarEntry.Home, BottomBarEntry.Tasks, BottomBarEntry.Students, BottomBarEntry.Settings)
 
+    var showInstallButton by remember { mutableStateOf(false) }
+    var showInstallIos by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        initInstallPrompt { canInstall ->
+            showInstallButton = canInstall && !isStandalone()
+        }
+
+        if (isIos() && !isStandalone()) {
+            showInstallIos = true
+        }
+    }
+
     Scaffold(
         bottomBar = {
             NavigationBar {
