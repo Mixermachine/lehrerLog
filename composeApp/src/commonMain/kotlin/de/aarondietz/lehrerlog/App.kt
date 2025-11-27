@@ -15,14 +15,26 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import de.aarondietz.lehrerlog.ui.navigation.BottomBarEntry
-import de.aarondietz.lehrerlog.ui.screens.HomeScreen
-import de.aarondietz.lehrerlog.ui.screens.SettingsScreen
-import de.aarondietz.lehrerlog.ui.screens.StudentsScreen
-import de.aarondietz.lehrerlog.ui.screens.TasksScreen
+import de.aarondietz.lehrerlog.ui.screens.home.HomeScreen
+import de.aarondietz.lehrerlog.ui.screens.home.HomeViewModel
+import de.aarondietz.lehrerlog.ui.screens.settings.SettingsScreen
+import de.aarondietz.lehrerlog.ui.screens.students.StudentsScreen
+import de.aarondietz.lehrerlog.ui.screens.tasks.TasksScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.koin.compose.KoinApplication
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun App() {
+    KoinApplication(application = {
+        modules(commonModule, platformModule)
+    }) {
+        AppContent()
+    }
+}
+
+@Composable
+private fun AppContent(viewModel: HomeViewModel = koinViewModel()) {
     val navController = rememberNavController()
     val items = listOf(BottomBarEntry.Home, BottomBarEntry.Tasks, BottomBarEntry.Students, BottomBarEntry.Settings)
 

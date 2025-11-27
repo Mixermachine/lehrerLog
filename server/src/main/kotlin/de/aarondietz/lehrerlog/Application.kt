@@ -16,8 +16,6 @@ fun main() {
         .start(wait = true)
 }
 
-
-
 fun Application.module() {
     routing {
         schoolClassRoute()

@@ -8,7 +8,10 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
-    alias(libs.plugins.sqlDelight)}
+    alias(libs.plugins.sqlDelight)
+    kotlin("plugin.serialization") version libs.versions.kotlin.get()
+
+}
 
 kotlin {
     androidTarget {
@@ -67,6 +70,13 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(libs.material.icons.extended)
             implementation(libs.sqldelight.coroutines)
+
+
+
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -82,10 +92,6 @@ kotlin {
             implementation(npm("sql.js", "1.13.0"))
             implementation(devNpm("copy-webpack-plugin", "13.0.1"))
         }
-        //implementation(libs.sqldelight.js)
-        //implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.1.0"))
-        //implementation(npm("sql.js", "1.13.0"))
-        //implementation(devNpm("copy-webpack-plugin", "9.1.0"))
     }
 }
 

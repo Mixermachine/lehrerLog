@@ -1,4 +1,4 @@
-package de.aarondietz.lehrerlog.ui.screens
+package de.aarondietz.lehrerlog.ui.screens.students
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +17,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -32,9 +31,12 @@ import de.aarondietz.lehrerlog.data.Student
 import de.aarondietz.lehrerlog.ui.composables.AddClassDialog
 import de.aarondietz.lehrerlog.ui.composables.AddStudentDialog
 import de.aarondietz.lehrerlog.ui.composables.ExpandableClassCard
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun StudentsScreen() {
+fun StudentsScreen(
+    viewModel: StudentsViewModel = koinViewModel()
+) {
     val classes = remember { mutableStateListOf<SchoolClass>() }
     val expandedClasses = remember { mutableStateMapOf<String, Boolean>() }
     var showAddClassDialog by remember { mutableStateOf(false) }
