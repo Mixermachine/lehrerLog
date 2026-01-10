@@ -4,8 +4,8 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
-data class Student constructor(
+data class Task(
     val id: String = Uuid.random().toString(),
-    val firstName: String,
-    val lastName: String,
+    val name: String,
+
 )

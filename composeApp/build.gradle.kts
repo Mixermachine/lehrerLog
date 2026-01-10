@@ -53,9 +53,11 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.sqldelight.android)
+            implementation(libs.ktor.client.okhttp)
         }
         iosMain.dependencies {
             implementation(libs.sqldelight.native)
+            implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -71,7 +73,10 @@ kotlin {
             implementation(libs.material.icons.extended)
             implementation(libs.sqldelight.coroutines)
 
-
+            // Ktor Client
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.serialization.json)
 
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
@@ -85,12 +90,14 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.sqldelight.jvm)
+            implementation(libs.ktor.client.cio)
         }
         wasmJsMain.dependencies {
             implementation("app.cash.sqldelight:web-worker-driver-wasm-js:2.1.0")
             implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.1.0"))
             implementation(npm("sql.js", "1.13.0"))
             implementation(devNpm("copy-webpack-plugin", "13.0.1"))
+            implementation(libs.ktor.client.js)
         }
     }
 }

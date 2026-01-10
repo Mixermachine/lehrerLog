@@ -31,13 +31,13 @@ import de.aarondietz.lehrerlog.data.Student
 import de.aarondietz.lehrerlog.ui.composables.AddClassDialog
 import de.aarondietz.lehrerlog.ui.composables.AddStudentDialog
 import de.aarondietz.lehrerlog.ui.composables.ExpandableClassCard
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun StudentsScreen(
     viewModel: StudentsViewModel = koinViewModel()
 ) {
-    val classes = remember { mutableStateListOf<SchoolClass>() }
     val expandedClasses = remember { mutableStateMapOf<String, Boolean>() }
     var showAddClassDialog by remember { mutableStateOf(false) }
     var selectedClassForStudent by remember { mutableStateOf<SchoolClass?>(null) }
@@ -52,7 +52,7 @@ fun StudentsScreen(
                 ))
             }
 
-            classes.add(myClass)
+            viewModel.classes.add(myClass)
         }
     }
 
@@ -72,7 +72,7 @@ fun StudentsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (classes.isEmpty()) {
+            if (viewModel.classes.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(32.dp),
@@ -87,7 +87,7 @@ fun StudentsScreen(
                 }
             } else {
                 items(
-                    items = classes,
+                    items = viewModel.classes,
                     key = { it.id }
                 ) { schoolClass ->
                     ExpandableClassCard(
@@ -100,7 +100,7 @@ fun StudentsScreen(
                             selectedClassForStudent = schoolClass
                         },
                         onDeleteClass = {
-                            classes.remove(schoolClass)
+                            viewModel.classes.remove(schoolClass)
                             expandedClasses.remove(schoolClass.id)
                         },
                         onDeleteStudent = { student ->
@@ -116,7 +116,7 @@ fun StudentsScreen(
         AddClassDialog(
             onDismiss = { showAddClassDialog = false },
             onConfirm = { className ->
-                classes.add(SchoolClass(name = className))
+                viewModel.classes.add(SchoolClass(name = className))
                 showAddClassDialog = false
             }
         )
@@ -131,4 +131,10 @@ fun StudentsScreen(
             }
         )
     }
+}
+
+@Preview
+@Composable
+fun StudentsScreenPreview() {
+    StudentsScreen(StudentsViewModel())
 }

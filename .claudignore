@@ -1,0 +1,19 @@
+# Build artifacts
+**/build/
+.gradle/
+.kotlin/
+.idea/
+**/.DS_Store
+
+# Local configuration
+local.properties
+
+# IOS specific large files
+iosApp/Pods/
+iosApp/**/*.xcodeproj/
+iosApp/**/*.xcworkspace/
+
+# Web specific
+build/js/
+build/wasmJs/
+kotlin_js_store/
