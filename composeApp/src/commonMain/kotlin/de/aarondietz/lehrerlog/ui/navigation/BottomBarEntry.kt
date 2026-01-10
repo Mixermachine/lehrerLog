@@ -6,10 +6,16 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import lehrerlog.composeapp.generated.resources.Res
+import lehrerlog.composeapp.generated.resources.nav_home
+import lehrerlog.composeapp.generated.resources.nav_settings
+import lehrerlog.composeapp.generated.resources.nav_students
+import lehrerlog.composeapp.generated.resources.nav_tasks
+import org.jetbrains.compose.resources.StringResource
 
-sealed class BottomBarEntry(val route: String, val title: String, val icon: ImageVector) {
-    data object Home : BottomBarEntry("home", "Home", Icons.Default.Home)
-    data object Tasks : BottomBarEntry("tasks", "Aufgaben", Icons.AutoMirrored.Filled.List)
-    data object Students : BottomBarEntry("students", "Schüler", Icons.Default.People)
-    data object Settings : BottomBarEntry("settings", "Einstellungen", Icons.Default.Settings)
+sealed class BottomBarEntry(val route: String, val titleRes: StringResource, val icon: ImageVector) {
+    data object Home : BottomBarEntry("home", Res.string.nav_home, Icons.Default.Home)
+    data object Tasks : BottomBarEntry("tasks", Res.string.nav_tasks, Icons.AutoMirrored.Filled.List)
+    data object Students : BottomBarEntry("students", Res.string.nav_students, Icons.Default.People)
+    data object Settings : BottomBarEntry("settings", Res.string.nav_settings, Icons.Default.Settings)
 }

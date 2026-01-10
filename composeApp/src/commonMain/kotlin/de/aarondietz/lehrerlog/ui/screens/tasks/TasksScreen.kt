@@ -15,6 +15,9 @@ import androidx.compose.runtime.setValue
 import de.aarondietz.lehrerlog.data.SchoolClass
 import de.aarondietz.lehrerlog.data.Student
 import de.aarondietz.lehrerlog.data.Task
+import lehrerlog.composeapp.generated.resources.Res
+import lehrerlog.composeapp.generated.resources.add_class
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -37,7 +40,7 @@ fun TasksScreen(
             FloatingActionButton(
                 onClick = { showAddTaskDialog = true }
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Klasse hinzufügen")
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_class))
             }
         }
     ) {

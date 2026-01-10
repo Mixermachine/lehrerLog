@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_tasks">Aufgaben</string>
+    <string name="nav_students">Schüler</string>
+    <string name="nav_settings">Einstellungen</string>
+
+    <!-- Common actions -->
+    <string name="action_add">Hinzufügen</string>
+    <string name="action_cancel">Abbrechen</string>
+
+    <!-- Classes -->
+    <string name="add_class">Klasse hinzufügen</string>
+    <string name="class_name">Klassenname</string>
+    <string name="class_name_placeholder">z.B. 5a, 10b</string>
+    <string name="delete_class">Klasse löschen</string>
+    <string name="no_classes">Keine Klassen vorhanden</string>
+
+    <!-- Students -->
+    <string name="add_student">Schüler hinzufügen</string>
+    <string name="first_name">Vorname</string>
+    <string name="last_name">Nachname</string>
+    <string name="delete_student">Schüler löschen</string>
+    <string name="no_students_in_class">Keine Schüler in dieser Klasse</string>
+    <string name="students_count">%1$d Schüler</string>
+
+    <!-- Accessibility -->
+    <string name="expand">Ausklappen</string>
+    <string name="collapse">Einklappen</string>
+</resources>

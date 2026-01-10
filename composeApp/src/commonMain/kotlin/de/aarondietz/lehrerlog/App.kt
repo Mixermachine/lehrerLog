@@ -20,6 +20,7 @@ import de.aarondietz.lehrerlog.ui.screens.home.HomeViewModel
 import de.aarondietz.lehrerlog.ui.screens.settings.SettingsScreen
 import de.aarondietz.lehrerlog.ui.screens.students.StudentsScreen
 import de.aarondietz.lehrerlog.ui.screens.tasks.TasksScreen
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.KoinApplication
 import org.koin.compose.viewmodel.koinViewModel
@@ -58,6 +59,7 @@ private fun AppContent(viewModel: HomeViewModel = koinViewModel()) {
                 val currentRoute = navBackStackEntry?.destination?.route
 
                 items.forEach { screen ->
+                    val title = stringResource(screen.titleRes)
                     NavigationBarItem(
                         selected = currentRoute == screen.route,
                         onClick = {
@@ -69,8 +71,8 @@ private fun AppContent(viewModel: HomeViewModel = koinViewModel()) {
                                 restoreState = true
                             }
                         },
-                        icon = { Icon(screen.icon, contentDescription = screen.title) },
-                        label = { Text(screen.title) }
+                        icon = { Icon(screen.icon, contentDescription = title) },
+                        label = { Text(title) }
                     )
                 }
             }

@@ -31,6 +31,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.data.SchoolClass
 import de.aarondietz.lehrerlog.data.Student
+import lehrerlog.composeapp.generated.resources.Res
+import lehrerlog.composeapp.generated.resources.add_student
+import lehrerlog.composeapp.generated.resources.collapse
+import lehrerlog.composeapp.generated.resources.delete_class
+import lehrerlog.composeapp.generated.resources.expand
+import lehrerlog.composeapp.generated.resources.no_students_in_class
+import lehrerlog.composeapp.generated.resources.students_count
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ExpandableClassCard(
@@ -64,7 +72,7 @@ fun ExpandableClassCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = if (isExpanded) "Einklappen" else "Ausklappen",
+                        contentDescription = stringResource(if (isExpanded) Res.string.collapse else Res.string.expand),
                         modifier = Modifier.rotate(rotationState)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -75,7 +83,7 @@ fun ExpandableClassCard(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${schoolClass.students.size} Schüler",
+                            text = stringResource(Res.string.students_count, schoolClass.students.size),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -85,7 +93,7 @@ fun ExpandableClassCard(
                 IconButton(onClick = onDeleteClass) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Klasse löschen"
+                        contentDescription = stringResource(Res.string.delete_class)
                     )
                 }
             }
@@ -103,7 +111,7 @@ fun ExpandableClassCard(
 
                     if (schoolClass.students.isEmpty()) {
                         Text(
-                            text = "Keine Schüler in dieser Klasse",
+                            text = stringResource(Res.string.no_students_in_class),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp)
@@ -125,7 +133,7 @@ fun ExpandableClassCard(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Schüler hinzufügen")
+                        Text(stringResource(Res.string.add_student))
                     }
                 }
             }

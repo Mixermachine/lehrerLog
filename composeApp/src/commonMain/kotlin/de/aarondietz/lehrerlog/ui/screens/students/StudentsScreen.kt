@@ -31,6 +31,10 @@ import de.aarondietz.lehrerlog.data.Student
 import de.aarondietz.lehrerlog.ui.composables.AddClassDialog
 import de.aarondietz.lehrerlog.ui.composables.AddStudentDialog
 import de.aarondietz.lehrerlog.ui.composables.ExpandableClassCard
+import lehrerlog.composeapp.generated.resources.Res
+import lehrerlog.composeapp.generated.resources.add_class
+import lehrerlog.composeapp.generated.resources.no_classes
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -61,7 +65,7 @@ fun StudentsScreen(
             FloatingActionButton(
                 onClick = { showAddClassDialog = true }
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Klasse hinzufügen")
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_class))
             }
         }
     ) { paddingValues ->
@@ -79,7 +83,7 @@ fun StudentsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "Keine Klassen vorhanden",
+                            stringResource(Res.string.no_classes),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

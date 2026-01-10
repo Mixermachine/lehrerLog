@@ -9,6 +9,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import lehrerlog.composeapp.generated.resources.Res
+import lehrerlog.composeapp.generated.resources.action_add
+import lehrerlog.composeapp.generated.resources.action_cancel
+import lehrerlog.composeapp.generated.resources.add_class
+import lehrerlog.composeapp.generated.resources.class_name
+import lehrerlog.composeapp.generated.resources.class_name_placeholder
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AddClassDialog(
@@ -19,13 +26,13 @@ fun AddClassDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Klasse hinzufügen") },
+        title = { Text(stringResource(Res.string.add_class)) },
         text = {
             OutlinedTextField(
                 value = className,
                 onValueChange = { className = it },
-                label = { Text("Klassenname") },
-                placeholder = { Text("z.B. 5a, 10b") },
+                label = { Text(stringResource(Res.string.class_name)) },
+                placeholder = { Text(stringResource(Res.string.class_name_placeholder)) },
                 singleLine = true
             )
         },
@@ -34,12 +41,12 @@ fun AddClassDialog(
                 onClick = { onConfirm(className.trim()) },
                 enabled = className.isNotBlank()
             ) {
-                Text("Hinzufügen")
+                Text(stringResource(Res.string.action_add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Abbrechen")
+                Text(stringResource(Res.string.action_cancel))
             }
         }
     )

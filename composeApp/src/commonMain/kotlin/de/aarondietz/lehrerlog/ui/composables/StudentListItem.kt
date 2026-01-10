@@ -15,6 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.data.Student
+import lehrerlog.composeapp.generated.resources.Res
+import lehrerlog.composeapp.generated.resources.delete_student
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun StudentListItem(
@@ -36,7 +39,7 @@ fun StudentListItem(
         IconButton(onClick = onDelete) {
             Icon(
                 Icons.Default.Delete,
-                contentDescription = "Schüler löschen",
+                contentDescription = stringResource(Res.string.delete_student),
                 tint = MaterialTheme.colorScheme.error
             )
         }

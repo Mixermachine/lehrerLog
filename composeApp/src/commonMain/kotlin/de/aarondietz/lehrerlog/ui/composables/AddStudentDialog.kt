@@ -13,6 +13,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.data.Student
+import lehrerlog.composeapp.generated.resources.Res
+import lehrerlog.composeapp.generated.resources.action_add
+import lehrerlog.composeapp.generated.resources.action_cancel
+import lehrerlog.composeapp.generated.resources.add_student
+import lehrerlog.composeapp.generated.resources.first_name
+import lehrerlog.composeapp.generated.resources.last_name
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AddStudentDialog(
@@ -24,19 +31,19 @@ fun AddStudentDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Schüler hinzufügen") },
+        title = { Text(stringResource(Res.string.add_student)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = firstName,
                     onValueChange = { firstName = it },
-                    label = { Text("Vorname") },
+                    label = { Text(stringResource(Res.string.first_name)) },
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = lastName,
                     onValueChange = { lastName = it },
-                    label = { Text("Nachname") },
+                    label = { Text(stringResource(Res.string.last_name)) },
                     singleLine = true
                 )
             }
@@ -51,12 +58,12 @@ fun AddStudentDialog(
                 },
                 enabled = firstName.isNotBlank() && lastName.isNotBlank()
             ) {
-                Text("Hinzufügen")
+                Text(stringResource(Res.string.action_add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Abbrechen")
+                Text(stringResource(Res.string.action_cancel))
             }
         }
     )
