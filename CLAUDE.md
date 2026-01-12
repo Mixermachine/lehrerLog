@@ -40,3 +40,8 @@ Server: Ktor
 - **Koin:** Prefer constructor injection for classes; use `koinViewModel()` in UI.
 - **Concurrency:** Dispatchers.Main for UI, Dispatchers.IO for DB/Network.
 - For bitwise operations, always use: `if ((flags and (1 shl 30)) != 0)`
+
+## Git Workflow
+- **IMPORTANT:** Always `git add` new files immediately after creating them. Untracked files are dangerous as they can be lost or forgotten.
+- Stage new files before finishing a task to ensure nothing is left behind.
+- You should NEVER make the final commit. This will be done by the user.

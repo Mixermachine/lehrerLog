@@ -30,13 +30,20 @@ dependencies {
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
 
+    // Authentication
+    implementation("io.ktor:ktor-server-auth:3.3.1")
+    implementation("io.ktor:ktor-server-auth-jwt:3.3.1")
+    implementation("org.mindrot:jbcrypt:0.4")
+
     // Exposed ORM
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.dao)
+    implementation("org.jetbrains.exposed:exposed-java-time:0.58.0")
 
     // Flyway migrations
     implementation(libs.flyway.core)
+    implementation("org.flywaydb:flyway-database-postgresql:11.17.0")
 
     // Database driver
     implementation(libs.postgres)

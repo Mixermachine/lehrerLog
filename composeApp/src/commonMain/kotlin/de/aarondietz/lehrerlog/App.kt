@@ -1,6 +1,9 @@
 package de.aarondietz.lehrerlog
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -8,6 +11,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -15,8 +19,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import de.aarondietz.lehrerlog.ui.navigation.BottomBarEntry
+import de.aarondietz.lehrerlog.ui.screens.auth.AuthState
+import de.aarondietz.lehrerlog.ui.screens.auth.AuthViewModel
+import de.aarondietz.lehrerlog.ui.screens.auth.LoginScreen
+import de.aarondietz.lehrerlog.ui.screens.auth.RegisterScreen
 import de.aarondietz.lehrerlog.ui.screens.home.HomeScreen
-import de.aarondietz.lehrerlog.ui.screens.home.HomeViewModel
 import de.aarondietz.lehrerlog.ui.screens.settings.SettingsScreen
 import de.aarondietz.lehrerlog.ui.screens.students.StudentsScreen
 import de.aarondietz.lehrerlog.ui.screens.tasks.TasksScreen
@@ -35,9 +42,8 @@ fun App() {
 }
 
 @Composable
-private fun AppContent(viewModel: HomeViewModel = koinViewModel()) {
-    val navController = rememberNavController()
-    val items = listOf(BottomBarEntry.Home, BottomBarEntry.Tasks, BottomBarEntry.Students, BottomBarEntry.Settings)
+private fun AppContent(authViewModel: AuthViewModel = koinViewModel()) {
+    val authState by authViewModel.authState.collectAsState()
 
     var showInstallButton by remember { mutableStateOf(false) }
     var showInstallIos by remember { mutableStateOf(false) }
@@ -51,6 +57,56 @@ private fun AppContent(viewModel: HomeViewModel = koinViewModel()) {
             showInstallIos = true
         }
     }
+
+    when (authState) {
+        is AuthState.Initial, is AuthState.Loading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        is AuthState.Unauthenticated, is AuthState.Error -> {
+            AuthNavigation()
+        }
+        is AuthState.Authenticated -> {
+            MainAppContent()
+        }
+    }
+}
+
+@Composable
+private fun AuthNavigation() {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = "login"
+    ) {
+        composable("login") {
+            LoginScreen(
+                onNavigateToRegister = {
+                    navController.navigate("register") {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+        composable("register") {
+            RegisterScreen(
+                onNavigateToLogin = {
+                    navController.popBackStack()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun MainAppContent() {
+    val navController = rememberNavController()
+    val items = listOf(BottomBarEntry.Home, BottomBarEntry.Tasks, BottomBarEntry.Students, BottomBarEntry.Settings)
 
     Scaffold(
         bottomBar = {
