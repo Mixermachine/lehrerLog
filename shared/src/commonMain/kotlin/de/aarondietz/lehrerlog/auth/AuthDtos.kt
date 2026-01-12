@@ -52,11 +52,6 @@ data class UserDto(
     val schoolId: String? = null
 )
 
-@Serializable
-data class ErrorResponse(
-    val error: String
-)
-
 enum class UserRole {
     ADMIN,
     SCHOOL_ADMIN,

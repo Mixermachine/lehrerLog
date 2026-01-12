@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlinJvm)
+    alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.ktor)
     application
 }
@@ -29,6 +30,8 @@ dependencies {
     implementation("io.ktor:ktor-server-core:3.3.1")
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
+    testImplementation("io.ktor:ktor-client-content-negotiation:3.3.1")
+    testImplementation("io.ktor:ktor-serialization-kotlinx-json:3.3.1")
 
     // Authentication
     implementation("io.ktor:ktor-server-auth:3.3.1")
