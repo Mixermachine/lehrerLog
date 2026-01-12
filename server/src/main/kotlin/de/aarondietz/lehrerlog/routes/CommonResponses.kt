@@ -1,13 +1,6 @@
 package de.aarondietz.lehrerlog.routes
 
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class ErrorResponse(
-    val error: String
-)
-
-@Serializable
-data class SuccessResponse(
-    val message: String
-)
+// Re-export shared response types for convenience
+// The actual definitions are in shared/src/commonMain/kotlin/de/aarondietz/lehrerlog/auth/AuthDtos.kt
+typealias ErrorResponse = de.aarondietz.lehrerlog.auth.ErrorResponse
+typealias SuccessResponse = de.aarondietz.lehrerlog.auth.SuccessResponse

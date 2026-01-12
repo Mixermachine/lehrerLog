@@ -1,9 +1,13 @@
 package de.aarondietz.lehrerlog
 
-import de.aarondietz.lehrerlog.auth.*
+import de.aarondietz.lehrerlog.auth.ErrorResponse
+import de.aarondietz.lehrerlog.auth.PasswordService
+import de.aarondietz.lehrerlog.auth.TokenService
 import de.aarondietz.lehrerlog.db.DatabaseFactory
 import de.aarondietz.lehrerlog.db.tables.*
-import de.aarondietz.lehrerlog.routes.*
+import de.aarondietz.lehrerlog.routes.AuthResponseDto
+import de.aarondietz.lehrerlog.routes.LoginRequestDto
+import de.aarondietz.lehrerlog.routes.RegisterRequestDto
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
