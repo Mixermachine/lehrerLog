@@ -17,3 +17,17 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# Claude Code temporary files
+.claude/
+tmpclaude-*
+nul
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# H2 Database files
+*.mv.db
+*.trace.db

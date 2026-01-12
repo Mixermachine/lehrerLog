@@ -1,5 +1,5 @@
 CREATE TABLE school_classes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     alternative_name VARCHAR(100),

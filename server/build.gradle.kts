@@ -45,8 +45,9 @@ dependencies {
     implementation(libs.flyway.core)
     implementation("org.flywaydb:flyway-database-postgresql:11.17.0")
 
-    // Database driver
+    // Database drivers
     implementation(libs.postgres)
+    implementation(libs.h2)
 }
 repositories {
     mavenCentral()

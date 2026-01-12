@@ -51,16 +51,6 @@ data class UserDto(
     val schoolId: String?
 )
 
-@Serializable
-data class ErrorResponse(
-    val error: String
-)
-
-@Serializable
-data class SuccessResponse(
-    val message: String
-)
-
 fun Route.authRoute(authService: AuthService) {
     route("/auth") {
         // Public endpoints

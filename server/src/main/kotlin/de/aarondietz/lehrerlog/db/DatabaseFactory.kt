@@ -9,9 +9,22 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object DatabaseFactory {
 
     fun init() {
-        val jdbcUrl = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/lehrerlog"
-        val dbUser = System.getenv("DATABASE_USER") ?: "postgres"
-        val dbPassword = System.getenv("DATABASE_PASSWORD") ?: "postgres"
+        val dbMode = System.getenv("DB_MODE") ?: "h2" // "h2" for dev, "postgres" for prod
+
+        val (jdbcUrl, driver, dbUser, dbPassword) = when (dbMode.lowercase()) {
+            "postgres", "postgresql" -> {
+                val url = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/lehrerlog"
+                val user = System.getenv("DATABASE_USER") ?: "postgres"
+                val password = System.getenv("DATABASE_PASSWORD") ?: "postgres"
+                DatabaseConfig(url, "org.postgresql.Driver", user, password)
+            }
+            else -> { // Default to H2 for development
+                val url = System.getenv("DATABASE_URL") ?: "jdbc:h2:./build/lehrerlog;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH"
+                DatabaseConfig(url, "org.h2.Driver", "", "")
+            }
+        }
+
+        println("Initializing database: $jdbcUrl")
 
         // Run Flyway migrations
         val flyway = Flyway.configure()
@@ -24,21 +37,16 @@ object DatabaseFactory {
         // Connect Exposed
         Database.connect(
             url = jdbcUrl,
-            driver = "org.postgresql.Driver",
+            driver = driver,
             user = dbUser,
             password = dbPassword
         )
-
-        // Verify tables exist (optional - Flyway should handle this)
-        transaction {
-            SchemaUtils.createMissingTablesAndColumns(
-                Schools,
-                Users,
-                RefreshTokens,
-                Students,
-                SchoolClasses,
-                SyncLog
-            )
-        }
     }
+
+    private data class DatabaseConfig(
+        val url: String,
+        val driver: String,
+        val user: String,
+        val password: String
+    )
 }
