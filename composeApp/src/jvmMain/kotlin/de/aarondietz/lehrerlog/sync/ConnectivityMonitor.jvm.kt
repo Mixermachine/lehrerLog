@@ -11,7 +11,7 @@ import java.net.Socket
  * JVM (Desktop) implementation of ConnectivityMonitor.
  * Uses periodic network checks to determine connectivity status.
  */
-actual class ConnectivityMonitor {
+actual class ConnectivityMonitor actual constructor(context: Any?) {
 
     private val _isConnected = MutableStateFlow(checkConnectivity())
     actual val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()

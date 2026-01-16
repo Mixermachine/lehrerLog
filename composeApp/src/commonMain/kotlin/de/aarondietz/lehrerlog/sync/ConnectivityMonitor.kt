@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
  * Platform-specific connectivity monitor to detect online/offline status.
  * Implementations should emit `true` when connected, `false` when disconnected.
  */
-expect class ConnectivityMonitor {
+expect class ConnectivityMonitor(context: Any?) {
     /**
      * Flow that emits the current connectivity status.
      * `true` when connected to network, `false` when offline.

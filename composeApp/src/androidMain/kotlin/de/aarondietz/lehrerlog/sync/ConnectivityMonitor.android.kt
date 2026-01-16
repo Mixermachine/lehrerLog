@@ -1,6 +1,5 @@
 package de.aarondietz.lehrerlog.sync
 
-import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -13,9 +12,13 @@ import kotlinx.coroutines.flow.asStateFlow
  * Android implementation of ConnectivityMonitor using ConnectivityManager.
  * Monitors network connectivity changes and emits state via StateFlow.
  */
-actual class ConnectivityMonitor(private val context: Context) {
+actual class ConnectivityMonitor actual constructor(context: Any?) {
 
-    private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val androidContext: android.content.Context =
+        context as? android.content.Context
+        ?: error("Android context is required for ConnectivityMonitor.")
+    private val connectivityManager =
+        androidContext.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val _isConnected = MutableStateFlow(checkInitialConnectivity())
     actual val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()

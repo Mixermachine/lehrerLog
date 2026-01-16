@@ -10,11 +10,11 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import de.aarondietz.lehrerlog.currentTimeMillis
 
 /**
  * Repository for Student data with offline-first capabilities.
@@ -35,7 +35,7 @@ class StudentRepository(
         return database.studentQueries
             .getStudentsBySchool(schoolId)
             .asFlow()
-            .mapToList(Dispatchers.IO)
+            .mapToList(Dispatchers.Default)
             .map { students ->
                 students.map { student ->
                     StudentDto(
@@ -70,9 +70,9 @@ class StudentRepository(
                     lastName = student.lastName,
                     version = student.version,
                     isSynced = 1, // Synced from server
-                    localUpdatedAt = System.currentTimeMillis(),
-                    createdAt = student.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
-                    updatedAt = student.updatedAt.toLongOrNull() ?: System.currentTimeMillis()
+                    localUpdatedAt = currentTimeMillis(),
+                    createdAt = student.createdAt.toLongOrNull() ?: currentTimeMillis(),
+                    updatedAt = student.updatedAt.toLongOrNull() ?: currentTimeMillis()
                 )
             }
 
@@ -94,7 +94,7 @@ class StudentRepository(
     ): Result<StudentDto> {
         return try {
             val studentId = Uuid.random().toString()
-            val now = System.currentTimeMillis()
+            val now = currentTimeMillis()
 
             // Save to local database first
             database.studentQueries.insertStudent(
@@ -147,7 +147,7 @@ class StudentRepository(
                 entityType = "STUDENT",
                 entityId = studentId,
                 operation = "DELETE",
-                createdAt = System.currentTimeMillis()
+                createdAt = currentTimeMillis()
             )
 
             Result.success(Unit)

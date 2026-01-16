@@ -10,11 +10,11 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import de.aarondietz.lehrerlog.currentTimeMillis
 
 /**
  * Repository for SchoolClass data with offline-first capabilities.
@@ -33,7 +33,7 @@ class SchoolClassRepository(
         return database.schoolClassQueries
             .getClassesBySchool(schoolId)
             .asFlow()
-            .mapToList(Dispatchers.IO)
+            .mapToList(Dispatchers.Default)
             .map { classes ->
                 classes.map { schoolClass ->
                     SchoolClassDto(
@@ -67,9 +67,9 @@ class SchoolClassRepository(
                     alternativeName = schoolClass.alternativeName,
                     version = schoolClass.version,
                     isSynced = 1,
-                    localUpdatedAt = System.currentTimeMillis(),
-                    createdAt = schoolClass.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
-                    updatedAt = schoolClass.updatedAt.toLongOrNull() ?: System.currentTimeMillis()
+                    localUpdatedAt = currentTimeMillis(),
+                    createdAt = schoolClass.createdAt.toLongOrNull() ?: currentTimeMillis(),
+                    updatedAt = schoolClass.updatedAt.toLongOrNull() ?: currentTimeMillis()
                 )
             }
 
@@ -91,7 +91,7 @@ class SchoolClassRepository(
         logger.d { "createClass called: schoolId=$schoolId, name=$name, alternativeName=$alternativeName" }
         return try {
             val classId = Uuid.random().toString()
-            val now = System.currentTimeMillis()
+            val now = currentTimeMillis()
 
             logger.d { "Generated classId=$classId, inserting into local database" }
 
@@ -150,7 +150,7 @@ class SchoolClassRepository(
                 entityType = "SCHOOL_CLASS",
                 entityId = classId,
                 operation = "DELETE",
-                createdAt = System.currentTimeMillis()
+                createdAt = currentTimeMillis()
             )
 
             Result.success(Unit)

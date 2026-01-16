@@ -10,7 +10,7 @@ import org.w3c.dom.events.Event
  * WasmJs (Web) implementation of ConnectivityMonitor.
  * Uses the browser's navigator.onLine API and online/offline events.
  */
-actual class ConnectivityMonitor {
+actual class ConnectivityMonitor actual constructor(context: Any?) {
 
     private val _isConnected = MutableStateFlow(window.navigator.onLine)
     actual val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()

@@ -42,12 +42,18 @@ kotlin {
         val nonWasmMain by creating {
             dependsOn(commonMain.get())
         }
+        val nativeMain by creating {
+            dependsOn(nonWasmMain)
+        }
+        val iosMain by creating {
+            dependsOn(nativeMain)
+        }
 
         androidMain.get().dependsOn(nonWasmMain)
         jvmMain.get().dependsOn(nonWasmMain)
 
-        iosArm64Main.get().dependsOn(nonWasmMain)
-        iosSimulatorArm64Main.get().dependsOn(nonWasmMain)
+        iosArm64Main.get().dependsOn(iosMain)
+        iosSimulatorArm64Main.get().dependsOn(iosMain)
 
         androidMain.dependencies {
             implementation(compose.preview)

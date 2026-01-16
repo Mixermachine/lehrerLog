@@ -7,7 +7,7 @@ import de.aarondietz.lehrerlog.lehrerLog
  * Factory for creating SQLDelight database instances.
  * Platform-specific implementations provide the SqlDriver.
  */
-expect class DatabaseDriverFactory {
+expect class DatabaseDriverFactory(context: Any?) {
     fun createDriver(): SqlDriver
 }
 

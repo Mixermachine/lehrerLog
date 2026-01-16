@@ -9,6 +9,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import de.aarondietz.lehrerlog.currentTimeMillis
 
 /**
  * Manages synchronization between local database and server.
@@ -117,7 +118,7 @@ class SyncManager(
 
             // Update stats
             _syncStats.value = _syncStats.value.copy(
-                lastSyncTimestamp = System.currentTimeMillis(),
+                lastSyncTimestamp = currentTimeMillis(),
                 pendingChanges = getPendingChangesCount(),
                 failedAttempts = 0
             )
@@ -239,7 +240,7 @@ class SyncManager(
                 if (response.changes.isNotEmpty()) {
                     database.syncMetadataQueries.updateLastSyncId(
                         lastSyncLogId = response.lastSyncId,
-                        lastSyncTimestamp = System.currentTimeMillis(),
+                        lastSyncTimestamp = currentTimeMillis(),
                         entityType = "STUDENT"
                     )
                 }
@@ -252,7 +253,7 @@ class SyncManager(
                 if (response.changes.isNotEmpty()) {
                     database.syncMetadataQueries.updateLastSyncId(
                         lastSyncLogId = response.lastSyncId,
-                        lastSyncTimestamp = System.currentTimeMillis(),
+                        lastSyncTimestamp = currentTimeMillis(),
                         entityType = "SCHOOL_CLASS"
                     )
                 }
