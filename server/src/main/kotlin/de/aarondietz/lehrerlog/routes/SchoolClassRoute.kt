@@ -1,23 +1,19 @@
 package de.aarondietz.lehrerlog.routes
 
+import de.aarondietz.lehrerlog.auth.ErrorResponse
 import de.aarondietz.lehrerlog.auth.UserPrincipal
 import de.aarondietz.lehrerlog.data.CreateSchoolClassRequest
-import de.aarondietz.lehrerlog.data.SchoolClassDto
 import de.aarondietz.lehrerlog.data.UpdateSchoolClassRequest
-import de.aarondietz.lehrerlog.db.tables.SchoolClasses
+import de.aarondietz.lehrerlog.services.ClassUpdateResult
+import de.aarondietz.lehrerlog.services.SchoolClassService
 import io.ktor.http.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
 import java.util.*
 
-fun Route.schoolClassRoute() {
+fun Route.schoolClassRoute(schoolClassService: SchoolClassService = SchoolClassService()) {
     authenticate("jwt") {
         route("/api/classes") {
 
@@ -31,23 +27,7 @@ fun Route.schoolClassRoute() {
                     return@get
                 }
 
-                val classes = transaction {
-                    SchoolClasses.selectAll()
-                        .where { SchoolClasses.schoolId eq schoolId }
-                        .map { row ->
-                            SchoolClassDto(
-                                id = row[SchoolClasses.id].value.toString(),
-                                schoolId = row[SchoolClasses.schoolId].value.toString(),
-                                name = row[SchoolClasses.name],
-                                alternativeName = row[SchoolClasses.alternativeName],
-                                studentCount = 0, // TODO: Count from student_classes junction table
-                                version = row[SchoolClasses.version],
-                                createdAt = row[SchoolClasses.createdAt].toString(),
-                                updatedAt = row[SchoolClasses.updatedAt].toString()
-                            )
-                        }
-                }
-
+                val classes = schoolClassService.getClassesBySchool(schoolId)
                 call.respond(classes)
             }
 
@@ -68,23 +48,7 @@ fun Route.schoolClassRoute() {
                     return@get
                 }
 
-                val schoolClass = transaction {
-                    SchoolClasses.selectAll()
-                        .where { (SchoolClasses.id eq classId) and (SchoolClasses.schoolId eq schoolId) }
-                        .firstOrNull()
-                        ?.let { row ->
-                            SchoolClassDto(
-                                id = row[SchoolClasses.id].value.toString(),
-                                schoolId = row[SchoolClasses.schoolId].value.toString(),
-                                name = row[SchoolClasses.name],
-                                alternativeName = row[SchoolClasses.alternativeName],
-                                studentCount = 0, // TODO: Count from student_classes junction table
-                                version = row[SchoolClasses.version],
-                                createdAt = row[SchoolClasses.createdAt].toString(),
-                                updatedAt = row[SchoolClasses.updatedAt].toString()
-                            )
-                        }
-                }
+                val schoolClass = schoolClassService.getClass(classId, schoolId)
 
                 if (schoolClass == null) {
                     call.respond(HttpStatusCode.NotFound, ErrorResponse("Class not found"))
@@ -110,32 +74,12 @@ fun Route.schoolClassRoute() {
                     return@post
                 }
 
-                val classId = transaction {
-                    SchoolClasses.insertAndGetId {
-                        it[SchoolClasses.schoolId] = schoolId
-                        it[SchoolClasses.name] = request.name
-                        it[SchoolClasses.alternativeName] = request.alternativeName
-                        it[SchoolClasses.createdBy] = principal.id
-                    }.value
-                }
-
-                val schoolClass = transaction {
-                    SchoolClasses.selectAll()
-                        .where { SchoolClasses.id eq classId }
-                        .first()
-                        .let { row ->
-                            SchoolClassDto(
-                                id = row[SchoolClasses.id].value.toString(),
-                                schoolId = row[SchoolClasses.schoolId].value.toString(),
-                                name = row[SchoolClasses.name],
-                                alternativeName = row[SchoolClasses.alternativeName],
-                                studentCount = 0,
-                                version = row[SchoolClasses.version],
-                                createdAt = row[SchoolClasses.createdAt].toString(),
-                                updatedAt = row[SchoolClasses.updatedAt].toString()
-                            )
-                        }
-                }
+                val schoolClass = schoolClassService.createClass(
+                    schoolId = schoolId,
+                    name = request.name,
+                    alternativeName = request.alternativeName,
+                    userId = principal.id
+                )
 
                 call.respond(HttpStatusCode.Created, schoolClass)
             }
@@ -164,45 +108,17 @@ fun Route.schoolClassRoute() {
                     return@put
                 }
 
-                val updated = transaction {
-                    // Check if class exists and belongs to user's school
-                    val existing = SchoolClasses.selectAll()
-                        .where { (SchoolClasses.id eq classId) and (SchoolClasses.schoolId eq schoolId) }
-                        .firstOrNull() ?: return@transaction null
-
-                    // Optimistic locking check
-                    if (existing[SchoolClasses.version] != request.version) {
-                        return@transaction "version_conflict"
-                    }
-
-                    SchoolClasses.update({ SchoolClasses.id eq classId }) {
-                        it[SchoolClasses.name] = request.name
-                        it[SchoolClasses.alternativeName] = request.alternativeName
-                        it[SchoolClasses.version] = request.version + 1
-                        it[SchoolClasses.updatedAt] = OffsetDateTime.now(ZoneOffset.UTC)
-                    }
-
-                    SchoolClasses.selectAll()
-                        .where { SchoolClasses.id eq classId }
-                        .first()
-                        .let { row ->
-                            SchoolClassDto(
-                                id = row[SchoolClasses.id].value.toString(),
-                                schoolId = row[SchoolClasses.schoolId].value.toString(),
-                                name = row[SchoolClasses.name],
-                                alternativeName = row[SchoolClasses.alternativeName],
-                                studentCount = 0,
-                                version = row[SchoolClasses.version],
-                                createdAt = row[SchoolClasses.createdAt].toString(),
-                                updatedAt = row[SchoolClasses.updatedAt].toString()
-                            )
-                        }
-                }
-
-                when (updated) {
-                    null -> call.respond(HttpStatusCode.NotFound, ErrorResponse("Class not found"))
-                    "version_conflict" -> call.respond(HttpStatusCode.Conflict, ErrorResponse("Version conflict. Class was modified by another user."))
-                    else -> call.respond(updated as SchoolClassDto)
+                when (val result = schoolClassService.updateClass(
+                    classId = classId,
+                    schoolId = schoolId,
+                    name = request.name,
+                    alternativeName = request.alternativeName,
+                    version = request.version,
+                    userId = principal.id
+                )) {
+                    is ClassUpdateResult.Success -> call.respond(result.data)
+                    is ClassUpdateResult.NotFound -> call.respond(HttpStatusCode.NotFound, ErrorResponse("Class not found"))
+                    is ClassUpdateResult.VersionConflict -> call.respond(HttpStatusCode.Conflict, ErrorResponse("Version conflict. Class was modified by another user."))
                 }
             }
 
@@ -223,12 +139,7 @@ fun Route.schoolClassRoute() {
                     return@delete
                 }
 
-                val deleted = transaction {
-                    val count = SchoolClasses.deleteWhere {
-                        (SchoolClasses.id eq classId) and (SchoolClasses.schoolId eq schoolId)
-                    }
-                    count > 0
-                }
+                val deleted = schoolClassService.deleteClass(classId, schoolId, principal.id)
 
                 if (deleted) {
                     call.respond(HttpStatusCode.NoContent)

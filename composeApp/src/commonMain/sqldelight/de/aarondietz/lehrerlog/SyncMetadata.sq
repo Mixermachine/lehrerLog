@@ -1,0 +1,24 @@
+CREATE TABLE IF NOT EXISTS SyncMetadata (
+    entityType TEXT PRIMARY KEY NOT NULL,
+    lastSyncLogId INTEGER NOT NULL DEFAULT 0,
+    lastSyncTimestamp INTEGER NOT NULL DEFAULT 0
+);
+
+-- Insert default values for all entity types
+INSERT OR IGNORE INTO SyncMetadata (entityType, lastSyncLogId, lastSyncTimestamp)
+VALUES
+    ('STUDENT', 0, 0),
+    ('SCHOOL_CLASS', 0, 0);
+
+getLastSyncId:
+SELECT lastSyncLogId, lastSyncTimestamp
+FROM SyncMetadata
+WHERE entityType = ?;
+
+updateLastSyncId:
+UPDATE SyncMetadata
+SET lastSyncLogId = ?, lastSyncTimestamp = ?
+WHERE entityType = ?;
+
+getAllSyncMetadata:
+SELECT * FROM SyncMetadata;

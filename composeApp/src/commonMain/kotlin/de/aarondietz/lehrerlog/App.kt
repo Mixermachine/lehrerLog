@@ -24,12 +24,14 @@ import de.aarondietz.lehrerlog.ui.screens.auth.AuthViewModel
 import de.aarondietz.lehrerlog.ui.screens.auth.LoginScreen
 import de.aarondietz.lehrerlog.ui.screens.auth.RegisterScreen
 import de.aarondietz.lehrerlog.ui.screens.home.HomeScreen
+import de.aarondietz.lehrerlog.sync.SyncManager
 import de.aarondietz.lehrerlog.ui.screens.settings.SettingsScreen
 import de.aarondietz.lehrerlog.ui.screens.students.StudentsScreen
 import de.aarondietz.lehrerlog.ui.screens.tasks.TasksScreen
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.KoinApplication
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -68,16 +70,16 @@ private fun AppContent(authViewModel: AuthViewModel = koinViewModel()) {
             }
         }
         is AuthState.Unauthenticated, is AuthState.Error -> {
-            AuthNavigation()
+            AuthNavigation(authViewModel = authViewModel)
         }
         is AuthState.Authenticated -> {
-            MainAppContent()
+            MainAppContent(authViewModel = authViewModel)
         }
     }
 }
 
 @Composable
-private fun AuthNavigation() {
+private fun AuthNavigation(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
 
     NavHost(
@@ -90,23 +92,34 @@ private fun AuthNavigation() {
                     navController.navigate("register") {
                         launchSingleTop = true
                     }
-                }
+                },
+                viewModel = authViewModel
             )
         }
         composable("register") {
             RegisterScreen(
                 onNavigateToLogin = {
                     navController.popBackStack()
-                }
+                },
+                viewModel = authViewModel
             )
         }
     }
 }
 
 @Composable
-private fun MainAppContent() {
+private fun MainAppContent(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
     val items = listOf(BottomBarEntry.Home, BottomBarEntry.Tasks, BottomBarEntry.Students, BottomBarEntry.Settings)
+    val syncManager: SyncManager = koinInject()
+
+    // Start sync when authenticated
+    DisposableEffect(Unit) {
+        syncManager.startAutoSync()
+        onDispose {
+            syncManager.stopAutoSync()
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -142,7 +155,7 @@ private fun MainAppContent() {
             composable(BottomBarEntry.Home.route) { HomeScreen() }
             composable(BottomBarEntry.Tasks.route) { TasksScreen() }
             composable(BottomBarEntry.Students.route) { StudentsScreen() }
-            composable(BottomBarEntry.Settings.route) { SettingsScreen() }
+            composable(BottomBarEntry.Settings.route) { SettingsScreen(onLogout = { authViewModel.logout() }) }
         }
     }
 }

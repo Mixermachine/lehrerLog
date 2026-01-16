@@ -1,8 +1,11 @@
 package de.aarondietz.lehrerlog
 
+import de.aarondietz.lehrerlog.database.DatabaseDriverFactory
+import de.aarondietz.lehrerlog.sync.ConnectivityMonitor
 import org.koin.dsl.module
 import org.koin.core.module.Module
 
 actual val platformModule: Module = module {
-    // wasmJS-specific bindings (usually empty or minimal)
+    single { DatabaseDriverFactory() }
+    single { ConnectivityMonitor() }
 }

@@ -11,6 +11,11 @@ enum class SyncOperation {
     DELETE
 }
 
+enum class EntityType {
+    STUDENT,
+    SCHOOL_CLASS
+}
+
 object SyncLog : LongIdTable("sync_log") {
     val schoolId = reference("school_id", Schools, onDelete = ReferenceOption.CASCADE)
     val entityType = varchar("entity_type", 50)

@@ -48,6 +48,7 @@ import lehrerlog.composeapp.generated.resources.password
 import lehrerlog.composeapp.generated.resources.register
 import lehrerlog.composeapp.generated.resources.welcome_back
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -56,6 +57,23 @@ fun LoginScreen(
     viewModel: AuthViewModel = koinViewModel()
 ) {
     val loginState by viewModel.loginState.collectAsState()
+    LoginScreenContent(
+        loginState = loginState,
+        onNavigateToRegister = onNavigateToRegister,
+        onEmailChange = viewModel::updateLoginEmail,
+        onPasswordChange = viewModel::updateLoginPassword,
+        onLoginClick = viewModel::login
+    )
+}
+
+@Composable
+private fun LoginScreenContent(
+    loginState: LoginUiState,
+    onNavigateToRegister: () -> Unit,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onLoginClick: () -> Unit
+) {
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -84,7 +102,7 @@ fun LoginScreen(
 
         OutlinedTextField(
             value = loginState.email,
-            onValueChange = viewModel::updateLoginEmail,
+            onValueChange = onEmailChange,
             label = { Text(stringResource(Res.string.email)) },
             leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             singleLine = true,
@@ -103,7 +121,7 @@ fun LoginScreen(
 
         OutlinedTextField(
             value = loginState.password,
-            onValueChange = viewModel::updateLoginPassword,
+            onValueChange = onPasswordChange,
             label = { Text(stringResource(Res.string.password)) },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             trailingIcon = {
@@ -123,7 +141,7 @@ fun LoginScreen(
             keyboardActions = KeyboardActions(
                 onDone = {
                     focusManager.clearFocus()
-                    viewModel.login()
+                    onLoginClick()
                 }
             ),
             modifier = Modifier.fillMaxWidth(),
@@ -142,7 +160,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.login() },
+            onClick = onLoginClick,
             modifier = Modifier.fillMaxWidth(),
             enabled = !loginState.isLoading
         ) {
@@ -165,5 +183,58 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.primary
             )
         }
+    }
+}
+
+@Preview
+@Composable
+private fun LoginScreenPreview() {
+    MaterialTheme {
+        LoginScreenContent(
+            loginState = LoginUiState(
+                email = "user@example.com",
+                password = "password123"
+            ),
+            onNavigateToRegister = {},
+            onEmailChange = {},
+            onPasswordChange = {},
+            onLoginClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun LoginScreenLoadingPreview() {
+    MaterialTheme {
+        LoginScreenContent(
+            loginState = LoginUiState(
+                email = "user@example.com",
+                password = "password123",
+                isLoading = true
+            ),
+            onNavigateToRegister = {},
+            onEmailChange = {},
+            onPasswordChange = {},
+            onLoginClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun LoginScreenErrorPreview() {
+    MaterialTheme {
+        LoginScreenContent(
+            loginState = LoginUiState(
+                email = "user@example.com",
+                password = "wrong",
+                error = "Invalid credentials. Please try again."
+            ),
+            onNavigateToRegister = {},
+            onEmailChange = {},
+            onPasswordChange = {},
+            onLoginClick = {}
+        )
     }
 }

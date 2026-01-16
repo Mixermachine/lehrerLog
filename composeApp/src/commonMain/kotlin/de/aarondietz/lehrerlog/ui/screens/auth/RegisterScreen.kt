@@ -54,6 +54,7 @@ import lehrerlog.composeapp.generated.resources.register
 import lehrerlog.composeapp.generated.resources.register_subtitle
 import lehrerlog.composeapp.generated.resources.school_code
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -62,6 +63,31 @@ fun RegisterScreen(
     viewModel: AuthViewModel = koinViewModel()
 ) {
     val registerState by viewModel.registerState.collectAsState()
+    RegisterScreenContent(
+        registerState = registerState,
+        onNavigateToLogin = onNavigateToLogin,
+        onFirstNameChange = viewModel::updateRegisterFirstName,
+        onLastNameChange = viewModel::updateRegisterLastName,
+        onEmailChange = viewModel::updateRegisterEmail,
+        onPasswordChange = viewModel::updateRegisterPassword,
+        onConfirmPasswordChange = viewModel::updateRegisterConfirmPassword,
+        onSchoolCodeChange = viewModel::updateRegisterSchoolCode,
+        onRegisterClick = viewModel::register
+    )
+}
+
+@Composable
+private fun RegisterScreenContent(
+    registerState: RegisterUiState,
+    onNavigateToLogin: () -> Unit,
+    onFirstNameChange: (String) -> Unit,
+    onLastNameChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+    onSchoolCodeChange: (String) -> Unit,
+    onRegisterClick: () -> Unit
+) {
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
@@ -91,7 +117,7 @@ fun RegisterScreen(
 
         OutlinedTextField(
             value = registerState.firstName,
-            onValueChange = viewModel::updateRegisterFirstName,
+            onValueChange = onFirstNameChange,
             label = { Text(stringResource(Res.string.first_name)) },
             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
             singleLine = true,
@@ -107,7 +133,7 @@ fun RegisterScreen(
 
         OutlinedTextField(
             value = registerState.lastName,
-            onValueChange = viewModel::updateRegisterLastName,
+            onValueChange = onLastNameChange,
             label = { Text(stringResource(Res.string.last_name)) },
             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
             singleLine = true,
@@ -123,7 +149,7 @@ fun RegisterScreen(
 
         OutlinedTextField(
             value = registerState.email,
-            onValueChange = viewModel::updateRegisterEmail,
+            onValueChange = onEmailChange,
             label = { Text(stringResource(Res.string.email)) },
             leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             singleLine = true,
@@ -142,7 +168,7 @@ fun RegisterScreen(
 
         OutlinedTextField(
             value = registerState.password,
-            onValueChange = viewModel::updateRegisterPassword,
+            onValueChange = onPasswordChange,
             label = { Text(stringResource(Res.string.password)) },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             trailingIcon = {
@@ -170,7 +196,7 @@ fun RegisterScreen(
 
         OutlinedTextField(
             value = registerState.confirmPassword,
-            onValueChange = viewModel::updateRegisterConfirmPassword,
+            onValueChange = onConfirmPasswordChange,
             label = { Text(stringResource(Res.string.confirm_password)) },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             trailingIcon = {
@@ -198,7 +224,7 @@ fun RegisterScreen(
 
         OutlinedTextField(
             value = registerState.schoolCode,
-            onValueChange = viewModel::updateRegisterSchoolCode,
+            onValueChange = onSchoolCodeChange,
             label = { Text(stringResource(Res.string.school_code)) },
             leadingIcon = { Icon(Icons.Default.School, contentDescription = null) },
             singleLine = true,
@@ -206,7 +232,7 @@ fun RegisterScreen(
             keyboardActions = KeyboardActions(
                 onDone = {
                     focusManager.clearFocus()
-                    viewModel.register()
+                    onRegisterClick()
                 }
             ),
             modifier = Modifier.fillMaxWidth(),
@@ -225,7 +251,7 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.register() },
+            onClick = onRegisterClick,
             modifier = Modifier.fillMaxWidth(),
             enabled = !registerState.isLoading
         ) {
@@ -248,5 +274,80 @@ fun RegisterScreen(
                 color = MaterialTheme.colorScheme.primary
             )
         }
+    }
+}
+
+@Preview
+@Composable
+private fun RegisterScreenPreview() {
+    MaterialTheme {
+        RegisterScreenContent(
+            registerState = RegisterUiState(
+                firstName = "John",
+                lastName = "Doe",
+                email = "john.doe@example.com",
+                password = "password123",
+                confirmPassword = "password123",
+                schoolCode = "SCHOOL123"
+            ),
+            onNavigateToLogin = {},
+            onFirstNameChange = {},
+            onLastNameChange = {},
+            onEmailChange = {},
+            onPasswordChange = {},
+            onConfirmPasswordChange = {},
+            onSchoolCodeChange = {},
+            onRegisterClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun RegisterScreenLoadingPreview() {
+    MaterialTheme {
+        RegisterScreenContent(
+            registerState = RegisterUiState(
+                firstName = "John",
+                lastName = "Doe",
+                email = "john.doe@example.com",
+                password = "password123",
+                confirmPassword = "password123",
+                isLoading = true
+            ),
+            onNavigateToLogin = {},
+            onFirstNameChange = {},
+            onLastNameChange = {},
+            onEmailChange = {},
+            onPasswordChange = {},
+            onConfirmPasswordChange = {},
+            onSchoolCodeChange = {},
+            onRegisterClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun RegisterScreenErrorPreview() {
+    MaterialTheme {
+        RegisterScreenContent(
+            registerState = RegisterUiState(
+                firstName = "John",
+                lastName = "Doe",
+                email = "john.doe@example.com",
+                password = "pass",
+                confirmPassword = "different",
+                error = "Passwords do not match"
+            ),
+            onNavigateToLogin = {},
+            onFirstNameChange = {},
+            onLastNameChange = {},
+            onEmailChange = {},
+            onPasswordChange = {},
+            onConfirmPasswordChange = {},
+            onSchoolCodeChange = {},
+            onRegisterClick = {}
+        )
     }
 }

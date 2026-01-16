@@ -7,6 +7,7 @@ import de.aarondietz.lehrerlog.routes.authRoute
 import de.aarondietz.lehrerlog.routes.schoolClassRoute
 import de.aarondietz.lehrerlog.routes.schoolRoute
 import de.aarondietz.lehrerlog.routes.studentRoute
+import de.aarondietz.lehrerlog.routes.syncRoute
 import de.aarondietz.lehrerlog.routes.userRoute
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -76,6 +77,7 @@ fun Application.module() {
         schoolClassRoute()
         schoolRoute()
         studentRoute()
+        syncRoute()
         userRoute()
     }
 }
