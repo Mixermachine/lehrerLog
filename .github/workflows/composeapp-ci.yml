@@ -28,7 +28,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Build Android, JVM, and Wasm targets
-        run: ./gradlew :composeApp:assembleDebug :composeApp:assembleRelease :composeApp:jvmJar :composeApp:wasmJsBrowserDistribution
+        run: chmod +x ./gradlew && ./gradlew :composeApp:assembleDebug :composeApp:assembleRelease :composeApp:jvmJar :composeApp:wasmJsBrowserDistribution
 
   build-ios:
     runs-on: macos-latest
@@ -46,4 +46,4 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Build iOS target
-        run: ./gradlew :composeApp:compileKotlinIosSimulatorArm64
+        run: chmod +x ./gradlew && ./gradlew :composeApp:compileKotlinIosSimulatorArm64
