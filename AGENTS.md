@@ -46,3 +46,4 @@ Use the Gradle wrapper (`./gradlew` on macOS/Linux, `.\gradlew.bat` on Windows).
 ## Configuration & Data
 - Server schema changes require a new Flyway migration in `server/src/main/resources/db/migration`.
 - Keep secrets out of VCS; prefer local config overrides (e.g., `local.properties`) for developer-specific values.
+- GitHub Actions Android signing expects these env vars: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS_APK`, `ANDROID_KEY_ALIAS_AAB`.

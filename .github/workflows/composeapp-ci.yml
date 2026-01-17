@@ -28,7 +28,39 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Build Android, JVM, and Wasm targets
-        run: chmod +x ./gradlew && ./gradlew :composeApp:assembleDebug :composeApp:assembleRelease :composeApp:jvmJar :composeApp:wasmJsBrowserDistribution
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS_APK: ${{ secrets.ANDROID_KEY_ALIAS_APK }}
+          ANDROID_KEY_ALIAS_AAB: ${{ secrets.ANDROID_KEY_ALIAS_AAB }}
+        run: |
+          chmod +x ./gradlew
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "${{ runner.temp }}/release.keystore"
+          ./gradlew :composeApp:assembleDebug :composeApp:assembleReleaseApk :composeApp:bundleReleaseAab :composeApp:jvmJar :composeApp:wasmJsBrowserDistribution
+
+      - name: Upload Android APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: composeApp/build/outputs/apk/releaseApk/*.apk
+
+      - name: Upload Android AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: composeApp/build/outputs/bundle/releaseAab/*.aab
+
+      - name: Upload JVM jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: jvm-jar
+          path: composeApp/build/libs/*.jar
+
+      - name: Upload Wasm distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-js-dist
+          path: composeApp/build/dist/wasmJs/**
 
   build-ios:
     runs-on: macos-latest
@@ -46,4 +78,12 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Build iOS target
-        run: chmod +x ./gradlew && ./gradlew :composeApp:compileKotlinIosSimulatorArm64
+        run: chmod +x ./gradlew && ./gradlew :composeApp:linkReleaseFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64
+
+      - name: Upload iOS frameworks
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-frameworks
+          path: |
+            composeApp/build/bin/iosSimulatorArm64/releaseFramework/ComposeApp.framework
+            composeApp/build/bin/iosArm64/releaseFramework/ComposeApp.framework

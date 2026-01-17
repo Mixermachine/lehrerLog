@@ -133,6 +133,20 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+    signingConfigs {
+        create("releaseApk") {
+            storeFile = System.getenv("ANDROID_KEYSTORE_PATH")?.let { file(it) }
+            storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS_APK")
+            keyPassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+        }
+        create("releaseAab") {
+            storeFile = System.getenv("ANDROID_KEYSTORE_PATH")?.let { file(it) }
+            storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS_AAB")
+            keyPassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+        }
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -141,6 +155,14 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+        }
+        create("releaseApk") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("releaseApk")
+        }
+        create("releaseAab") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("releaseAab")
         }
     }
     compileOptions {
