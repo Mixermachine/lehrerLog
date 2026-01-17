@@ -4,6 +4,7 @@ import de.aarondietz.lehrerlog.db.tables.RefreshTokens
 import de.aarondietz.lehrerlog.db.tables.Schools
 import de.aarondietz.lehrerlog.db.tables.UserRole
 import de.aarondietz.lehrerlog.db.tables.Users
+import de.aarondietz.lehrerlog.schools.SchoolCatalogService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
@@ -42,7 +43,8 @@ class AuthException(message: String) : Exception(message)
 
 class AuthService(
     private val passwordService: PasswordService,
-    private val tokenService: TokenService
+    private val tokenService: TokenService,
+    private val schoolCatalogService: SchoolCatalogService
 ) {
 
     fun register(request: RegisterRequest, deviceInfo: String? = null): Pair<AuthTokens, UserInfo> = transaction {
@@ -54,8 +56,7 @@ class AuthService(
 
         // Find school if code provided
         val schoolId = request.schoolCode?.let { code ->
-            Schools.selectAll().where { Schools.code eq code }.firstOrNull()?.let { it[Schools.id].value }
-                ?: throw AuthException("Invalid school code")
+            resolveSchoolId(code)
         }
 
         // Create user
@@ -159,6 +160,37 @@ class AuthService(
         }
     }
 
+    fun joinSchool(userId: UUID, schoolCode: String, deviceInfo: String? = null): Pair<AuthTokens, UserInfo> = transaction {
+        val schoolId = resolveSchoolId(schoolCode)
+
+        val userRow = Users.selectAll()
+            .where { (Users.id eq userId) and (Users.isActive eq true) }
+            .firstOrNull() ?: throw AuthException("User not found or inactive")
+
+        val existingSchoolId = userRow[Users.schoolId]?.value
+        if (existingSchoolId != null && existingSchoolId != schoolId) {
+            throw AuthException("User already associated with a different school")
+        }
+
+        if (existingSchoolId == null) {
+            Users.update({ Users.id eq userId }) {
+                it[Users.schoolId] = schoolId
+            }
+        }
+
+        val user = UserInfo(
+            id = userRow[Users.id].value,
+            email = userRow[Users.email],
+            firstName = userRow[Users.firstName],
+            lastName = userRow[Users.lastName],
+            role = userRow[Users.role],
+            schoolId = schoolId
+        )
+
+        val tokens = generateAndStoreTokens(user, deviceInfo)
+        tokens to user
+    }
+
     fun getUserById(userId: UUID): UserInfo? = transaction {
         Users.selectAll()
             .where { (Users.id eq userId) and (Users.isActive eq true) }
@@ -201,5 +233,23 @@ class AuthService(
             refreshToken = refreshToken,
             expiresIn = JwtConfig.ACCESS_TOKEN_VALIDITY_MS / 1000
         )
+    }
+
+    private fun resolveSchoolId(schoolCode: String): UUID {
+        val existingSchool = Schools.selectAll()
+            .where { Schools.code eq schoolCode }
+            .firstOrNull()
+
+        if (existingSchool != null) {
+            return existingSchool[Schools.id].value
+        }
+
+        val catalogEntry = schoolCatalogService.findByCode(schoolCode)
+            ?: throw AuthException("Invalid school code")
+
+        return Schools.insertAndGetId {
+            it[Schools.name] = catalogEntry.name
+            it[Schools.code] = catalogEntry.code
+        }.value
     }
 }

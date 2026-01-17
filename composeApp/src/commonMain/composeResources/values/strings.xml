@@ -38,6 +38,12 @@
     <string name="confirm_password">Passwort bestätigen</string>
     <string name="school_code">Schulcode (optional)</string>
     <string name="school_code_hint">Falls vorhanden</string>
+    <string name="school_search">Schule suchen</string>
+    <string name="school_search_hint">Nach Name oder Ort suchen</string>
+    <string name="school_search_min_chars">Mindestens 2 Buchstaben eingeben</string>
+    <string name="school_search_no_results">Keine Schule gefunden</string>
+    <string name="join_school_title">Schule beitreten</string>
+    <string name="join_school_action">Beitreten</string>
     <string name="no_account">Noch kein Konto?</string>
     <string name="have_account">Bereits ein Konto?</string>
     <string name="welcome_back">Willkommen zurück!</string>

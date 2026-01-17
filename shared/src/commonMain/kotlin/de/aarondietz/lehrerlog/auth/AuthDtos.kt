@@ -28,6 +28,11 @@ data class LogoutRequest(
 )
 
 @Serializable
+data class JoinSchoolRequest(
+    val schoolCode: String
+)
+
+@Serializable
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String,

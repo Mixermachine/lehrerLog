@@ -9,6 +9,7 @@ import de.aarondietz.lehrerlog.routes.schoolRoute
 import de.aarondietz.lehrerlog.routes.studentRoute
 import de.aarondietz.lehrerlog.routes.syncRoute
 import de.aarondietz.lehrerlog.routes.userRoute
+import de.aarondietz.lehrerlog.schools.SchoolCatalogService
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -21,6 +22,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 import java.util.*
+import java.nio.file.Path
 
 fun main() {
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
@@ -34,7 +36,11 @@ fun Application.module() {
     // Services
     val passwordService = PasswordService()
     val tokenService = TokenService()
-    val authService = AuthService(passwordService, tokenService)
+    val catalogPath = System.getenv("SCHOOL_CATALOG_PATH") ?: "data/schools.json"
+    val catalogEndpoint = System.getenv("SCHOOL_CATALOG_ENDPOINT")
+        ?: "https://overpass-api.de/api/interpreter"
+    val schoolCatalogService = SchoolCatalogService(Path.of(catalogPath), catalogEndpoint)
+    val authService = AuthService(passwordService, tokenService, schoolCatalogService)
 
     // Install plugins
     install(ContentNegotiation) {
@@ -75,7 +81,7 @@ fun Application.module() {
     routing {
         authRoute(authService)
         schoolClassRoute()
-        schoolRoute()
+        schoolRoute(schoolCatalogService)
         studentRoute()
         syncRoute()
         userRoute()

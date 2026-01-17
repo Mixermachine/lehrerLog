@@ -34,6 +34,11 @@ data class LogoutRequestDto(
 )
 
 @Serializable
+data class JoinSchoolRequestDto(
+    val schoolCode: String
+)
+
+@Serializable
 data class AuthResponseDto(
     val accessToken: String,
     val refreshToken: String,
@@ -168,6 +173,35 @@ fun Route.authRoute(authService: AuthService) {
                     call.respond(SuccessResponse("Logged out from $count devices"))
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Logout failed: ${e.message}"))
+                }
+            }
+
+            post("/join-school") {
+                try {
+                    val request = call.receive<JoinSchoolRequestDto>()
+                    if (request.schoolCode.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("School code is required"))
+                        return@post
+                    }
+
+                    val principal = call.principal<UserPrincipal>()!!
+                    val deviceInfo = call.request.header("User-Agent")
+                    val (tokens, user) = authService.joinSchool(
+                        userId = principal.id,
+                        schoolCode = request.schoolCode.trim(),
+                        deviceInfo = deviceInfo
+                    )
+
+                    call.respond(AuthResponseDto(
+                        accessToken = tokens.accessToken,
+                        refreshToken = tokens.refreshToken,
+                        expiresIn = tokens.expiresIn,
+                        user = user.toDto()
+                    ))
+                } catch (e: AuthException) {
+                    call.respond(HttpStatusCode.Conflict, ErrorResponse(e.message ?: "Failed to join school"))
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to join school: ${e.message}"))
                 }
             }
 

@@ -3,6 +3,7 @@ package de.aarondietz.lehrerlog.ui.screens.auth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,10 +17,13 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,7 +56,10 @@ import lehrerlog.composeapp.generated.resources.login
 import lehrerlog.composeapp.generated.resources.password
 import lehrerlog.composeapp.generated.resources.register
 import lehrerlog.composeapp.generated.resources.register_subtitle
-import lehrerlog.composeapp.generated.resources.school_code
+import lehrerlog.composeapp.generated.resources.school_search
+import lehrerlog.composeapp.generated.resources.school_search_hint
+import lehrerlog.composeapp.generated.resources.school_search_min_chars
+import lehrerlog.composeapp.generated.resources.school_search_no_results
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
@@ -71,7 +78,8 @@ fun RegisterScreen(
         onEmailChange = viewModel::updateRegisterEmail,
         onPasswordChange = viewModel::updateRegisterPassword,
         onConfirmPasswordChange = viewModel::updateRegisterConfirmPassword,
-        onSchoolCodeChange = viewModel::updateRegisterSchoolCode,
+        onSchoolQueryChange = viewModel::updateRegisterSchoolQuery,
+        onSchoolSelected = viewModel::selectRegisterSchool,
         onRegisterClick = viewModel::register
     )
 }
@@ -85,12 +93,14 @@ private fun RegisterScreenContent(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
-    onSchoolCodeChange: (String) -> Unit,
+    onSchoolQueryChange: (String) -> Unit,
+    onSchoolSelected: (de.aarondietz.lehrerlog.data.SchoolSearchResultDto) -> Unit,
     onRegisterClick: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    var schoolMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -222,22 +232,84 @@ private fun RegisterScreenContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(
-            value = registerState.schoolCode,
-            onValueChange = onSchoolCodeChange,
-            label = { Text(stringResource(Res.string.school_code)) },
-            leadingIcon = { Icon(Icons.Default.School, contentDescription = null) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    focusManager.clearFocus()
-                    onRegisterClick()
+        Box(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = registerState.schoolQuery,
+                onValueChange = {
+                    onSchoolQueryChange(it)
+                    schoolMenuExpanded = true
+                },
+                label = { Text(stringResource(Res.string.school_search)) },
+                leadingIcon = { Icon(Icons.Default.School, contentDescription = null) },
+                trailingIcon = {
+                    if (registerState.isSchoolLoading) {
+                        CircularProgressIndicator(modifier = Modifier.height(18.dp), strokeWidth = 2.dp)
+                    } else {
+                        IconButton(onClick = { schoolMenuExpanded = !schoolMenuExpanded }) {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        }
+                    }
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                        onRegisterClick()
+                    }
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !registerState.isLoading
+            )
+
+            DropdownMenu(
+                expanded = schoolMenuExpanded && registerState.schoolSuggestions.isNotEmpty(),
+                onDismissRequest = { schoolMenuExpanded = false },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                registerState.schoolSuggestions.forEach { school ->
+                    val label = listOfNotNull(
+                        school.name,
+                        school.city,
+                        school.postcode
+                    ).filter { it.isNotBlank() }
+                    val displayLabel = if (label.size > 1) {
+                        "${label[0]} (${label.drop(1).joinToString(", ")})"
+                    } else {
+                        school.name
+                    }
+
+                    DropdownMenuItem(
+                        text = { Text(displayLabel) },
+                        onClick = {
+                            onSchoolSelected(school)
+                            schoolMenuExpanded = false
+                        }
+                    )
                 }
-            ),
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !registerState.isLoading
-        )
+            }
+        }
+
+        val schoolHelperText = when {
+            registerState.schoolQuery.isBlank() ->
+                stringResource(Res.string.school_search_hint)
+            registerState.schoolQuery.trim().length < 2 ->
+                stringResource(Res.string.school_search_min_chars)
+            !registerState.isSchoolLoading &&
+                registerState.schoolSuggestions.isEmpty() &&
+                registerState.selectedSchool == null ->
+                stringResource(Res.string.school_search_no_results)
+            else -> null
+        }
+
+        schoolHelperText?.let { helperText ->
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = helperText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
         registerState.error?.let { error ->
             Spacer(modifier = Modifier.height(8.dp))
@@ -288,7 +360,7 @@ private fun RegisterScreenPreview() {
                 email = "john.doe@example.com",
                 password = "password123",
                 confirmPassword = "password123",
-                schoolCode = "SCHOOL123"
+                schoolQuery = "Gymnasium Musterstadt"
             ),
             onNavigateToLogin = {},
             onFirstNameChange = {},
@@ -296,7 +368,8 @@ private fun RegisterScreenPreview() {
             onEmailChange = {},
             onPasswordChange = {},
             onConfirmPasswordChange = {},
-            onSchoolCodeChange = {},
+            onSchoolQueryChange = {},
+            onSchoolSelected = {},
             onRegisterClick = {}
         )
     }
@@ -321,7 +394,8 @@ private fun RegisterScreenLoadingPreview() {
             onEmailChange = {},
             onPasswordChange = {},
             onConfirmPasswordChange = {},
-            onSchoolCodeChange = {},
+            onSchoolQueryChange = {},
+            onSchoolSelected = {},
             onRegisterClick = {}
         )
     }
@@ -346,7 +420,8 @@ private fun RegisterScreenErrorPreview() {
             onEmailChange = {},
             onPasswordChange = {},
             onConfirmPasswordChange = {},
-            onSchoolCodeChange = {},
+            onSchoolQueryChange = {},
+            onSchoolSelected = {},
             onRegisterClick = {}
         )
     }

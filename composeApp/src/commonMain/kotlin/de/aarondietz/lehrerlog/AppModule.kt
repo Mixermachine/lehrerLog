@@ -7,6 +7,7 @@ import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.auth.createTokenStorage
 import de.aarondietz.lehrerlog.data.api.SyncApi
+import de.aarondietz.lehrerlog.data.repository.SchoolRepository
 import de.aarondietz.lehrerlog.data.repository.SchoolClassRepository
 import de.aarondietz.lehrerlog.data.repository.StudentRepository
 import de.aarondietz.lehrerlog.database.createDatabase
@@ -38,12 +39,13 @@ val commonModule = module {
     // Repositories
     single { StudentRepository(get(), get(), SERVER_URL, get()) }
     single { SchoolClassRepository(get(), get(), SERVER_URL, get()) }
+    single { SchoolRepository(get(), SERVER_URL) }
 
     // Sync
     single { SyncApi(get(), SERVER_URL) }
     single { SyncManager(get(), get(), get(), get()) }
 
-    viewModelOf(::AuthViewModel)
+    viewModel { AuthViewModel(get(), get()) }
     viewModelOf(::HomeViewModel)
     viewModelOf(::SettingsViewModel)
     viewModel { StudentsViewModel(get(), get(), get(), get()) }

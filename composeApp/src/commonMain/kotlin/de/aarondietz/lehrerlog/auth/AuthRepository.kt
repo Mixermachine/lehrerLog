@@ -140,6 +140,42 @@ class AuthRepository(
         }
     }
 
+    suspend fun joinSchool(schoolCode: String): AuthResult<AuthResponse> {
+        val accessToken = tokenStorage.getAccessToken() ?: return AuthResult.Error("Not authenticated")
+
+        return try {
+            val response: HttpResponse = httpClient.post("$baseUrl/auth/join-school") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $accessToken")
+                setBody(JoinSchoolRequest(schoolCode))
+            }
+
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    val authResponse = response.body<AuthResponse>()
+                    saveTokens(authResponse.accessToken, authResponse.refreshToken)
+                    AuthResult.Success(authResponse)
+                }
+                HttpStatusCode.Unauthorized -> {
+                    when (val refreshResult = refreshToken()) {
+                        is AuthResult.Success -> joinSchool(schoolCode)
+                        is AuthResult.Error -> AuthResult.Error("Session expired", 401)
+                    }
+                }
+                else -> {
+                    val error = try {
+                        response.body<ErrorResponse>()
+                    } catch (e: Exception) {
+                        ErrorResponse("Failed to join school")
+                    }
+                    AuthResult.Error(error.error, response.status.value)
+                }
+            }
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "Network error")
+        }
+    }
+
     suspend fun getCurrentUser(): AuthResult<UserDto> {
         val accessToken = tokenStorage.getAccessToken() ?: return AuthResult.Error("Not authenticated")
 

@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.data.SchoolClassDto
 import de.aarondietz.lehrerlog.ui.composables.AddClassDialog
 import de.aarondietz.lehrerlog.ui.composables.AddStudentDialog
+import de.aarondietz.lehrerlog.ui.composables.JoinSchoolDialog
 import lehrerlog.composeapp.generated.resources.Res
 import lehrerlog.composeapp.generated.resources.add_class
 import lehrerlog.composeapp.generated.resources.no_classes
@@ -27,15 +28,31 @@ fun StudentsScreen(
     val students by viewModel.students.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val needsSchool by viewModel.needsSchool.collectAsState()
 
     val expandedClasses = remember { mutableStateMapOf<String, Boolean>() }
     var showAddClassDialog by remember { mutableStateOf(false) }
+    var showJoinSchoolDialog by remember { mutableStateOf(false) }
     var selectedClassForStudent by remember { mutableStateOf<SchoolClassDto?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(needsSchool) {
+        if (needsSchool) {
+            showJoinSchoolDialog = true
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddClassDialog = true }
+                onClick = {
+                    if (needsSchool) {
+                        showJoinSchoolDialog = true
+                    } else {
+                        showAddClassDialog = true
+                    }
+                }
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_class))
             }
@@ -106,7 +123,7 @@ fun StudentsScreen(
     // Error snackbar
     error?.let { errorMessage ->
         LaunchedEffect(errorMessage) {
-            // TODO: Show snackbar with error
+            snackbarHostState.showSnackbar(errorMessage)
             viewModel.clearError()
         }
     }
@@ -117,6 +134,16 @@ fun StudentsScreen(
             onConfirm = { className ->
                 viewModel.createClass(className)
                 showAddClassDialog = false
+            }
+        )
+    }
+
+    if (showJoinSchoolDialog) {
+        JoinSchoolDialog(
+            onDismiss = { showJoinSchoolDialog = false },
+            onConfirm = { schoolCode ->
+                viewModel.joinSchool(schoolCode)
+                showJoinSchoolDialog = false
             }
         )
     }

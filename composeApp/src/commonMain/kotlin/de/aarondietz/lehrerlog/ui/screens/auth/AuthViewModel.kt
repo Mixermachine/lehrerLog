@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.AuthResult
 import de.aarondietz.lehrerlog.auth.UserDto
+import de.aarondietz.lehrerlog.data.SchoolSearchResultDto
+import de.aarondietz.lehrerlog.data.repository.SchoolRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,13 +35,17 @@ data class RegisterUiState(
     val confirmPassword: String = "",
     val firstName: String = "",
     val lastName: String = "",
-    val schoolCode: String = "",
+    val schoolQuery: String = "",
+    val selectedSchool: SchoolSearchResultDto? = null,
+    val schoolSuggestions: List<SchoolSearchResultDto> = emptyList(),
+    val isSchoolLoading: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null
 )
 
 class AuthViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val schoolRepository: SchoolRepository
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Initial)
@@ -48,6 +56,7 @@ class AuthViewModel(
 
     private val _registerState = MutableStateFlow(RegisterUiState())
     val registerState: StateFlow<RegisterUiState> = _registerState.asStateFlow()
+    private var schoolSearchJob: Job? = null
 
     init {
         checkAuthStatus()
@@ -125,8 +134,46 @@ class AuthViewModel(
         _registerState.value = _registerState.value.copy(lastName = lastName, error = null)
     }
 
-    fun updateRegisterSchoolCode(schoolCode: String) {
-        _registerState.value = _registerState.value.copy(schoolCode = schoolCode, error = null)
+    fun updateRegisterSchoolQuery(query: String) {
+        _registerState.value = _registerState.value.copy(
+            schoolQuery = query,
+            selectedSchool = null,
+            schoolSuggestions = emptyList(),
+            isSchoolLoading = query.isNotBlank(),
+            error = null
+        )
+
+        schoolSearchJob?.cancel()
+        if (query.trim().length < 2) {
+            _registerState.value = _registerState.value.copy(isSchoolLoading = false)
+            return
+        }
+
+        schoolSearchJob = viewModelScope.launch {
+            delay(250)
+            val result = schoolRepository.searchSchools(query.trim())
+            if (result.isSuccess) {
+                _registerState.value = _registerState.value.copy(
+                    schoolSuggestions = result.getOrNull().orEmpty(),
+                    isSchoolLoading = false
+                )
+            } else {
+                _registerState.value = _registerState.value.copy(
+                    isSchoolLoading = false,
+                    error = "Failed to load schools"
+                )
+            }
+        }
+    }
+
+    fun selectRegisterSchool(school: SchoolSearchResultDto) {
+        _registerState.value = _registerState.value.copy(
+            schoolQuery = schoolDisplayName(school),
+            selectedSchool = school,
+            schoolSuggestions = emptyList(),
+            isSchoolLoading = false,
+            error = null
+        )
     }
 
     fun register() {
@@ -158,11 +205,15 @@ class AuthViewModel(
                 _registerState.value = state.copy(error = "Last name is required")
                 return
             }
+            state.schoolQuery.isNotBlank() && state.selectedSchool == null -> {
+                _registerState.value = state.copy(error = "Please select a school from the list")
+                return
+            }
         }
 
         viewModelScope.launch {
             _registerState.value = _registerState.value.copy(isLoading = true, error = null)
-            val schoolCode = state.schoolCode.takeIf { it.isNotBlank() }
+            val schoolCode = state.selectedSchool?.code
 
             when (val result = authRepository.register(
                 email = state.email,
@@ -199,5 +250,14 @@ class AuthViewModel(
 
     fun clearRegisterError() {
         _registerState.value = _registerState.value.copy(error = null)
+    }
+
+    private fun schoolDisplayName(school: SchoolSearchResultDto): String {
+        val parts = listOfNotNull(school.name, school.city, school.postcode).filter { it.isNotBlank() }
+        return if (parts.size > 1) {
+            "${parts[0]} (${parts.drop(1).joinToString(", ")})"
+        } else {
+            school.name
+        }
     }
 }
