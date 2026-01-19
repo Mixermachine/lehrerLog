@@ -20,4 +20,10 @@ import de.aarondietz.lehrerlog.lehrerLog
               "lehrerlog.db"       // Third: database name (no parameter name)
           )
       }
+
+      actual fun deleteDatabase() {
+          val androidContext = context as? Context
+              ?: error("Android context is required to delete the SQLDelight database.")
+          androidContext.deleteDatabase("lehrerlog.db")
+      }
   }

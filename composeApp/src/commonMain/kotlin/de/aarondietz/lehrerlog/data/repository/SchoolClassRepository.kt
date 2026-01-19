@@ -3,8 +3,9 @@ package de.aarondietz.lehrerlog.data.repository
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import co.touchlab.kermit.Logger
+import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.data.SchoolClassDto
-import de.aarondietz.lehrerlog.lehrerLog
+import de.aarondietz.lehrerlog.database.DatabaseManager
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -21,10 +22,13 @@ import de.aarondietz.lehrerlog.currentTimeMillis
  */
 class SchoolClassRepository(
     private val httpClient: HttpClient,
-    private val database: lehrerLog,
+    private val tokenStorage: TokenStorage,
+    private val databaseManager: DatabaseManager,
     private val baseUrl: String,
     private val logger: Logger
 ) {
+    private val database
+        get() = databaseManager.db
 
     /**
      * Get all classes for the current school from local database.
@@ -56,6 +60,7 @@ class SchoolClassRepository(
         return try {
             val classes = httpClient.get("$baseUrl/api/classes") {
                 parameter("schoolId", schoolId)
+                tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }.body<List<SchoolClassDto>>()
 
             // Update local database

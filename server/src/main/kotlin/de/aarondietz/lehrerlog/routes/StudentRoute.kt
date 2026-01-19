@@ -78,6 +78,7 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
                     schoolId = schoolId,
                     firstName = request.firstName,
                     lastName = request.lastName,
+                    classIds = request.classIds,
                     userId = principal.id
                 )
 
@@ -113,6 +114,7 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
                     schoolId = schoolId,
                     firstName = request.firstName,
                     lastName = request.lastName,
+                    classIds = request.classIds,
                     version = request.version,
                     userId = principal.id
                 )) {

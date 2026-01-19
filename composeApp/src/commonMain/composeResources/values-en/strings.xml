@@ -25,6 +25,17 @@
     <string name="no_students_in_class">No students in this class</string>
     <string name="students_count">%1$d students</string>
 
+    <!-- Tasks -->
+    <string name="add_task">Add task</string>
+    <string name="task_title">Title</string>
+    <string name="task_description">Description (optional)</string>
+    <string name="due_date">Due date</string>
+    <string name="due_date_hint">YYYY-MM-DD</string>
+    <string name="no_tasks">No tasks available</string>
+    <string name="select_class">Select class</string>
+    <string name="submissions_status">%1$d of %2$d submitted</string>
+    <string name="due_label">Due: %1$s</string>
+
     <!-- Accessibility -->
     <string name="expand">Expand</string>
     <string name="collapse">Collapse</string>
@@ -42,8 +53,6 @@
     <string name="school_search_hint">Search by name or city</string>
     <string name="school_search_min_chars">Type at least 2 characters</string>
     <string name="school_search_no_results">No schools found</string>
-    <string name="join_school_title">Join school</string>
-    <string name="join_school_action">Join</string>
     <string name="no_account">Don\'t have an account?</string>
     <string name="have_account">Already have an account?</string>
     <string name="welcome_back">Welcome back!</string>

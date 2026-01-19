@@ -17,6 +17,8 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+composeApp/release/
+data/schools.json
 
 # Claude Code temporary files
 .claude/

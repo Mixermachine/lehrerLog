@@ -4,7 +4,9 @@ import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.data.SchoolClassDto
 import de.aarondietz.lehrerlog.data.StudentDto
 import de.aarondietz.lehrerlog.data.api.SyncApi
-import de.aarondietz.lehrerlog.lehrerLog
+import de.aarondietz.lehrerlog.database.DatabaseManager
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
@@ -16,11 +18,13 @@ import de.aarondietz.lehrerlog.currentTimeMillis
  * Monitors connectivity and automatically syncs when online.
  */
 class SyncManager(
-    private val database: lehrerLog,
+    private val databaseManager: DatabaseManager,
     private val syncApi: SyncApi,
     private val connectivityMonitor: ConnectivityMonitor,
     private val logger: Logger
 ) {
+    private val database
+        get() = databaseManager.db
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
@@ -31,6 +35,13 @@ class SyncManager(
 
     private var autoSyncJob: Job? = null
     private var isSyncing = false
+
+    sealed class SyncResult {
+        data object Success : SyncResult()
+        data object Unauthorized : SyncResult()
+        data object Offline : SyncResult()
+        data class Failure(val message: String?) : SyncResult()
+    }
 
     /**
      * Start automatic sync monitoring.
@@ -83,16 +94,23 @@ class SyncManager(
      * Pushes local changes and pulls remote changes.
      */
     suspend fun sync(): Boolean {
+        return when (syncAndReport()) {
+            is SyncResult.Success -> true
+            else -> false
+        }
+    }
+
+    suspend fun syncAndReport(): SyncResult {
         logger.i { "sync() called - isSyncing=$isSyncing" }
         if (isSyncing) {
             logger.w { "Sync already in progress, skipping" }
-            return false
+            return SyncResult.Failure("Sync already in progress")
         }
 
         if (!connectivityMonitor.isConnected.value) {
             logger.w { "No internet connection, cannot sync" }
             _syncState.value = SyncState.Error("No internet connection", canRetry = true)
-            return false
+            return SyncResult.Offline
         }
 
         isSyncing = true
@@ -100,7 +118,6 @@ class SyncManager(
         logger.i { "Starting sync process" }
 
         return try {
-            // Step 1: Push local changes
             logger.d { "Phase 1: Pushing local changes" }
             _syncState.value = SyncState.Syncing(progress = 0.3f, message = "Pushing local changes...")
             val pushSuccess = pushLocalChanges()
@@ -108,15 +125,13 @@ class SyncManager(
             if (!pushSuccess) {
                 logger.e { "Failed to push local changes" }
                 _syncState.value = SyncState.Error("Failed to push local changes", canRetry = true)
-                return false
+                return SyncResult.Failure("Failed to push local changes")
             }
 
             logger.d { "Phase 2: Pulling remote changes" }
-            // Step 2: Pull remote changes
             _syncState.value = SyncState.Syncing(progress = 0.6f, message = "Pulling remote changes...")
             val itemsSynced = pullRemoteChanges()
 
-            // Update stats
             _syncStats.value = _syncStats.value.copy(
                 lastSyncTimestamp = currentTimeMillis(),
                 pendingChanges = getPendingChangesCount(),
@@ -125,14 +140,24 @@ class SyncManager(
 
             logger.i { "Sync completed successfully, itemsSynced=$itemsSynced" }
             _syncState.value = SyncState.Success(itemsSynced = itemsSynced)
-            true
+            SyncResult.Success
+        } catch (e: ClientRequestException) {
+            if (e.response.status == HttpStatusCode.Unauthorized) {
+                logger.w { "Sync unauthorized, logging out" }
+                _syncState.value = SyncState.Error("Unauthorized", canRetry = false)
+                SyncResult.Unauthorized
+            } else {
+                logger.e(e) { "Sync failed with client error: ${e.message}" }
+                _syncState.value = SyncState.Error(e.message ?: "Sync failed", canRetry = true)
+                SyncResult.Failure(e.message)
+            }
         } catch (e: Exception) {
             logger.e(e) { "Sync failed with exception: ${e.message}" }
             _syncStats.value = _syncStats.value.copy(
                 failedAttempts = _syncStats.value.failedAttempts + 1
             )
             _syncState.value = SyncState.Error(e.message ?: "Sync failed", canRetry = true)
-            false
+            SyncResult.Failure(e.message)
         } finally {
             isSyncing = false
             logger.d { "Sync process ended, isSyncing=false" }
@@ -206,6 +231,10 @@ class SyncManager(
                 }
 
                 response.failureCount == 0
+            } catch (e: ClientRequestException) {
+                if (e.response.status == HttpStatusCode.Unauthorized) throw e
+                logger.e(e) { "Exception during pushLocalChanges: ${e.message}" }
+                false
             } catch (e: Exception) {
                 logger.e(e) { "Exception during pushLocalChanges: ${e.message}" }
                 false
@@ -259,6 +288,9 @@ class SyncManager(
                 }
 
                 totalItemsSynced
+            } catch (e: ClientRequestException) {
+                if (e.response.status == HttpStatusCode.Unauthorized) throw e
+                0
             } catch (e: Exception) {
                 0
             }
@@ -352,12 +384,16 @@ class SyncManager(
                 "STUDENT" -> {
                     val student = database.studentQueries.getStudentById(entityId).executeAsOneOrNull()
                     student?.let {
+                        val now = currentTimeMillis()
+                        val classIds = database.studentClassQueries
+                            .getClassIdsForStudent(entityId, now)
+                            .executeAsList()
                         val dto = StudentDto(
                             id = it.id,
                             schoolId = it.schoolId,
                             firstName = it.firstName,
                             lastName = it.lastName,
-                            classIds = emptyList(),
+                            classIds = classIds,
                             version = it.version,
                             createdAt = it.createdAt.toString(),
                             updatedAt = it.updatedAt.toString()

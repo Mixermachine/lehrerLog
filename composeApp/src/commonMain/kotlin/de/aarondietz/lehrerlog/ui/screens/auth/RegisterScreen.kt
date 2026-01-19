@@ -1,12 +1,13 @@
 package de.aarondietz.lehrerlog.ui.screens.auth
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -22,12 +23,12 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -100,7 +101,7 @@ private fun RegisterScreenContent(
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-    var schoolMenuExpanded by remember { mutableStateOf(false) }
+    val suggestionScrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
@@ -124,6 +125,95 @@ private fun RegisterScreenContent(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = registerState.schoolQuery,
+            onValueChange = {
+                onSchoolQueryChange(it)
+            },
+            label = { Text(stringResource(Res.string.school_search)) },
+            leadingIcon = { Icon(Icons.Default.School, contentDescription = null) },
+            trailingIcon = {
+                if (registerState.isSchoolLoading) {
+                    CircularProgressIndicator(modifier = Modifier.height(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                }
+            },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            ),
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !registerState.isLoading
+        )
+
+        if (registerState.schoolSuggestions.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Surface(
+                tonalElevation = 2.dp,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 200.dp)
+                    .verticalScroll(suggestionScrollState)
+            ) {
+                Column {
+                    registerState.schoolSuggestions.forEachIndexed { index, school ->
+                        val label = listOfNotNull(
+                            school.name,
+                            school.city,
+                            school.postcode
+                        ).filter { it.isNotBlank() }
+                        val displayLabel = if (label.size > 1) {
+                            "${label[0]} (${label.drop(1).joinToString(", ")})"
+                        } else {
+                            school.name
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    enabled = !registerState.isLoading
+                                ) {
+                                    onSchoolSelected(school)
+                                }
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            Text(text = displayLabel, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        if (index < registerState.schoolSuggestions.lastIndex) {
+                            Divider()
+                        }
+                    }
+                }
+            }
+        }
+
+        val schoolHelperText = when {
+            registerState.schoolQuery.isBlank() ->
+                stringResource(Res.string.school_search_hint)
+            registerState.schoolQuery.trim().length < 2 ->
+                stringResource(Res.string.school_search_min_chars)
+            !registerState.isSchoolLoading &&
+                registerState.schoolSuggestions.isEmpty() &&
+                registerState.selectedSchool == null ->
+                stringResource(Res.string.school_search_no_results)
+            else -> null
+        }
+
+        schoolHelperText?.let { helperText ->
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = helperText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = registerState.firstName,
@@ -231,85 +321,6 @@ private fun RegisterScreenContent(
         )
 
         Spacer(modifier = Modifier.height(12.dp))
-
-        Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = registerState.schoolQuery,
-                onValueChange = {
-                    onSchoolQueryChange(it)
-                    schoolMenuExpanded = true
-                },
-                label = { Text(stringResource(Res.string.school_search)) },
-                leadingIcon = { Icon(Icons.Default.School, contentDescription = null) },
-                trailingIcon = {
-                    if (registerState.isSchoolLoading) {
-                        CircularProgressIndicator(modifier = Modifier.height(18.dp), strokeWidth = 2.dp)
-                    } else {
-                        IconButton(onClick = { schoolMenuExpanded = !schoolMenuExpanded }) {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                        }
-                    }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        focusManager.clearFocus()
-                        onRegisterClick()
-                    }
-                ),
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !registerState.isLoading
-            )
-
-            DropdownMenu(
-                expanded = schoolMenuExpanded && registerState.schoolSuggestions.isNotEmpty(),
-                onDismissRequest = { schoolMenuExpanded = false },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                registerState.schoolSuggestions.forEach { school ->
-                    val label = listOfNotNull(
-                        school.name,
-                        school.city,
-                        school.postcode
-                    ).filter { it.isNotBlank() }
-                    val displayLabel = if (label.size > 1) {
-                        "${label[0]} (${label.drop(1).joinToString(", ")})"
-                    } else {
-                        school.name
-                    }
-
-                    DropdownMenuItem(
-                        text = { Text(displayLabel) },
-                        onClick = {
-                            onSchoolSelected(school)
-                            schoolMenuExpanded = false
-                        }
-                    )
-                }
-            }
-        }
-
-        val schoolHelperText = when {
-            registerState.schoolQuery.isBlank() ->
-                stringResource(Res.string.school_search_hint)
-            registerState.schoolQuery.trim().length < 2 ->
-                stringResource(Res.string.school_search_min_chars)
-            !registerState.isSchoolLoading &&
-                registerState.schoolSuggestions.isEmpty() &&
-                registerState.selectedSchool == null ->
-                stringResource(Res.string.school_search_no_results)
-            else -> null
-        }
-
-        schoolHelperText?.let { helperText ->
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = helperText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
 
         registerState.error?.let { error ->
             Spacer(modifier = Modifier.height(8.dp))

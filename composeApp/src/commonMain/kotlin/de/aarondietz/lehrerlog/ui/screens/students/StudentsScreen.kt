@@ -5,6 +5,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.data.SchoolClassDto
 import de.aarondietz.lehrerlog.ui.composables.AddClassDialog
 import de.aarondietz.lehrerlog.ui.composables.AddStudentDialog
-import de.aarondietz.lehrerlog.ui.composables.JoinSchoolDialog
 import lehrerlog.composeapp.generated.resources.Res
 import lehrerlog.composeapp.generated.resources.add_class
 import lehrerlog.composeapp.generated.resources.no_classes
@@ -28,30 +29,17 @@ fun StudentsScreen(
     val students by viewModel.students.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val needsSchool by viewModel.needsSchool.collectAsState()
-
     val expandedClasses = remember { mutableStateMapOf<String, Boolean>() }
     var showAddClassDialog by remember { mutableStateOf(false) }
-    var showJoinSchoolDialog by remember { mutableStateOf(false) }
     var selectedClassForStudent by remember { mutableStateOf<SchoolClassDto?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(needsSchool) {
-        if (needsSchool) {
-            showJoinSchoolDialog = true
-        }
-    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    if (needsSchool) {
-                        showJoinSchoolDialog = true
-                    } else {
-                        showAddClassDialog = true
-                    }
+                    showAddClassDialog = true
                 }
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_class))
@@ -138,21 +126,11 @@ fun StudentsScreen(
         )
     }
 
-    if (showJoinSchoolDialog) {
-        JoinSchoolDialog(
-            onDismiss = { showJoinSchoolDialog = false },
-            onConfirm = { schoolCode ->
-                viewModel.joinSchool(schoolCode)
-                showJoinSchoolDialog = false
-            }
-        )
-    }
-
     selectedClassForStudent?.let { schoolClass ->
         AddStudentDialog(
             onDismiss = { selectedClassForStudent = null },
             onConfirm = { student ->
-                viewModel.createStudent(student.firstName, student.lastName)
+                viewModel.createStudent(schoolClass.id, student.firstName, student.lastName)
                 selectedClassForStudent = null
             }
         )
@@ -184,13 +162,11 @@ private fun ClassCard(
                     text = schoolClass.name,
                     style = MaterialTheme.typography.titleMedium
                 )
-                Row {
-                    IconButton(onClick = onExpandClick) {
-                        Icon(
-                            imageVector = if (isExpanded) Icons.Default.Add else Icons.Default.Add,
-                            contentDescription = "Expand"
-                        )
-                    }
+                IconButton(onClick = onExpandClick) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (isExpanded) "Collapse" else "Expand"
+                    )
                 }
             }
 
@@ -211,21 +187,54 @@ private fun ClassCard(
                     }
                 }
 
-                Button(
-                    onClick = onAddStudent,
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text("Add Student")
-                }
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Button(
-                    onClick = onDeleteClass,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    ),
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text("Delete Class")
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    if (maxWidth < 360.dp) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Button(
+                                onClick = onAddStudent,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Add Student")
+                            }
+
+                            Button(
+                                onClick = onDeleteClass,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Delete Class")
+                            }
+                        }
+                    } else {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Button(
+                                onClick = onAddStudent,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Add Student")
+                            }
+
+                            Button(
+                                onClick = onDeleteClass,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                ),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Delete Class")
+                            }
+                        }
+                    }
                 }
             }
         }

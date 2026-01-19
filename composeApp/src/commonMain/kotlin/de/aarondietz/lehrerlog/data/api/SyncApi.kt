@@ -1,5 +1,6 @@
 package de.aarondietz.lehrerlog.data.api
 
+import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.sync.PushChangesRequest
 import de.aarondietz.lehrerlog.sync.PushChangesResponse
 import de.aarondietz.lehrerlog.sync.SyncChangesResponse
@@ -11,7 +12,11 @@ import io.ktor.http.*
 /**
  * API client for synchronization endpoints.
  */
-class SyncApi(private val client: HttpClient, private val baseUrl: String) {
+class SyncApi(
+    private val client: HttpClient,
+    private val tokenStorage: TokenStorage,
+    private val baseUrl: String
+) {
 
     /**
      * Get changes from the server since a specific sync log ID.
@@ -19,6 +24,7 @@ class SyncApi(private val client: HttpClient, private val baseUrl: String) {
     suspend fun getChanges(sinceLogId: Long): SyncChangesResponse {
         return client.get("$baseUrl/api/sync/changes") {
             parameter("since", sinceLogId)
+            tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
         }.body()
     }
 
@@ -29,6 +35,7 @@ class SyncApi(private val client: HttpClient, private val baseUrl: String) {
         return client.post("$baseUrl/api/sync/push") {
             contentType(ContentType.Application.Json)
             setBody(request)
+            tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
         }.body()
     }
 }

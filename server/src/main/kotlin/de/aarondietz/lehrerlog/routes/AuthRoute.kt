@@ -76,6 +76,10 @@ fun Route.authRoute(authService: AuthService) {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("First name and last name are required"))
                     return@post
                 }
+                if (request.schoolCode.isNullOrBlank()) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("School code is required"))
+                    return@post
+                }
 
                 val deviceInfo = call.request.header("User-Agent")
                 val (tokens, user) = authService.register(

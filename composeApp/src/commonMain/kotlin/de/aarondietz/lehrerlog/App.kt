@@ -121,6 +121,13 @@ private fun MainAppContent(authViewModel: AuthViewModel) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        when (syncManager.syncAndReport()) {
+            is SyncManager.SyncResult.Unauthorized -> authViewModel.logout()
+            else -> Unit
+        }
+    }
+
     Scaffold(
         bottomBar = {
             NavigationBar {

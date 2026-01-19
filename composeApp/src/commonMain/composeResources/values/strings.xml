@@ -25,6 +25,17 @@
     <string name="no_students_in_class">Keine Schüler in dieser Klasse</string>
     <string name="students_count">%1$d Schüler</string>
 
+    <!-- Tasks -->
+    <string name="add_task">Aufgabe hinzufügen</string>
+    <string name="task_title">Titel</string>
+    <string name="task_description">Beschreibung (optional)</string>
+    <string name="due_date">Abgabedatum</string>
+    <string name="due_date_hint">YYYY-MM-DD</string>
+    <string name="no_tasks">Keine Aufgaben vorhanden</string>
+    <string name="select_class">Klasse auswählen</string>
+    <string name="submissions_status">%1$d von %2$d abgegeben</string>
+    <string name="due_label">Abgabe: %1$s</string>
+
     <!-- Accessibility -->
     <string name="expand">Ausklappen</string>
     <string name="collapse">Einklappen</string>
@@ -42,8 +53,6 @@
     <string name="school_search_hint">Nach Name oder Ort suchen</string>
     <string name="school_search_min_chars">Mindestens 2 Buchstaben eingeben</string>
     <string name="school_search_no_results">Keine Schule gefunden</string>
-    <string name="join_school_title">Schule beitreten</string>
-    <string name="join_school_action">Beitreten</string>
     <string name="no_account">Noch kein Konto?</string>
     <string name="have_account">Bereits ein Konto?</string>
     <string name="welcome_back">Willkommen zurück!</string>

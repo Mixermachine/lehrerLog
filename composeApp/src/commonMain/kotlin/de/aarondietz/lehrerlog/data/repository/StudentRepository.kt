@@ -3,8 +3,9 @@ package de.aarondietz.lehrerlog.data.repository
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import co.touchlab.kermit.Logger
+import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.data.StudentDto
-import de.aarondietz.lehrerlog.lehrerLog
+import de.aarondietz.lehrerlog.database.DatabaseManager
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -22,28 +23,34 @@ import de.aarondietz.lehrerlog.currentTimeMillis
  */
 class StudentRepository(
     private val httpClient: HttpClient,
-    private val database: lehrerLog,
+    private val tokenStorage: TokenStorage,
+    private val databaseManager: DatabaseManager,
     private val baseUrl: String,
     private val logger: Logger
 ) {
+    private val database
+        get() = databaseManager.db
 
     /**
      * Get all students for the current school from local database.
      * Returns a Flow that emits updates when data changes.
      */
     fun getStudentsFlow(schoolId: String): Flow<List<StudentDto>> {
-        return database.studentQueries
-            .getStudentsBySchool(schoolId)
+        val now = currentTimeMillis()
+        return database.studentClassQueries
+            .getStudentsWithClassesBySchool(now, schoolId)
             .asFlow()
             .mapToList(Dispatchers.Default)
-            .map { students ->
-                students.map { student ->
+            .map { rows ->
+                rows.groupBy { it.id }.map { (_, groupedRows) ->
+                    val student = groupedRows.first()
+                    val classIds = groupedRows.mapNotNull { it.classId }.distinct()
                     StudentDto(
                         id = student.id,
                         schoolId = student.schoolId,
                         firstName = student.firstName,
                         lastName = student.lastName,
-                        classIds = emptyList(), // TODO: Implement class associations
+                        classIds = classIds,
                         version = student.version,
                         createdAt = student.createdAt.toString(),
                         updatedAt = student.updatedAt.toString()
@@ -59,10 +66,12 @@ class StudentRepository(
         return try {
             val students = httpClient.get("$baseUrl/api/students") {
                 parameter("schoolId", schoolId)
+                tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }.body<List<StudentDto>>()
 
             // Update local database
             students.forEach { student ->
+                val now = currentTimeMillis()
                 database.studentQueries.insertStudent(
                     id = student.id,
                     schoolId = student.schoolId,
@@ -70,10 +79,21 @@ class StudentRepository(
                     lastName = student.lastName,
                     version = student.version,
                     isSynced = 1, // Synced from server
-                    localUpdatedAt = currentTimeMillis(),
-                    createdAt = student.createdAt.toLongOrNull() ?: currentTimeMillis(),
-                    updatedAt = student.updatedAt.toLongOrNull() ?: currentTimeMillis()
+                    localUpdatedAt = now,
+                    createdAt = student.createdAt.toLongOrNull() ?: now,
+                    updatedAt = student.updatedAt.toLongOrNull() ?: now
                 )
+                database.studentClassQueries.deleteClassesForStudent(student.id)
+                student.classIds.forEach { classId ->
+                    database.studentClassQueries.insertStudentClass(
+                        studentId = student.id,
+                        classId = classId,
+                        validFrom = now,
+                        validTill = null,
+                        version = 1L,
+                        createdAt = now
+                    )
+                }
             }
 
             Result.success(students)
@@ -89,6 +109,7 @@ class StudentRepository(
     @OptIn(ExperimentalUuidApi::class)
     suspend fun createStudent(
         schoolId: String,
+        classId: String?,
         firstName: String,
         lastName: String
     ): Result<StudentDto> {
@@ -117,12 +138,23 @@ class StudentRepository(
                 createdAt = now
             )
 
+            if (!classId.isNullOrBlank()) {
+                database.studentClassQueries.insertStudentClass(
+                    studentId = studentId,
+                    classId = classId,
+                    validFrom = now,
+                    validTill = null,
+                    version = 1L,
+                    createdAt = now
+                )
+            }
+
             val student = StudentDto(
                 id = studentId,
                 schoolId = schoolId,
                 firstName = firstName,
                 lastName = lastName,
-                classIds = emptyList(),
+                classIds = classId?.let { listOf(it) }.orEmpty(),
                 version = 1L,
                 createdAt = now.toString(),
                 updatedAt = now.toString()
@@ -141,6 +173,7 @@ class StudentRepository(
         return try {
             // Delete from local database
             database.studentQueries.deleteStudent(studentId)
+            database.studentClassQueries.deleteClassesForStudent(studentId)
 
             // Queue for sync
             database.pendingSyncQueries.insertPendingSync(

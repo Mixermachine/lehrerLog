@@ -8,6 +8,7 @@ import de.aarondietz.lehrerlog.routes.schoolClassRoute
 import de.aarondietz.lehrerlog.routes.schoolRoute
 import de.aarondietz.lehrerlog.routes.studentRoute
 import de.aarondietz.lehrerlog.routes.syncRoute
+import de.aarondietz.lehrerlog.routes.taskRoute
 import de.aarondietz.lehrerlog.routes.userRoute
 import de.aarondietz.lehrerlog.schools.SchoolCatalogService
 import io.ktor.http.*
@@ -41,6 +42,13 @@ fun Application.module() {
         ?: "https://overpass-api.de/api/interpreter"
     val schoolCatalogService = SchoolCatalogService(Path.of(catalogPath), catalogEndpoint)
     val authService = AuthService(passwordService, tokenService, schoolCatalogService)
+
+    try {
+        schoolCatalogService.initialize()
+    } catch (e: Exception) {
+        environment.log.error("Failed to initialize school catalog; server will not start.", e)
+        throw e
+    }
 
     // Install plugins
     install(ContentNegotiation) {
@@ -79,10 +87,14 @@ fun Application.module() {
     }
 
     routing {
+        get("/health") {
+            call.respondText("ok")
+        }
         authRoute(authService)
         schoolClassRoute()
         schoolRoute(schoolCatalogService)
         studentRoute()
+        taskRoute()
         syncRoute()
         userRoute()
     }

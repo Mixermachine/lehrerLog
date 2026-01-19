@@ -26,27 +26,24 @@ class SchoolCatalogService(
     @Volatile
     private var catalog: List<SchoolCatalogEntry>? = null
 
-    fun ensureLoaded(): List<SchoolCatalogEntry> {
-        val existing = catalog
-        if (existing != null) {
-            return existing
-        }
-
+    fun initialize(): List<SchoolCatalogEntry> {
         synchronized(this) {
-            val doubleCheck = catalog
-            if (doubleCheck != null) {
-                return doubleCheck
+            val existing = catalog
+            if (existing != null) {
+                return existing
             }
 
             if (!Files.exists(storagePath)) {
                 downloadAndStoreCatalog()
             }
 
-            val content = Files.readString(storagePath)
-            val loaded = json.decodeFromString<List<SchoolCatalogEntry>>(content)
-            catalog = loaded
-            return loaded
+            return loadFromDisk()
         }
+    }
+
+    fun ensureLoaded(): List<SchoolCatalogEntry> {
+        return catalog
+            ?: throw IllegalStateException("School catalog is not loaded. Call initialize() at startup.")
     }
 
     fun search(query: String, limit: Int): List<SchoolSearchResultDto> {
@@ -56,15 +53,25 @@ class SchoolCatalogService(
         }
 
         val normalizedQuery = normalize(trimmed)
+        val tokens = normalizedQuery
+            .split(Regex("\\s+"))
+            .filter { it.isNotBlank() }
+        if (tokens.isEmpty()) {
+            return emptyList()
+        }
         val results = ensureLoaded()
             .asSequence()
-            .filter { entry ->
-                val name = normalize(entry.name)
-                val city = normalize(entry.city ?: "")
-                name.contains(normalizedQuery) || city.contains(normalizedQuery)
+            .mapNotNull { entry ->
+                scoreEntry(entry, normalizedQuery, tokens)?.let { score ->
+                    entry to score
+                }
             }
+            .sortedWith(
+                compareByDescending<Pair<SchoolCatalogEntry, Int>> { it.second }
+                    .thenBy { it.first.name.length }
+            )
             .take(limit)
-            .map { it.toSearchResult() }
+            .map { (entry, _) -> entry.toSearchResult() }
             .toList()
 
         return results
@@ -72,6 +79,21 @@ class SchoolCatalogService(
 
     fun findByCode(code: String): SchoolCatalogEntry? {
         return ensureLoaded().firstOrNull { it.code == code }
+    }
+
+    private fun loadFromDisk(): List<SchoolCatalogEntry> {
+        if (!Files.exists(storagePath)) {
+            throw IllegalStateException("School catalog file not found at $storagePath")
+        }
+
+        val content = Files.readString(storagePath)
+        val loaded = json.decodeFromString<List<SchoolCatalogEntry>>(content)
+        if (loaded.isEmpty()) {
+            throw IllegalStateException("School catalog is empty at $storagePath")
+        }
+
+        catalog = loaded
+        return loaded
     }
 
     private fun downloadAndStoreCatalog() {
@@ -123,6 +145,114 @@ class SchoolCatalogService(
     private fun normalize(value: String): String {
         val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
         return normalized.replace(Regex("\\p{M}+"), "").lowercase()
+    }
+
+    private fun scoreEntry(
+        entry: SchoolCatalogEntry,
+        normalizedQuery: String,
+        tokens: List<String>
+    ): Int? {
+        val name = normalize(entry.name)
+        val city = normalize(entry.city ?: "")
+        val postcode = normalize(entry.postcode ?: "")
+        val state = normalize(entry.state ?: "")
+
+        val nameWords = name.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val cityWords = city.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val stateWords = state.split(Regex("\\s+")).filter { it.isNotBlank() }
+
+        var score = 0
+        for (token in tokens) {
+            val tokenScore = tokenMatchScore(
+                token = token,
+                name = name,
+                city = city,
+                postcode = postcode,
+                state = state,
+                nameWords = nameWords,
+                cityWords = cityWords,
+                stateWords = stateWords
+            )
+            if (tokenScore == 0) {
+                return null
+            }
+            score += tokenScore
+        }
+
+        when {
+            name.startsWith(normalizedQuery) -> score += 7
+            name.contains(normalizedQuery) -> score += 6
+            city.startsWith(normalizedQuery) -> score += 3
+            city.contains(normalizedQuery) -> score += 2
+        }
+
+        return score
+    }
+
+    private fun tokenMatchScore(
+        token: String,
+        name: String,
+        city: String,
+        postcode: String,
+        state: String,
+        nameWords: List<String>,
+        cityWords: List<String>,
+        stateWords: List<String>
+    ): Int {
+        if (nameWords.any { it == token }) return 5
+        if (nameWords.any { it.startsWith(token) }) return 4
+        if (name.contains(token)) return 3
+
+        if (postcode == token) return 4
+        if (postcode.startsWith(token)) return 2
+
+        if (cityWords.any { it == token }) return 3
+        if (cityWords.any { it.startsWith(token) }) return 2
+        if (city.contains(token)) return 1
+
+        if (stateWords.any { it == token }) return 1
+
+        if (token.length >= 4) {
+            if (nameWords.any { levenshteinDistanceAtMost(it, token, 1) }) return 1
+            if (cityWords.any { levenshteinDistanceAtMost(it, token, 1) }) return 1
+        }
+
+        return 0
+    }
+
+    private fun levenshteinDistanceAtMost(a: String, b: String, maxDistance: Int): Boolean {
+        val lengthDiff = kotlin.math.abs(a.length - b.length)
+        if (lengthDiff > maxDistance) return false
+        if (a == b) return true
+        if (maxDistance == 0) return false
+
+        var prev = IntArray(b.length + 1) { it }
+        var curr = IntArray(b.length + 1)
+
+        for (i in 1..a.length) {
+            curr[0] = i
+            var rowMin = curr[0]
+            val aChar = a[i - 1]
+            for (j in 1..b.length) {
+                val cost = if (aChar == b[j - 1]) 0 else 1
+                val insert = curr[j - 1] + 1
+                val delete = prev[j] + 1
+                val replace = prev[j - 1] + cost
+                val value = minOf(insert, delete, replace)
+                curr[j] = value
+                if (value < rowMin) {
+                    rowMin = value
+                }
+            }
+
+            if (rowMin > maxDistance) return false
+
+            val temp = prev
+            prev = curr
+            curr = temp
+        }
+
+        return prev[b.length] <= maxDistance
     }
 }
 

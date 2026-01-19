@@ -1,0 +1,65 @@
+name: Deploy Server (Staging)
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push server image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: server/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/lehrerlog-server:staging
+            ghcr.io/${{ github.repository_owner }}/lehrerlog-server:staging-${{ github.sha }}
+
+      - name: Upload deploy assets
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "deploy/**"
+          target: "/home/${{ secrets.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy"
+          strip_components: 1
+
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            chmod +x /home/${{ secrets.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy/remote-deploy.sh
+            DOMAIN=staging.lehrerlog.9d4.de \
+            DEPLOY_DIR=/home/${{ secrets.DEPLOY_USER }}/docker/lehrerlog-staging \
+            IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/lehrerlog-server \
+            IMAGE_TAG=staging \
+            HOST_PORT=8081 \
+            LETSENCRYPT_EMAIL=${{ secrets.LETSENCRYPT_EMAIL }} \
+            GHCR_USERNAME=${{ github.repository_owner }} \
+            GHCR_TOKEN=${{ secrets.GHCR_TOKEN }} \
+            /home/${{ secrets.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy/remote-deploy.sh

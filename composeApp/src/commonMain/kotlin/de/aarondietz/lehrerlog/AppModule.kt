@@ -10,7 +10,8 @@ import de.aarondietz.lehrerlog.data.api.SyncApi
 import de.aarondietz.lehrerlog.data.repository.SchoolRepository
 import de.aarondietz.lehrerlog.data.repository.SchoolClassRepository
 import de.aarondietz.lehrerlog.data.repository.StudentRepository
-import de.aarondietz.lehrerlog.database.createDatabase
+import de.aarondietz.lehrerlog.data.repository.TaskRepository
+import de.aarondietz.lehrerlog.database.DatabaseManager
 import de.aarondietz.lehrerlog.network.createHttpClient
 import de.aarondietz.lehrerlog.sync.SyncManager
 import de.aarondietz.lehrerlog.ui.screens.auth.AuthViewModel
@@ -34,22 +35,23 @@ val commonModule = module {
     single { AuthRepository(get(), get()) }
 
     // Database
-    single { createDatabase(get()) }
+    single { DatabaseManager(get()) }
 
     // Repositories
-    single { StudentRepository(get(), get(), SERVER_URL, get()) }
-    single { SchoolClassRepository(get(), get(), SERVER_URL, get()) }
+    single { StudentRepository(get(), get(), get(), SERVER_URL, get()) }
+    single { SchoolClassRepository(get(), get(), get(), SERVER_URL, get()) }
     single { SchoolRepository(get(), SERVER_URL) }
+    single { TaskRepository(get(), get(), SERVER_URL) }
 
     // Sync
-    single { SyncApi(get(), SERVER_URL) }
+    single { SyncApi(get(), get(), SERVER_URL) }
     single { SyncManager(get(), get(), get(), get()) }
 
-    viewModel { AuthViewModel(get(), get()) }
+    viewModel { AuthViewModel(get(), get(), get()) }
     viewModelOf(::HomeViewModel)
     viewModelOf(::SettingsViewModel)
     viewModel { StudentsViewModel(get(), get(), get(), get()) }
-    viewModelOf(::TasksViewModel)
+    viewModel { TasksViewModel(get(), get(), get(), get()) }
 }
 
 // For platform-specific dependencies (includes ConnectivityMonitor)

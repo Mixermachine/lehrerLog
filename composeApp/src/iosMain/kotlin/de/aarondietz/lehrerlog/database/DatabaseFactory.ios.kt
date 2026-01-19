@@ -4,6 +4,9 @@ import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import de.aarondietz.lehrerlog.lehrerLog
+import platform.Foundation.NSDocumentDirectory
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSUserDomainMask
 
 /**
  * iOS implementation of DatabaseDriverFactory.
@@ -15,5 +18,18 @@ actual class DatabaseDriverFactory actual constructor(context: Any?) {
             schema = lehrerLog.Schema.synchronous(),
             name = "lehrerlog.db"
         )
+    }
+
+    actual fun deleteDatabase() {
+        val fileManager = NSFileManager.defaultManager
+        val urls = fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask)
+        val baseUrl = urls.firstOrNull()
+        val dbUrl = baseUrl?.URLByAppendingPathComponent("lehrerlog.db")
+        val walUrl = baseUrl?.URLByAppendingPathComponent("lehrerlog.db-wal")
+        val shmUrl = baseUrl?.URLByAppendingPathComponent("lehrerlog.db-shm")
+
+        dbUrl?.path?.let { fileManager.removeItemAtPath(it, null) }
+        walUrl?.path?.let { fileManager.removeItemAtPath(it, null) }
+        shmUrl?.path?.let { fileManager.removeItemAtPath(it, null) }
     }
 }

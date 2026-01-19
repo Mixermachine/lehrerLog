@@ -133,6 +133,7 @@ class SyncService {
                     schoolId = schoolId,
                     firstName = studentDto.firstName,
                     lastName = studentDto.lastName,
+                    classIds = studentDto.classIds,
                     userId = userId
                 )
 
@@ -158,6 +159,7 @@ class SyncService {
                     schoolId = schoolId,
                     firstName = studentDto.firstName,
                     lastName = studentDto.lastName,
+                    classIds = studentDto.classIds,
                     version = change.version,
                     userId = userId
                 )

@@ -23,4 +23,8 @@ actual class DatabaseDriverFactory actual constructor(context: Any?) {
             lehrerLog.Schema.create(driver)
         }
     }
+
+    actual fun deleteDatabase() {
+        // SQL.js storage is ephemeral per session; nothing to delete here.
+    }
 }

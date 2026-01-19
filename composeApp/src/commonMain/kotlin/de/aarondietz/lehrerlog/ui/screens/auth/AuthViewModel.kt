@@ -7,6 +7,7 @@ import de.aarondietz.lehrerlog.auth.AuthResult
 import de.aarondietz.lehrerlog.auth.UserDto
 import de.aarondietz.lehrerlog.data.SchoolSearchResultDto
 import de.aarondietz.lehrerlog.data.repository.SchoolRepository
+import de.aarondietz.lehrerlog.database.DatabaseManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +46,8 @@ data class RegisterUiState(
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
-    private val schoolRepository: SchoolRepository
+    private val schoolRepository: SchoolRepository,
+    private val databaseManager: DatabaseManager
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Initial)
@@ -101,6 +103,7 @@ class AuthViewModel(
             when (val result = authRepository.login(state.email, state.password)) {
                 is AuthResult.Success -> {
                     _loginState.value = LoginUiState()
+                    databaseManager.getDatabase()
                     _authState.value = AuthState.Authenticated(result.data.user)
                 }
                 is AuthResult.Error -> {
@@ -205,8 +208,8 @@ class AuthViewModel(
                 _registerState.value = state.copy(error = "Last name is required")
                 return
             }
-            state.schoolQuery.isNotBlank() && state.selectedSchool == null -> {
-                _registerState.value = state.copy(error = "Please select a school from the list")
+            state.selectedSchool == null -> {
+                _registerState.value = state.copy(error = "School is required")
                 return
             }
         }
@@ -224,6 +227,7 @@ class AuthViewModel(
             )) {
                 is AuthResult.Success -> {
                     _registerState.value = RegisterUiState()
+                    databaseManager.getDatabase()
                     _authState.value = AuthState.Authenticated(result.data.user)
                 }
                 is AuthResult.Error -> {
@@ -240,6 +244,7 @@ class AuthViewModel(
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             authRepository.logout()
+            databaseManager.reset()
             _authState.value = AuthState.Unauthenticated
         }
     }

@@ -16,9 +16,15 @@ class StudentService {
      */
     fun getStudentsBySchool(schoolId: UUID): List<StudentDto> {
         return transaction {
-            Students.selectAll()
+            val students = Students.selectAll()
                 .where { Students.schoolId eq schoolId }
-                .map { it.toStudentDto() }
+                .toList()
+            val studentIds = students.map { it[Students.id].value }
+            val classIdsByStudent = loadClassIdsByStudent(schoolId, studentIds)
+            students.map { row ->
+                val classIds = classIdsByStudent[row[Students.id].value].orEmpty()
+                row.toStudentDto(classIds)
+            }
         }
     }
 
@@ -30,7 +36,10 @@ class StudentService {
             Students.selectAll()
                 .where { (Students.id eq studentId) and (Students.schoolId eq schoolId) }
                 .firstOrNull()
-                ?.toStudentDto()
+                ?.let { row ->
+                    val classIds = loadClassIdsByStudent(schoolId, listOf(studentId))[studentId].orEmpty()
+                    row.toStudentDto(classIds)
+                }
         }
     }
 
@@ -42,6 +51,7 @@ class StudentService {
         schoolId: UUID,
         firstName: String,
         lastName: String,
+        classIds: List<String>,
         userId: UUID
     ): StudentDto {
         return transaction {
@@ -62,6 +72,8 @@ class StudentService {
                 it[SyncLog.userId] = userId
             }
 
+            assignStudentClasses(studentId, schoolId, classIds)
+
             getStudent(studentId, schoolId)!!
         }
     }
@@ -73,6 +85,7 @@ class StudentService {
         schoolId: UUID,
         firstName: String,
         lastName: String,
+        classIds: List<String>,
         userId: UUID
     ): StudentDto {
         return transaction {
@@ -92,10 +105,12 @@ class StudentService {
                 it[SyncLog.userId] = userId
             }
 
+            assignStudentClasses(studentId, schoolId, classIds)
+
             Students.selectAll()
                 .where { Students.id eq studentId }
                 .first()
-                .toStudentDto()
+                .toStudentDto(loadClassIdsByStudent(schoolId, listOf(studentId))[studentId].orEmpty())
         }
     }
 
@@ -107,6 +122,7 @@ class StudentService {
         schoolId: UUID,
         firstName: String,
         lastName: String,
+        classIds: List<String>,
         version: Long,
         userId: UUID
     ): UpdateResult {
@@ -138,10 +154,12 @@ class StudentService {
                 it[SyncLog.userId] = userId
             }
 
+            assignStudentClasses(studentId, schoolId, classIds)
+
             val updated = Students.selectAll()
                 .where { Students.id eq studentId }
                 .first()
-                .toStudentDto()
+                .toStudentDto(loadClassIdsByStudent(schoolId, listOf(studentId))[studentId].orEmpty())
 
             UpdateResult.Success(updated)
         }
@@ -175,16 +193,69 @@ class StudentService {
         }
     }
 
-    private fun ResultRow.toStudentDto() = StudentDto(
+    private fun ResultRow.toStudentDto(classIds: List<String>) = StudentDto(
         id = this[Students.id].value.toString(),
         schoolId = this[Students.schoolId].value.toString(),
         firstName = this[Students.firstName],
         lastName = this[Students.lastName],
-        classIds = emptyList(), // TODO: Load from student_classes junction table
+        classIds = classIds,
         version = this[Students.version],
         createdAt = this[Students.createdAt].toString(),
         updatedAt = this[Students.updatedAt].toString()
     )
+
+    private fun assignStudentClasses(studentId: UUID, schoolId: UUID, classIds: List<String>) {
+        val validClassIds = loadValidClassIds(schoolId, classIds)
+        StudentClasses.deleteWhere { StudentClasses.studentId eq studentId }
+        if (validClassIds.isEmpty()) {
+            return
+        }
+
+        val now = OffsetDateTime.now(ZoneOffset.UTC)
+        validClassIds.forEach { classId ->
+            StudentClasses.insert {
+                it[StudentClasses.studentId] = studentId
+                it[StudentClasses.schoolClassId] = classId
+                it[StudentClasses.validFrom] = now
+                it[StudentClasses.validTill] = null
+            }
+        }
+    }
+
+    private fun loadValidClassIds(schoolId: UUID, classIds: List<String>): List<UUID> {
+        if (classIds.isEmpty()) return emptyList()
+        val parsedIds = classIds.mapNotNull {
+            try { UUID.fromString(it) } catch (e: Exception) { null }
+        }
+        if (parsedIds.isEmpty()) return emptyList()
+        return SchoolClasses
+            .selectAll()
+            .where { (SchoolClasses.id inList parsedIds) and (SchoolClasses.schoolId eq schoolId) }
+            .map { it[SchoolClasses.id].value }
+    }
+
+    private fun loadClassIdsByStudent(
+        schoolId: UUID,
+        studentIds: List<UUID>
+    ): Map<UUID, List<String>> {
+        if (studentIds.isEmpty()) return emptyMap()
+        val result = mutableMapOf<UUID, MutableList<String>>()
+        StudentClasses
+            .innerJoin(SchoolClasses)
+            .select(StudentClasses.studentId, StudentClasses.schoolClassId)
+            .where {
+                (StudentClasses.studentId inList studentIds) and
+                    (SchoolClasses.schoolId eq schoolId) and
+                    StudentClasses.validTill.isNull()
+            }
+            .forEach { row ->
+                val studentId = row[StudentClasses.studentId].value
+                val classId = row[StudentClasses.schoolClassId].value.toString()
+                result.getOrPut(studentId) { mutableListOf() }.add(classId)
+            }
+
+        return result.mapValues { it.value.distinct() }
+    }
 }
 
 sealed class UpdateResult {

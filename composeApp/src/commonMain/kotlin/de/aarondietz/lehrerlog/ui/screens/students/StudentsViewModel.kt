@@ -33,9 +33,6 @@ class StudentsViewModel(
     private val _schoolId = MutableStateFlow<String?>(null)
     private val schoolId: StateFlow<String?> = _schoolId.asStateFlow()
 
-    private val _needsSchool = MutableStateFlow(false)
-    val needsSchool: StateFlow<Boolean> = _needsSchool.asStateFlow()
-
     // Classes with their students
     val classes: StateFlow<List<SchoolClassDto>> = schoolId
         .filterNotNull()
@@ -74,12 +71,10 @@ class StudentsViewModel(
                     if (userSchoolId != null) {
                         logger.i { "Setting schoolId to: $userSchoolId" }
                         _schoolId.value = userSchoolId
-                        _needsSchool.value = false
                         loadData()
                     } else {
                         logger.w { "User does not have a schoolId assigned" }
-                        _error.value = "User is not associated with a school. Please join a school with a code."
-                        _needsSchool.value = true
+                        _error.value = "User is not associated with a school. Please contact your administrator."
                         _isLoading.value = false
                     }
                 }
@@ -102,12 +97,14 @@ class StudentsViewModel(
             // Load classes
             schoolClassRepository.refreshClasses(currentSchoolId)
                 .onFailure { e ->
+                    logger.e(e) { "Failed to load classes" }
                     _error.value = "Failed to load classes: ${e.message}"
                 }
 
             // Load students
             studentRepository.refreshStudents(currentSchoolId)
                 .onFailure { e ->
+                    logger.e(e) { "Failed to load students" }
                     _error.value = "Failed to load students: ${e.message}"
                 }
 
@@ -120,8 +117,7 @@ class StudentsViewModel(
         val currentSchoolId = _schoolId.value
         if (currentSchoolId == null) {
             logger.w { "Cannot create class: schoolId is null" }
-            _error.value = "Cannot create class without a school. Please join a school first."
-            _needsSchool.value = true
+            _error.value = "Cannot create class without a school. Please contact your administrator."
             return
         }
 
@@ -140,51 +136,23 @@ class StudentsViewModel(
         }
     }
 
-    fun joinSchool(schoolCode: String) {
-        val trimmedCode = schoolCode.trim()
-        if (trimmedCode.isBlank()) {
-            _error.value = "School code is required"
-            return
-        }
-
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-
-            when (val result = authRepository.joinSchool(trimmedCode)) {
-                is AuthResult.Success -> {
-                    _schoolId.value = result.data.user.schoolId
-                    _needsSchool.value = _schoolId.value == null
-                    if (_schoolId.value != null) {
-                        loadData()
-                    } else {
-                        _error.value = "School assignment failed. Please try again."
-                    }
-                }
-                is AuthResult.Error -> {
-                    _error.value = result.message
-                }
-            }
-
-            _isLoading.value = false
-        }
-    }
-
     fun deleteClass(classId: String) {
         viewModelScope.launch {
             schoolClassRepository.deleteClass(classId)
                 .onFailure { e ->
+                    logger.e(e) { "Failed to delete class" }
                     _error.value = "Failed to delete class: ${e.message}"
                 }
         }
     }
 
-    fun createStudent(firstName: String, lastName: String) {
+    fun createStudent(classId: String, firstName: String, lastName: String) {
         val currentSchoolId = _schoolId.value ?: return
 
         viewModelScope.launch {
-            studentRepository.createStudent(currentSchoolId, firstName, lastName)
+            studentRepository.createStudent(currentSchoolId, classId, firstName, lastName)
                 .onFailure { e ->
+                    logger.e(e) { "Failed to create student" }
                     _error.value = "Failed to create student: ${e.message}"
                 }
         }
@@ -194,6 +162,7 @@ class StudentsViewModel(
         viewModelScope.launch {
             studentRepository.deleteStudent(studentId)
                 .onFailure { e ->
+                    logger.e(e) { "Failed to delete student" }
                     _error.value = "Failed to delete student: ${e.message}"
                 }
         }

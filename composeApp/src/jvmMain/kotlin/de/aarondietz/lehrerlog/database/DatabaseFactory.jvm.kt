@@ -23,4 +23,15 @@ actual class DatabaseDriverFactory actual constructor(context: Any?) {
 
         return driver
     }
+
+    actual fun deleteDatabase() {
+        val databasePath = File(System.getProperty("user.home"), ".lehrerlog")
+        val dbFile = File(databasePath, "lehrerlog.db")
+        val walFile = File(databasePath, "lehrerlog.db-wal")
+        val shmFile = File(databasePath, "lehrerlog.db-shm")
+
+        dbFile.delete()
+        walFile.delete()
+        shmFile.delete()
+    }
 }

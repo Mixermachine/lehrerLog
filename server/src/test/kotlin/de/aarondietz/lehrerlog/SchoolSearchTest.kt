@@ -51,6 +51,7 @@ class SchoolSearchTest {
             )
         )
         val service = SchoolCatalogService(catalogPath, "http://example.invalid")
+        service.initialize()
 
         val results = service.search("muster", 10)
 
@@ -68,6 +69,7 @@ class SchoolSearchTest {
             )
         )
         val service = SchoolCatalogService(catalogPath, "http://example.invalid")
+        service.initialize()
 
         application {
             install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) {
