@@ -86,7 +86,10 @@ if [[ -z "$POSTGRES_PASSWORD" ]]; then
     POSTGRES_PASSWORD="$EXISTING_PASSWORD"
     echo "Using existing POSTGRES_PASSWORD from $DEPLOY_DIR/.env"
   else
+    # Avoid SIGPIPE causing exit under pipefail when head closes the pipe.
+    set +o pipefail
     POSTGRES_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
+    set -o pipefail
     echo "Generated new POSTGRES_PASSWORD for ${ENV_NAME}"
   fi
 elif [[ -n "$EXISTING_PASSWORD" ]] && [[ "$POSTGRES_PASSWORD" != "$EXISTING_PASSWORD" ]]; then
