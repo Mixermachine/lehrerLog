@@ -13,21 +13,21 @@ jobs:
       SERVER_URL: https://staging.lehrerlog.9d4.de
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5.1.0
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.2.0
         with:
           node-version: "18"
 
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3.5.0
 
       - name: Build Android, JVM, and Wasm targets (staging)
         env:
@@ -41,25 +41,25 @@ jobs:
           ./gradlew :composeApp:assembleReleaseApk :composeApp:bundleReleaseAab :composeApp:jvmJar :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL
 
       - name: Upload Android APKs (staging)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: android-apk-staging
           path: composeApp/build/outputs/apk/releaseApk/*.apk
 
       - name: Upload Android AAB (staging)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: android-aab-staging
           path: composeApp/build/outputs/bundle/releaseAab/*.aab
 
       - name: Upload JVM jar (staging)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: jvm-jar-staging
           path: composeApp/build/libs/*.jar
 
       - name: Upload Wasm distribution (staging)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: wasm-js-dist-staging
           path: composeApp/build/dist/wasmJs/**
@@ -71,21 +71,21 @@ jobs:
       SERVER_URL: https://lehrerlog.9d4.de
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5.1.0
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.2.0
         with:
           node-version: "18"
 
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3.5.0
 
       - name: Build Android, JVM, and Wasm targets (prod)
         env:
@@ -99,25 +99,25 @@ jobs:
           ./gradlew :composeApp:assembleReleaseApk :composeApp:bundleReleaseAab :composeApp:jvmJar :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL
 
       - name: Upload Android APKs (prod)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: android-apk-prod-${{ github.ref_name }}
           path: composeApp/build/outputs/apk/releaseApk/*.apk
 
       - name: Upload Android AAB (prod)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: android-aab-prod-${{ github.ref_name }}
           path: composeApp/build/outputs/bundle/releaseAab/*.aab
 
       - name: Upload JVM jar (prod)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: jvm-jar-prod-${{ github.ref_name }}
           path: composeApp/build/libs/*.jar
 
       - name: Upload Wasm distribution (prod)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: wasm-js-dist-prod-${{ github.ref_name }}
           path: composeApp/build/dist/wasmJs/**
@@ -129,16 +129,16 @@ jobs:
       SERVER_URL: https://staging.lehrerlog.9d4.de
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5.1.0
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3.5.0
 
       - name: Build iOS target (staging)
         run: |
@@ -146,7 +146,7 @@ jobs:
           ./gradlew :composeApp:linkReleaseFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL
 
       - name: Upload iOS frameworks (staging)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: ios-frameworks-staging
           path: |
@@ -160,16 +160,16 @@ jobs:
       SERVER_URL: https://lehrerlog.9d4.de
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5.1.0
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3.5.0
 
       - name: Build iOS target (prod)
         run: |
@@ -177,7 +177,7 @@ jobs:
           ./gradlew :composeApp:linkReleaseFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL
 
       - name: Upload iOS frameworks (prod)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: ios-frameworks-prod-${{ github.ref_name }}
           path: |
