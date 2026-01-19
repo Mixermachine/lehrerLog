@@ -12,12 +12,22 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
 
       - name: Normalize GHCR owner
         run: echo "GHCR_OWNER_LOWER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
+      - name: Validate deploy config
+        run: |
+          if [ -z "${DEPLOY_HOST}" ] || [ -z "${DEPLOY_USER}" ]; then
+            echo "DEPLOY_HOST and DEPLOY_USER must be set via repo variables." >&2
+            exit 1
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -42,24 +52,24 @@ jobs:
       - name: Upload deploy assets
         uses: appleboy/scp-action@v1.0.0
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: "deploy/**"
-          target: "/home/${{ secrets.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy"
+          target: "/home/${{ env.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy"
           strip_components: 1
 
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            chmod +x /home/${{ secrets.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy/remote-deploy.sh
+            chmod +x /home/${{ env.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy/remote-deploy.sh
             ENV_NAME=staging \
             DOMAIN=staging.lehrerlog.9d4.de \
-            DEPLOY_DIR=/home/${{ secrets.DEPLOY_USER }}/docker/lehrerlog-staging \
+            DEPLOY_DIR=/home/${{ env.DEPLOY_USER }}/docker/lehrerlog-staging \
             IMAGE_NAME=ghcr.io/${{ env.GHCR_OWNER_LOWER }}/lehrerlog-server \
             IMAGE_TAG=staging \
             HOST_PORT=18081 \
@@ -71,4 +81,4 @@ jobs:
             LETSENCRYPT_EMAIL=${{ secrets.LETSENCRYPT_EMAIL }} \
             GHCR_USERNAME=${{ env.GHCR_OWNER_LOWER }} \
             GHCR_TOKEN=${{ secrets.GHCR_TOKEN }} \
-            /home/${{ secrets.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy/remote-deploy.sh
+            /home/${{ env.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy/remote-deploy.sh
