@@ -51,7 +51,7 @@ fi
 
 # Ensure sudo is non-interactive using a whitelisted command (GitHub Actions has no TTY).
 SUDO_CHECK_DIR="/tmp/lehrerlog-sudo-check-${ENV_NAME}"
-if ! sudo /usr/bin/mkdir -p "$SUDO_CHECK_DIR" 2>/dev/null; then
+if ! sudo mkdir -p "$SUDO_CHECK_DIR" 2>/dev/null; then
   echo "Error: passwordless sudo is required for deployment."
   echo "Configure sudoers for the deploy user (e.g., aaron) or rerun manually with a TTY."
   exit 1
