@@ -34,6 +34,13 @@ if [[ -z "$LETSENCRYPT_EMAIL" ]]; then
   exit 1
 fi
 
+# Ensure sudo is non-interactive (GitHub Actions has no TTY for password prompts).
+if ! sudo -n true 2>/dev/null; then
+  echo "Error: passwordless sudo is required for deployment."
+  echo "Configure sudoers for the deploy user (e.g., aaron) or rerun manually with a TTY."
+  exit 1
+fi
+
 # Acquire deployment lock
 acquire_lock() {
   if [[ -f "$LOCK_FILE" ]]; then
