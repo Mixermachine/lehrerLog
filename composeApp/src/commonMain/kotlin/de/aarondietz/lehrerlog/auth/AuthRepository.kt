@@ -1,24 +1,11 @@
 package de.aarondietz.lehrerlog.auth
 
-import de.aarondietz.lehrerlog.SERVER_URL
-import de.aarondietz.lehrerlog.auth.AuthResponse
-import de.aarondietz.lehrerlog.auth.ErrorResponse
-import de.aarondietz.lehrerlog.auth.LoginRequest
-import de.aarondietz.lehrerlog.auth.LogoutRequest
-import de.aarondietz.lehrerlog.auth.RefreshRequest
-import de.aarondietz.lehrerlog.auth.RegisterRequest
-import de.aarondietz.lehrerlog.auth.TokenResponse
-import de.aarondietz.lehrerlog.auth.UserDto
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import de.aarondietz.lehrerlog.ServerConfig
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 
 sealed class AuthResult<out T> {
     data class Success<T>(val data: T) : AuthResult<T>()
@@ -29,7 +16,7 @@ class AuthRepository(
     private val httpClient: HttpClient,
     private val tokenStorage: TokenStorage
 ) {
-    private val baseUrl = SERVER_URL
+    private val baseUrl = ServerConfig.SERVER_URL
 
     suspend fun register(
         email: String,

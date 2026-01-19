@@ -6,21 +6,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import lehrerlog.composeapp.generated.resources.Res
-import lehrerlog.composeapp.generated.resources.action_add
-import lehrerlog.composeapp.generated.resources.action_cancel
-import lehrerlog.composeapp.generated.resources.add_task
-import lehrerlog.composeapp.generated.resources.due_date
-import lehrerlog.composeapp.generated.resources.due_date_hint
-import lehrerlog.composeapp.generated.resources.task_description
-import lehrerlog.composeapp.generated.resources.task_title
+import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

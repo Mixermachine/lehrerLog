@@ -4,18 +4,17 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.auth.TokenStorage
+import de.aarondietz.lehrerlog.currentTimeMillis
 import de.aarondietz.lehrerlog.data.StudentDto
 import de.aarondietz.lehrerlog.database.DatabaseManager
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-import de.aarondietz.lehrerlog.currentTimeMillis
 
 /**
  * Repository for Student data with offline-first capabilities.

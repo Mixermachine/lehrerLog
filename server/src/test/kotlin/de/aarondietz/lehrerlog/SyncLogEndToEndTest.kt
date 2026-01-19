@@ -107,6 +107,7 @@ class SyncLogEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "John",
             lastName = "Doe",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -156,6 +157,7 @@ class SyncLogEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Alice",
             lastName = "Smith",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -164,6 +166,7 @@ class SyncLogEndToEndTest {
             schoolId = otherSchoolId,
             firstName = "Bob",
             lastName = "Jones",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -206,6 +209,7 @@ class SyncLogEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Student",
             lastName = "One",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -213,6 +217,7 @@ class SyncLogEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Student",
             lastName = "Two",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -220,6 +225,7 @@ class SyncLogEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Student",
             lastName = "Three",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -257,6 +263,7 @@ class SyncLogEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Charlie",
             lastName = "Brown",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -265,6 +272,7 @@ class SyncLogEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Charles",
             lastName = "Brown",
+            classIds = emptyList(),
             version = student.version,
             userId = testUserId!!
         )
@@ -303,6 +311,7 @@ class SyncLogEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "David",
             lastName = "Wilson",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -310,6 +319,7 @@ class SyncLogEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Emily",
             lastName = "Taylor",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -356,6 +366,7 @@ class SyncLogEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Frank",
             lastName = "Miller",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -379,6 +390,7 @@ class SyncLogEndToEndTest {
                 schoolId = testSchoolId!!,
                 firstName = "Student",
                 lastName = "Number$index",
+                classIds = emptyList(),
                 userId = testUserId!!
             )
         }

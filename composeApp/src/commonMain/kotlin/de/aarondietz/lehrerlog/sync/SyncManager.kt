@@ -1,17 +1,18 @@
 package de.aarondietz.lehrerlog.sync
 
 import co.touchlab.kermit.Logger
+import de.aarondietz.lehrerlog.currentTimeMillis
 import de.aarondietz.lehrerlog.data.SchoolClassDto
 import de.aarondietz.lehrerlog.data.StudentDto
 import de.aarondietz.lehrerlog.data.api.SyncApi
 import de.aarondietz.lehrerlog.database.DatabaseManager
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.http.HttpStatusCode
+import io.ktor.client.plugins.*
+import io.ktor.http.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlinx.serialization.encodeToString
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
-import de.aarondietz.lehrerlog.currentTimeMillis
 
 /**
  * Manages synchronization between local database and server.

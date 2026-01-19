@@ -74,17 +74,39 @@ echo ""
 mkdir -p "$DEPLOY_DIR"
 mkdir -p "$DEPLOY_DIR/.deploy"
 
-if [[ -z "$POSTGRES_PASSWORD" ]] && [[ -f "$DEPLOY_DIR/.env" ]]; then
+# Handle POSTGRES_PASSWORD: reuse existing, use provided, or generate new
+EXISTING_PASSWORD=""
+if [[ -f "$DEPLOY_DIR/.env" ]]; then
   EXISTING_PASSWORD=$(grep -E '^POSTGRES_PASSWORD=' "$DEPLOY_DIR/.env" | head -1 | cut -d= -f2- || true)
-  if [[ -n "$EXISTING_PASSWORD" ]]; then
-    POSTGRES_PASSWORD="$EXISTING_PASSWORD"
-    echo "Using existing POSTGRES_PASSWORD from $DEPLOY_DIR/.env"
-  fi
 fi
 
 if [[ -z "$POSTGRES_PASSWORD" ]]; then
-  POSTGRES_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
-  echo "Generated POSTGRES_PASSWORD for ${ENV_NAME}"
+  # No password provided - use existing or generate new
+  if [[ -n "$EXISTING_PASSWORD" ]]; then
+    POSTGRES_PASSWORD="$EXISTING_PASSWORD"
+    echo "Using existing POSTGRES_PASSWORD from $DEPLOY_DIR/.env"
+  else
+    POSTGRES_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
+    echo "Generated new POSTGRES_PASSWORD for ${ENV_NAME}"
+  fi
+elif [[ -n "$EXISTING_PASSWORD" ]] && [[ "$POSTGRES_PASSWORD" != "$EXISTING_PASSWORD" ]]; then
+  # Password provided but differs from existing - DANGER!
+  echo ""
+  echo "WARNING: Provided POSTGRES_PASSWORD differs from existing password in $DEPLOY_DIR/.env"
+  echo "The database was initialized with the existing password."
+  echo "Changing it will cause connection failures!"
+  echo ""
+  echo "Options:"
+  echo "  1. Remove the POSTGRES_PASSWORD secret to use existing password"
+  echo "  2. Manually update the database password first"
+  echo "  3. Set FORCE_PASSWORD_CHANGE=true to proceed anyway (DANGEROUS)"
+  echo ""
+  if [[ "${FORCE_PASSWORD_CHANGE:-false}" != "true" ]]; then
+    echo "Falling back to existing password for safety."
+    POSTGRES_PASSWORD="$EXISTING_PASSWORD"
+  else
+    echo "FORCE_PASSWORD_CHANGE=true - proceeding with new password!"
+  fi
 fi
 
 # Create data directories with proper ownership (only if new)

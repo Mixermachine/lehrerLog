@@ -42,8 +42,10 @@ Use the Gradle wrapper (`./gradlew` on macOS/Linux, `.\gradlew.bat` on Windows).
 - Prefer short, present-tense summaries; use `fix:` or `feat:` prefixes if you follow conventional commits, but keep it consistent within a series.
 - PRs should include a clear description, steps to verify, and screenshots for UI changes. Mention any schema/migration updates and link related issues.
 - Always `git add` newly created files; avoid leaving untracked files behind.
+- Files that belong in the repo MUST be staged immediately after creation to avoid missing critical changes.
 
 ## Configuration & Data
 - Server schema changes require a new Flyway migration in `server/src/main/resources/db/migration`.
 - Keep secrets out of VCS; prefer local config overrides (e.g., `local.properties`) for developer-specific values.
 - GitHub Actions Android signing expects these env vars: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS_APK`, `ANDROID_KEY_ALIAS_AAB`.
+- Client environments: DEV defaults to `http://localhost:8080`; CI builds STAGING (`https://staging.lehrerlog.9d4.de`) and PROD (`https://lehrerlog.9d4.de`) via `-PserverUrl=...`.

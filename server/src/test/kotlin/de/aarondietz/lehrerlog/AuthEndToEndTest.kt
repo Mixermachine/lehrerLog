@@ -8,17 +8,22 @@ import de.aarondietz.lehrerlog.db.tables.*
 import de.aarondietz.lehrerlog.routes.AuthResponseDto
 import de.aarondietz.lehrerlog.routes.LoginRequestDto
 import de.aarondietz.lehrerlog.routes.RegisterRequestDto
+import de.aarondietz.lehrerlog.schools.SchoolCatalogEntry
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.*
 import kotlin.test.*
 
@@ -37,6 +42,7 @@ class AuthEndToEndTest {
     companion object {
         private var testSchoolId: UUID? = null
         private var isInitialized = false
+        private var catalogPath: Path? = null
 
         // Generate unique prefix for this test run (e.g., "testing93821")
         private val TEST_PREFIX = "testing${(10000..99999).random()}"
@@ -64,12 +70,30 @@ class AuthEndToEndTest {
                 it[code] = "${TEST_PREFIX_UPPER}_SCHOOL"
             } get Schools.id
         }.value
+
+        if (catalogPath == null) {
+            val tempDir = Files.createTempDirectory("school-catalog-test")
+            catalogPath = tempDir.resolve("schools.json")
+        }
+
+        val catalogEntry = SchoolCatalogEntry(
+            code = testSchoolCode(),
+            name = "$TEST_PREFIX Test School",
+            city = "Test City",
+            postcode = "00000",
+            state = "Test State"
+        )
+        val json = Json { prettyPrint = true }
+        Files.writeString(catalogPath!!, json.encodeToString(listOf(catalogEntry)))
+        System.setProperty("SCHOOL_CATALOG_PATH", catalogPath!!.toString())
     }
 
     @AfterTest
     fun teardown() {
         // Clean up after each test for good hygiene
         cleanupTestData()
+        System.clearProperty("SCHOOL_CATALOG_PATH")
+        catalogPath?.let { Files.deleteIfExists(it) }
     }
 
     /**
@@ -134,7 +158,7 @@ class AuthEndToEndTest {
     }
 
     @Test
-    fun `test successful registration without school code`() = testApplication {
+    fun `test registration without school code fails`() = testApplication {
         application { module() }
 
         val testClient = createClient {
@@ -156,16 +180,9 @@ class AuthEndToEndTest {
             ))
         }
 
-        assertEquals(HttpStatusCode.Created, response.status)
-
-        val authResponse = response.body<AuthResponseDto>()
-        assertNotNull(authResponse.accessToken)
-        assertNotNull(authResponse.refreshToken)
-        assertEquals(email, authResponse.user.email)
-        assertEquals("John", authResponse.user.firstName)
-        assertEquals("Doe", authResponse.user.lastName)
-        assertEquals("TEACHER", authResponse.user.role)
-        assertNull(authResponse.user.schoolId)
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        val errorResponse = response.body<ErrorResponse>()
+        assertTrue(errorResponse.error.contains("School code is required"))
     }
 
     @Test
@@ -243,7 +260,8 @@ class AuthEndToEndTest {
             email = email,
             password = "SecurePassword",
             firstName = "Duplicate",
-            lastName = "User"
+            lastName = "User",
+            schoolCode = testSchoolCode()
         )
 
         // First registration
@@ -282,7 +300,8 @@ class AuthEndToEndTest {
                 email = email,
                 password = "short",  // Less than 8 characters
                 firstName = "Short",
-                lastName = "Password"
+                lastName = "Password",
+                schoolCode = testSchoolCode()
             ))
         }
 
@@ -308,7 +327,8 @@ class AuthEndToEndTest {
                 email = "",
                 password = "SecurePassword",
                 firstName = "",
-                lastName = "User"
+                lastName = "User",
+                schoolCode = testSchoolCode()
             ))
         }
 
@@ -334,7 +354,8 @@ class AuthEndToEndTest {
                 email = email,
                 password = "LoginPassword123",
                 firstName = "Login",
-                lastName = "Test"
+                lastName = "Test",
+                schoolCode = testSchoolCode()
             ))
         }
 
@@ -376,7 +397,8 @@ class AuthEndToEndTest {
                 email = email,
                 password = "CorrectPassword123",
                 firstName = "Wrong",
-                lastName = "Password"
+                lastName = "Password",
+                schoolCode = testSchoolCode()
             ))
         }
 
@@ -467,7 +489,8 @@ class AuthEndToEndTest {
                 email = email,
                 password = "JwtPassword123",
                 firstName = "JWT",
-                lastName = "Test"
+                lastName = "Test",
+                schoolCode = testSchoolCode()
             ))
         }
 

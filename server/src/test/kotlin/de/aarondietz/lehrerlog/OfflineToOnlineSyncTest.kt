@@ -181,6 +181,7 @@ class OfflineToOnlineSyncTest {
             schoolId = testSchoolId!!,
             firstName = "Original",
             lastName = "Name",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -276,6 +277,7 @@ class OfflineToOnlineSyncTest {
             schoolId = testSchoolId!!,
             firstName = "ToDelete",
             lastName = "Offline",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 

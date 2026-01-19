@@ -6,11 +6,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
-import lehrerlog.composeapp.generated.resources.Res
-import lehrerlog.composeapp.generated.resources.nav_home
-import lehrerlog.composeapp.generated.resources.nav_settings
-import lehrerlog.composeapp.generated.resources.nav_students
-import lehrerlog.composeapp.generated.resources.nav_tasks
+import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.StringResource
 
 sealed class BottomBarEntry(val route: String, val titleRes: StringResource, val icon: ImageVector) {

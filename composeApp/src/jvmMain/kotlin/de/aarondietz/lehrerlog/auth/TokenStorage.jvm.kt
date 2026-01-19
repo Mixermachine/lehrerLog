@@ -1,7 +1,7 @@
 package de.aarondietz.lehrerlog.auth
 
 import java.io.File
-import java.util.Properties
+import java.util.*
 
 /**
  * JVM/Desktop TokenStorage implementation using a properties file.

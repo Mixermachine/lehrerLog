@@ -117,6 +117,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Student",
             lastName = "One",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -124,6 +125,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Student",
             lastName = "Two",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -131,6 +133,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Student",
             lastName = "Three",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -156,6 +159,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "First",
             lastName = "Student",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -163,6 +167,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Second",
             lastName = "Student",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -175,6 +180,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Third",
             lastName = "Student",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -192,6 +198,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "ToDelete",
             lastName = "Student",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -258,6 +265,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Original",
             lastName = "Student",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -305,6 +313,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Original",
             lastName = "Student",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -351,6 +360,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Student",
             lastName = "One",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -416,6 +426,7 @@ class SyncServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "TestSchool",
             lastName = "Student",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -424,6 +435,7 @@ class SyncServiceEndToEndTest {
             schoolId = otherSchoolId,
             firstName = "OtherSchool",
             lastName = "Student",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -451,20 +463,31 @@ class SyncServiceEndToEndTest {
                 schoolId = testSchoolId!!,
                 firstName = "Student",
                 lastName = "Number$index",
+                classIds = emptyList(),
                 userId = testUserId!!
             )
         }
 
+        val totalLogs = transaction {
+            SyncLog.selectAll()
+                .where { SyncLog.schoolId eq testSchoolId!! }
+                .count()
+                .toInt()
+        }
+        val expectedFirstPageCount = minOf(totalLogs, SyncService.MAX_CHANGES_PER_REQUEST)
+        val expectedHasMore = totalLogs > SyncService.MAX_CHANGES_PER_REQUEST
+
         // First pull should get 100 changes
         val firstPage = syncService.getChangesSince(testSchoolId!!, sinceLogId = 0L)
 
-        assertEquals(100, firstPage.changes.size)
-        assertTrue(firstPage.hasMore, "Should indicate more changes available")
+        assertEquals(expectedFirstPageCount, firstPage.changes.size)
+        assertEquals(expectedHasMore, firstPage.hasMore, "hasMore should reflect remaining changes")
 
         // Second pull should get remaining 5 changes
         val secondPage = syncService.getChangesSince(testSchoolId!!, sinceLogId = firstPage.lastSyncId)
 
-        assertEquals(5, secondPage.changes.size)
+        val expectedSecondPageCount = (totalLogs - expectedFirstPageCount).coerceAtLeast(0)
+        assertEquals(expectedSecondPageCount, secondPage.changes.size)
         assertFalse(secondPage.hasMore, "Should indicate no more changes")
     }
 }

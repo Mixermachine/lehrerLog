@@ -32,6 +32,24 @@ in your IDE’s toolbar or build it directly from the terminal:
   .\gradlew.bat :composeApp:assembleDebug
   ```
 
+### Environment Flavors
+
+The client uses a build-time server URL. DEV defaults to localhost; staging and prod are built in CI.
+
+- DEV (local): uses `http://localhost:8080`
+  - Override with `-PserverUrl=http://localhost:8080`
+  - Example:
+    - macOS/Linux:
+      ```shell
+      ./gradlew :composeApp:assembleDebug -PserverUrl=http://localhost:8080
+      ```
+    - Windows:
+      ```shell
+      .\gradlew.bat :composeApp:assembleDebug -PserverUrl=http://localhost:8080
+      ```
+- STAGING: CI builds with `https://staging.lehrerlog.9d4.de`
+- PROD: CI builds with `https://lehrerlog.9d4.de`
+
 ### Build and Run Desktop (JVM) Application
 
 To build and run the development version of the desktop app, use the run configuration from the run widget

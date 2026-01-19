@@ -3,25 +3,12 @@ package de.aarondietz.lehrerlog.ui.composables
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -31,13 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.data.SchoolClass
 import de.aarondietz.lehrerlog.data.Student
-import lehrerlog.composeapp.generated.resources.Res
-import lehrerlog.composeapp.generated.resources.add_student
-import lehrerlog.composeapp.generated.resources.collapse
-import lehrerlog.composeapp.generated.resources.delete_class
-import lehrerlog.composeapp.generated.resources.expand
-import lehrerlog.composeapp.generated.resources.no_students_in_class
-import lehrerlog.composeapp.generated.resources.students_count
+import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

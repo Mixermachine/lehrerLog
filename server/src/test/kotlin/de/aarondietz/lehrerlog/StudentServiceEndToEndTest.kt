@@ -102,6 +102,7 @@ class StudentServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "John",
             lastName = "Doe",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -134,6 +135,7 @@ class StudentServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Jane",
             lastName = "Smith",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -143,6 +145,7 @@ class StudentServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Janet",
             lastName = "Smith-Jones",
+            classIds = emptyList(),
             version = student.version,
             userId = testUserId!!
         )
@@ -176,6 +179,7 @@ class StudentServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Bob",
             lastName = "Wilson",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -185,6 +189,7 @@ class StudentServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Robert",
             lastName = "Wilson",
+            classIds = emptyList(),
             version = 999L, // Wrong version
             userId = testUserId!!
         )
@@ -198,6 +203,7 @@ class StudentServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Alice",
             lastName = "Brown",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -245,6 +251,7 @@ class StudentServiceEndToEndTest {
             schoolId = otherSchoolId,
             firstName = "Eve",
             lastName = "Davis",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -274,6 +281,7 @@ class StudentServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Student",
             lastName = "One",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 
@@ -281,6 +289,7 @@ class StudentServiceEndToEndTest {
             schoolId = testSchoolId!!,
             firstName = "Student",
             lastName = "Two",
+            classIds = emptyList(),
             userId = testUserId!!
         )
 

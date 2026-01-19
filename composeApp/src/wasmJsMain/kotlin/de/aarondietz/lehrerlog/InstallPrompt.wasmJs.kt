@@ -1,7 +1,5 @@
 package de.aarondietz.lehrerlog
 
-import kotlinx.browser.window
-
 @OptIn(ExperimentalWasmJsInterop::class)
 external interface JsInstallPrompt : JsAny {
     fun prompt()

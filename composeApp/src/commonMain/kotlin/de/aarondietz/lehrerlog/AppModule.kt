@@ -1,14 +1,12 @@
 package de.aarondietz.lehrerlog
 
 import co.touchlab.kermit.Logger
-import co.touchlab.kermit.LoggerConfig
-import co.touchlab.kermit.platformLogWriter
 import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.auth.createTokenStorage
 import de.aarondietz.lehrerlog.data.api.SyncApi
-import de.aarondietz.lehrerlog.data.repository.SchoolRepository
 import de.aarondietz.lehrerlog.data.repository.SchoolClassRepository
+import de.aarondietz.lehrerlog.data.repository.SchoolRepository
 import de.aarondietz.lehrerlog.data.repository.StudentRepository
 import de.aarondietz.lehrerlog.data.repository.TaskRepository
 import de.aarondietz.lehrerlog.database.DatabaseManager
@@ -38,13 +36,13 @@ val commonModule = module {
     single { DatabaseManager(get()) }
 
     // Repositories
-    single { StudentRepository(get(), get(), get(), SERVER_URL, get()) }
-    single { SchoolClassRepository(get(), get(), get(), SERVER_URL, get()) }
-    single { SchoolRepository(get(), SERVER_URL) }
-    single { TaskRepository(get(), get(), SERVER_URL) }
+    single { StudentRepository(get(), get(), get(), ServerConfig.SERVER_URL, get()) }
+    single { SchoolClassRepository(get(), get(), get(), ServerConfig.SERVER_URL, get()) }
+    single { SchoolRepository(get(), ServerConfig.SERVER_URL) }
+    single { TaskRepository(get(), get(), ServerConfig.SERVER_URL) }
 
     // Sync
-    single { SyncApi(get(), get(), SERVER_URL) }
+    single { SyncApi(get(), get(), ServerConfig.SERVER_URL) }
     single { SyncManager(get(), get(), get(), get()) }
 
     viewModel { AuthViewModel(get(), get(), get()) }

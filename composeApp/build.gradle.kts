@@ -1,3 +1,9 @@
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -11,6 +17,39 @@ plugins {
     alias(libs.plugins.sqlDelight)
     kotlin("plugin.serialization") version libs.versions.kotlin.get()
 
+}
+
+abstract class GenerateServerConfig : DefaultTask() {
+    @get:Input
+    abstract val serverUrl: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
+        val packageDir = outputDir.get().asFile.resolve("de/aarondietz/lehrerlog")
+        packageDir.mkdirs()
+        val configFile = packageDir.resolve("ServerConfig.kt")
+        val escapedUrl = serverUrl.get().replace("\\", "\\\\").replace("\"", "\\\"")
+        configFile.writeText(
+            """
+            |package de.aarondietz.lehrerlog
+            |
+            |object ServerConfig {
+            |    const val SERVER_URL = "$escapedUrl"
+            |}
+            """.trimMargin()
+        )
+    }
+}
+
+val serverUrlProvider = providers.gradleProperty("serverUrl").orElse("http://localhost:8080")
+val serverConfigDir = layout.buildDirectory.dir("generated/source/serverConfig")
+
+val generateServerConfig = tasks.register<GenerateServerConfig>("generateServerConfig") {
+    serverUrl.set(serverUrlProvider)
+    outputDir.set(serverConfigDir)
 }
 
 kotlin {
@@ -39,8 +78,11 @@ kotlin {
     }
 
     sourceSets {
+        val commonMain by getting {
+            kotlin.srcDir(serverConfigDir)
+        }
         val nonWasmMain by creating {
-            dependsOn(commonMain.get())
+            dependsOn(commonMain)
         }
         val nativeMain by creating {
             dependsOn(nonWasmMain)
@@ -104,7 +146,7 @@ kotlin {
             implementation(libs.ktor.client.cio)
         }
         wasmJsMain.dependencies {
-            implementation("app.cash.sqldelight:web-worker-driver-wasm-js:2.1.0")
+            implementation("app.cash.sqldelight:web-worker-driver-wasm-js:2.2.1")
             implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.1.0"))
             implementation(npm("sql.js", "1.13.0"))
             implementation(devNpm("copy-webpack-plugin", "13.0.1"))
@@ -120,6 +162,10 @@ sqldelight {
             generateAsync.set(true)
         }
     }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+    dependsOn(generateServerConfig)
 }
 
 android {

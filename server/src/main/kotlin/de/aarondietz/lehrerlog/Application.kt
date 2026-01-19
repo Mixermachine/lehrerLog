@@ -39,8 +39,11 @@ fun Application.module() {
     // Services
     val passwordService = PasswordService()
     val tokenService = TokenService()
-    val catalogPath = System.getenv("SCHOOL_CATALOG_PATH") ?: "data/schools.json"
+    val catalogPath = System.getenv("SCHOOL_CATALOG_PATH")
+        ?: System.getProperty("SCHOOL_CATALOG_PATH")
+        ?: "data/schools.json"
     val catalogEndpoint = System.getenv("SCHOOL_CATALOG_ENDPOINT")
+        ?: System.getProperty("SCHOOL_CATALOG_ENDPOINT")
         ?: "https://overpass-api.de/api/interpreter"
     val schoolCatalogService = SchoolCatalogService(Path.of(catalogPath), catalogEndpoint)
     val authService = AuthService(passwordService, tokenService, schoolCatalogService)
