@@ -10,6 +10,7 @@ LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 GHCR_USERNAME="${GHCR_USERNAME:-}"
 GHCR_TOKEN="${GHCR_TOKEN:-}"
 SKIP_DNS_CHECK="${SKIP_DNS_CHECK:-false}"
+SUDO_PASSWORD="${SUDO_PASSWORD:-}"
 
 # PostgreSQL settings
 POSTGRES_DB="${POSTGRES_DB:-lehrerlog}"
@@ -34,9 +35,23 @@ if [[ -z "$LETSENCRYPT_EMAIL" ]]; then
   exit 1
 fi
 
+# Configure sudo for non-interactive use (either passwordless or SUDO_PASSWORD).
+if [[ -n "$SUDO_PASSWORD" ]]; then
+  ASKPASS_FILE="$(mktemp)"
+  chmod 700 "$ASKPASS_FILE"
+  printf '#!/bin/sh\necho "%s"\n' "$SUDO_PASSWORD" > "$ASKPASS_FILE"
+  export SUDO_ASKPASS="$ASKPASS_FILE"
+  export SUDO_ASKPASS_REQUIRE=force
+  export SUDO_PROMPT=""
+  sudo() { command sudo -A "$@"; }
+  trap 'rm -f "$ASKPASS_FILE"' EXIT
+else
+  sudo() { command sudo -n "$@"; }
+fi
+
 # Ensure sudo is non-interactive using a whitelisted command (GitHub Actions has no TTY).
 SUDO_CHECK_DIR="/tmp/lehrerlog-sudo-check-${ENV_NAME}"
-if ! sudo -n /usr/bin/mkdir -p "$SUDO_CHECK_DIR" 2>/dev/null; then
+if ! sudo /usr/bin/mkdir -p "$SUDO_CHECK_DIR" 2>/dev/null; then
   echo "Error: passwordless sudo is required for deployment."
   echo "Configure sudoers for the deploy user (e.g., aaron) or rerun manually with a TTY."
   exit 1

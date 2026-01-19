@@ -82,4 +82,5 @@ jobs:
             LETSENCRYPT_EMAIL=${{ secrets.LETSENCRYPT_EMAIL }} \
             GHCR_USERNAME=${{ env.GHCR_OWNER_LOWER }} \
             GHCR_TOKEN=${{ secrets.GHCR_TOKEN }} \
+            SUDO_PASSWORD=${{ secrets.SUDO_PASSWORD }} \
             /home/${{ env.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy/remote-deploy.sh
