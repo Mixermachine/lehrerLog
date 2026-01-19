@@ -54,11 +54,17 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             chmod +x /home/${{ secrets.DEPLOY_USER }}/docker/lehrerlog-staging/.deploy/remote-deploy.sh
+            ENV_NAME=staging \
             DOMAIN=staging.lehrerlog.9d4.de \
             DEPLOY_DIR=/home/${{ secrets.DEPLOY_USER }}/docker/lehrerlog-staging \
             IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/lehrerlog-server \
             IMAGE_TAG=staging \
-            HOST_PORT=8081 \
+            HOST_PORT=18081 \
+            POSTGRES_DB=lehrerlog_staging \
+            POSTGRES_USER=lehrerlog \
+            POSTGRES_PASSWORD=${{ secrets.STAGING_DB_PASSWORD }} \
+            DATA_DIR=/var/lib/lehrerlog/staging/data \
+            DB_DATA_DIR=/var/lib/lehrerlog/staging/pgdata \
             LETSENCRYPT_EMAIL=${{ secrets.LETSENCRYPT_EMAIL }} \
             GHCR_USERNAME=${{ github.repository_owner }} \
             GHCR_TOKEN=${{ secrets.GHCR_TOKEN }} \

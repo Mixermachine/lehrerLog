@@ -1,17 +1,52 @@
 services:
   lehrerlog-server:
+    container_name: lehrerlog-${ENV_NAME:-prod}-server
     image: ${IMAGE_NAME}:${IMAGE_TAG}
     restart: unless-stopped
     env_file:
       - ./app.env
     environment:
       - SCHOOL_CATALOG_PATH=/app/data/schools.json
+      - DB_MODE=postgres
+      - DATABASE_URL=jdbc:postgresql://db:5432/${POSTGRES_DB:-lehrerlog}
+      - DATABASE_USER=${POSTGRES_USER:-lehrerlog}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD:?Database password required}
     volumes:
-      - ./data:/app/data
+      - ${DATA_DIR:-./data}:/app/data
     ports:
       - "127.0.0.1:${HOST_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    networks:
+      - lehrerlog-net
+
+  db:
+    container_name: lehrerlog-${ENV_NAME:-prod}-db
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-lehrerlog}
+      - POSTGRES_USER=${POSTGRES_USER:-lehrerlog}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Database password required}
+    volumes:
+      - ${DB_DATA_DIR:-./pgdata}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lehrerlog} -d ${POSTGRES_DB:-lehrerlog}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - lehrerlog-net
+    # Database is not exposed to host - only accessible within docker network
+
+networks:
+  lehrerlog-net:
+    driver: bridge

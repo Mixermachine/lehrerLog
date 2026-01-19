@@ -33,3 +33,10 @@ __pycache__/
 # H2 Database files
 *.mv.db
 *.trace.db
+
+# Deploy environment files (contain secrets)
+deploy/.env
+deploy/app.env
+!deploy/.env.example
+!deploy/.env.*.example
+!deploy/app.env.example

@@ -21,7 +21,9 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import java.nio.file.Path
 
@@ -88,7 +90,24 @@ fun Application.module() {
 
     routing {
         get("/health") {
-            call.respondText("ok")
+            val dbHealthy = try {
+                transaction {
+                    exec("SELECT 1") { it.next() }
+                }
+                true
+            } catch (e: Exception) {
+                environment.log.error("Database health check failed", e)
+                false
+            }
+
+            if (dbHealthy) {
+                call.respond(HealthResponse(status = "ok", database = "connected"))
+            } else {
+                call.respond(
+                    HttpStatusCode.ServiceUnavailable,
+                    HealthResponse(status = "unhealthy", database = "disconnected")
+                )
+            }
         }
         authRoute(authService)
         schoolClassRoute()
@@ -99,3 +118,9 @@ fun Application.module() {
         userRoute()
     }
 }
+
+@Serializable
+data class HealthResponse(
+    val status: String,
+    val database: String
+)
