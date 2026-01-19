@@ -65,6 +65,7 @@ jobs:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          request_pty: true
           script: |
             chmod +x /home/${{ env.DEPLOY_USER }}/docker/lehrerlog/.deploy/remote-deploy.sh
             ENV_NAME=prod \
