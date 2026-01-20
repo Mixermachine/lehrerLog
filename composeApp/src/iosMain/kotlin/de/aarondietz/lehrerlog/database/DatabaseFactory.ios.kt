@@ -7,6 +7,7 @@ import de.aarondietz.lehrerlog.lehrerLog
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSUserDomainMask
 
 /**
@@ -24,9 +25,8 @@ actual class DatabaseDriverFactory actual constructor(context: Any?) {
     @OptIn(ExperimentalForeignApi::class)
     actual fun deleteDatabase() {
         val fileManager = NSFileManager.defaultManager
-        val urls = fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask)
-        val baseUrl = urls.firstOrNull()
-        val basePath = baseUrl?.path ?: return
+        val paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)
+        val basePath = paths.firstOrNull() ?: return
         val dbPath = "$basePath/lehrerlog.db"
         val walPath = "$basePath/lehrerlog.db-wal"
         val shmPath = "$basePath/lehrerlog.db-shm"
