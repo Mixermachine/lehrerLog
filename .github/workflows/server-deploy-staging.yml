@@ -80,8 +80,8 @@ jobs:
             DATA_DIR=/var/lib/lehrerlog/staging/data \
             DB_DATA_DIR=/var/lib/lehrerlog/staging/pgdata \
             LETSENCRYPT_EMAIL=${{ secrets.LETSENCRYPT_EMAIL }} \
-            SEED_TEST_USER_EMAIL=${{ secrets.STAGING_SEED_USER_EMAIL }} \
-            SEED_TEST_USER_PASSWORD=${{ secrets.STAGING_SEED_USER_PASSWORD }} \
+            SEED_TEST_USER_EMAIL=${{ secrets.STAGING_TEST_USER_EMAIL }} \
+            SEED_TEST_USER_PASSWORD=${{ secrets.STAGING_TEST_USER_PASSWORD }} \
             GHCR_USERNAME=${{ env.GHCR_OWNER_LOWER }} \
             GHCR_TOKEN=${{ secrets.GHCR_TOKEN }} \
             SUDO_PASSWORD=${{ secrets.SUDO_PASSWORD }} \
