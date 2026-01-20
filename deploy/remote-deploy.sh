@@ -220,14 +220,20 @@ EOF
 
 echo "Created .env file at $DEPLOY_DIR/.env"
 
-# Setup nginx configuration
-if [[ -f "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" ]]; then
-  sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" "/etc/nginx/sites-available/$DOMAIN"
-else
-  sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/lehrerlog.9d4.de.conf" "/etc/nginx/sites-available/$DOMAIN"
-  sudo "$BIN_SED" -i "s/server_name lehrerlog.9d4.de;/server_name $DOMAIN;/" "/etc/nginx/sites-available/$DOMAIN"
+# Setup nginx configuration (avoid overwriting certbot-managed SSL blocks).
+NGINX_SITE="/etc/nginx/sites-available/$DOMAIN"
+if [[ ! -f "$NGINX_SITE" ]]; then
+  if [[ -f "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" ]]; then
+    sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" "$NGINX_SITE"
+  else
+    sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/lehrerlog.9d4.de.conf" "$NGINX_SITE"
+    sudo "$BIN_SED" -i "s/server_name lehrerlog.9d4.de;/server_name $DOMAIN;/" "$NGINX_SITE"
+  fi
 fi
-sudo "$BIN_SED" -i "s/127.0.0.1:[0-9]*/127.0.0.1:$HOST_PORT/" "/etc/nginx/sites-available/$DOMAIN"
+# Ensure current domain and upstream port are updated in-place.
+sudo "$BIN_SED" -i "s/server_name .*/server_name $DOMAIN;/" "$NGINX_SITE"
+sudo "$BIN_SED" -i "s|proxy_pass http://127.0.0.1:[0-9]*;|proxy_pass http://127.0.0.1:$HOST_PORT;|g" "$NGINX_SITE"
+sudo "$BIN_SED" -i "s|proxy_pass http://localhost:[0-9]*;|proxy_pass http://127.0.0.1:$HOST_PORT;|g" "$NGINX_SITE"
 
 # Create symlink if it doesn't exist (use -e to check for symlink existence)
 if [[ ! -e "/etc/nginx/sites-enabled/$DOMAIN" ]]; then
