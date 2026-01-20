@@ -2,7 +2,9 @@ package de.aarondietz.lehrerlog
 
 import de.aarondietz.lehrerlog.auth.*
 import de.aarondietz.lehrerlog.db.DatabaseFactory
+import de.aarondietz.lehrerlog.db.tables.Schools
 import de.aarondietz.lehrerlog.db.tables.UserRole
+import de.aarondietz.lehrerlog.db.tables.Users
 import de.aarondietz.lehrerlog.routes.authRoute
 import de.aarondietz.lehrerlog.routes.schoolClassRoute
 import de.aarondietz.lehrerlog.routes.schoolRoute
@@ -23,6 +25,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import java.nio.file.Path
@@ -54,6 +57,8 @@ fun Application.module() {
         environment.log.error("Failed to initialize school catalog; server will not start.", e)
         throw e
     }
+
+    seedTestUserIfConfigured(passwordService)
 
     // Install plugins
     install(ContentNegotiation) {
@@ -127,3 +132,66 @@ data class HealthResponse(
     val status: String,
     val database: String
 )
+
+private fun Application.seedTestUserIfConfigured(passwordService: PasswordService) {
+    val email = System.getenv("SEED_TEST_USER_EMAIL")?.trim().orEmpty()
+    val password = System.getenv("SEED_TEST_USER_PASSWORD")?.trim().orEmpty()
+    if (email.isBlank() && password.isBlank()) {
+        return
+    }
+    if (email.isBlank() || password.isBlank()) {
+        environment.log.warn("Seed test user skipped: SEED_TEST_USER_EMAIL and SEED_TEST_USER_PASSWORD must both be set.")
+        return
+    }
+
+    val firstName = System.getenv("SEED_TEST_USER_FIRST_NAME")?.trim().orEmpty().ifBlank { "Staging" }
+    val lastName = System.getenv("SEED_TEST_USER_LAST_NAME")?.trim().orEmpty().ifBlank { "Verifier" }
+    val schoolCode = System.getenv("SEED_TEST_SCHOOL_CODE")?.trim().orEmpty().ifBlank { "STAGING-TEST" }
+    val schoolName = System.getenv("SEED_TEST_SCHOOL_NAME")?.trim().orEmpty().ifBlank { "Staging Test School" }
+
+    try {
+        transaction {
+            val existingUser = Users.selectAll()
+                .where { Users.email eq email }
+                .firstOrNull()
+            if (existingUser != null) {
+                return@transaction
+            }
+
+            var schoolId = Schools.selectAll()
+                .where { Schools.code eq schoolCode }
+                .firstOrNull()
+                ?.get(Schools.id)
+                ?.value
+
+            if (schoolId == null) {
+                Schools.insertIgnore {
+                    it[Schools.code] = schoolCode
+                    it[Schools.name] = schoolName
+                }
+                schoolId = Schools.selectAll()
+                    .where { Schools.code eq schoolCode }
+                    .firstOrNull()
+                    ?.get(Schools.id)
+                    ?.value
+            }
+
+            if (schoolId == null) {
+                environment.log.warn("Seed test user skipped: school '$schoolCode' could not be created.")
+                return@transaction
+            }
+
+            Users.insertIgnore {
+                it[Users.email] = email
+                it[Users.passwordHash] = passwordService.hashPassword(password)
+                it[Users.firstName] = firstName
+                it[Users.lastName] = lastName
+                it[Users.role] = UserRole.TEACHER
+                it[Users.schoolId] = schoolId
+            }
+        }
+        environment.log.info("Seed test user ensured for $email (school=$schoolCode).")
+    } catch (e: Exception) {
+        environment.log.error("Seed test user failed for $email.", e)
+    }
+}
