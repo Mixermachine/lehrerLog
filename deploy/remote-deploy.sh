@@ -43,10 +43,20 @@ if [[ -n "$SUDO_PASSWORD" ]]; then
   export SUDO_ASKPASS="$ASKPASS_FILE"
   export SUDO_ASKPASS_REQUIRE=force
   export SUDO_PROMPT=""
-  sudo() { command sudo -A "$@"; }
+  sudo() {
+    if ! command sudo -A "$@"; then
+      echo "Error: sudo failed for: $*"
+      exit 1
+    fi
+  }
   trap 'rm -f "$ASKPASS_FILE"' EXIT
 else
-  sudo() { command sudo -n "$@"; }
+  sudo() {
+    if ! command sudo -n "$@"; then
+      echo "Error: sudo failed for: $*"
+      exit 1
+    fi
+  }
 fi
 
 # Ensure sudo is non-interactive using a whitelisted command (GitHub Actions has no TTY).
