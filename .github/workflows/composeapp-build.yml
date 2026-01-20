@@ -44,7 +44,8 @@ jobs:
         run: |
           chmod +x ./gradlew
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "${{ runner.temp }}/release.keystore"
-          ./gradlew :composeApp:assembleReleaseApk :composeApp:bundleReleaseAab :composeApp:jvmJar :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL
+          ./gradlew --no-parallel :composeApp:assembleReleaseApk :composeApp:bundleReleaseAab :composeApp:jvmJar -PserverUrl=$SERVER_URL
+          ./gradlew --no-parallel :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL
 
       - name: Upload Android APKs (qa)
         uses: actions/upload-artifact@v6.0.0
@@ -102,7 +103,8 @@ jobs:
         run: |
           chmod +x ./gradlew
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "${{ runner.temp }}/release.keystore"
-          ./gradlew :composeApp:assembleReleaseApk :composeApp:bundleReleaseAab :composeApp:jvmJar :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL
+          ./gradlew --no-parallel :composeApp:assembleReleaseApk :composeApp:bundleReleaseAab :composeApp:jvmJar -PserverUrl=$SERVER_URL
+          ./gradlew --no-parallel :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL
 
       - name: Upload Android APKs (prod)
         uses: actions/upload-artifact@v6.0.0
