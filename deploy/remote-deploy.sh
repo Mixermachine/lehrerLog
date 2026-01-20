@@ -158,7 +158,8 @@ cleanup_legacy_staging() {
   local legacy_dir="$HOME/docker/lehrerlog-staging"
   if [[ -f "$legacy_dir/docker-compose.yml" ]]; then
     echo "Stopping legacy staging stack at $legacy_dir to free port $HOST_PORT..."
-    (cd "$legacy_dir" && docker compose down) || true
+    docker rm -f lehrerlog-staging-server lehrerlog-staging-db || true
+    docker network rm lehrerlog-staging_lehrerlog-net || true
   fi
 }
 
