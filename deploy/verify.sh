@@ -109,26 +109,15 @@ PY
     exit 1
   }
 
-  access_token="$(python3 - <<'PY'
-import json
-import sys
-data = json.load(sys.stdin)
-print(data.get("accessToken", ""))
-PY
-  <<< "$login_json")"
+  access_token="$(printf '%s' "$login_json" | sed -n 's/.*"accessToken"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p')"
 
   if [[ -z "$access_token" ]]; then
     echo "Error: login did not return an access token."
     exit 1
   fi
 
-  me_email="$(curl -fsS -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/auth/me" | python3 - <<'PY'
-import json
-import sys
-data = json.load(sys.stdin)
-print(data.get("email", ""))
-PY
-)"
+  me_json="$(curl -fsS -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/auth/me")"
+  me_email="$(printf '%s' "$me_json" | sed -n 's/.*"email"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p')"
 
   if [[ "$me_email" != "$VERIFY_USER_EMAIL" ]]; then
     echo "Error: /auth/me returned unexpected user email."
