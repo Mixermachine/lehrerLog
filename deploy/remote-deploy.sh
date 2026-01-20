@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Ensure system sbin paths are available for non-interactive shells.
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
 # Configuration with defaults
 DOMAIN="${DOMAIN:-lehrerlog.9d4.de}"
 DEPLOY_DIR="${DEPLOY_DIR:-$HOME/docker/lehrerlog}"
