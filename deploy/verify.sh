@@ -110,7 +110,19 @@ PY
   }
 
   login_compact="$(printf '%s' "$login_json" | tr -d '\r\n')"
-  access_token="$(printf '%s' "$login_compact" | sed -n 's/.*"accessToken"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p')"
+  access_token="$(python3 - <<'PY'
+import json
+import sys
+
+data = sys.stdin.read().strip()
+try:
+    parsed = json.loads(data)
+except Exception:
+    print("")
+    sys.exit(0)
+print(parsed.get("accessToken", "") or "")
+PY
+  <<< "$login_compact")"
 
   if [[ -z "$access_token" ]]; then
     echo "Error: login did not return an access token."
@@ -121,7 +133,19 @@ PY
 
   me_json="$(curl -fsS -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/auth/me")"
   me_compact="$(printf '%s' "$me_json" | tr -d '\r\n')"
-  me_email="$(printf '%s' "$me_compact" | sed -n 's/.*"email"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p')"
+  me_email="$(python3 - <<'PY'
+import json
+import sys
+
+data = sys.stdin.read().strip()
+try:
+    parsed = json.loads(data)
+except Exception:
+    print("")
+    sys.exit(0)
+print(parsed.get("email", "") or "")
+PY
+  <<< "$me_compact")"
 
   if [[ "$me_email" != "$VERIFY_USER_EMAIL" ]]; then
     echo "Error: /auth/me returned unexpected user email."
