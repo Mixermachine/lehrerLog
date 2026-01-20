@@ -1,5 +1,5 @@
 CREATE TABLE tasks (
-    id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
     school_class_id UUID NOT NULL REFERENCES school_classes(id) ON DELETE CASCADE,
     title VARCHAR(200) NOT NULL,
@@ -13,3 +13,4 @@ CREATE TABLE tasks (
 
 CREATE INDEX idx_tasks_school_id ON tasks(school_id);
 CREATE INDEX idx_tasks_school_class_id ON tasks(school_class_id);
+

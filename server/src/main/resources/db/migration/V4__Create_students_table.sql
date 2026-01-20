@@ -1,5 +1,5 @@
 CREATE TABLE students (
-    id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
@@ -10,3 +10,4 @@ CREATE TABLE students (
 );
 
 CREATE INDEX idx_students_school_id ON students(school_id);
+
