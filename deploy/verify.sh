@@ -114,6 +114,8 @@ PY
 
   if [[ -z "$access_token" ]]; then
     echo "Error: login did not return an access token."
+    login_redacted="$(printf '%s' "$login_compact" | sed -E 's/"accessToken"[[:space:]]*:[[:space:]]*"[^"]*"/"accessToken":"[redacted]"/g; s/"refreshToken"[[:space:]]*:[[:space:]]*"[^"]*"/"refreshToken":"[redacted]"/g')"
+    echo "Login response (redacted): $login_redacted"
     exit 1
   fi
 
