@@ -267,7 +267,7 @@ if sudo "$BIN_CERTBOT" certificates -d "$DOMAIN" 2>/dev/null | grep -q "Certific
   CERT_EXISTS=true
 fi
 SSL_CONFIGURED=false
-if sudo grep -q "ssl_certificate" "$NGINX_SITE"; then
+if [[ -r "$NGINX_SITE" ]] && grep -q "ssl_certificate" "$NGINX_SITE"; then
   SSL_CONFIGURED=true
 fi
 
