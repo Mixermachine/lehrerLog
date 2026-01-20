@@ -12,6 +12,40 @@ GHCR_TOKEN="${GHCR_TOKEN:-}"
 SKIP_DNS_CHECK="${SKIP_DNS_CHECK:-false}"
 SUDO_PASSWORD="${SUDO_PASSWORD:-}"
 
+# Resolve command paths for sudoers matching.
+BIN_APT_GET="$(command -v apt-get || true)"
+BIN_CERTBOT="$(command -v certbot || true)"
+BIN_CHMOD="$(command -v chmod || true)"
+BIN_CHOWN="$(command -v chown || true)"
+BIN_CP="$(command -v cp || true)"
+BIN_LN="$(command -v ln || true)"
+BIN_LOGROTATE="$(command -v logrotate || true)"
+BIN_MKDIR="$(command -v mkdir || true)"
+BIN_NGINX="$(command -v nginx || true)"
+BIN_SED="$(command -v sed || true)"
+BIN_SYSTEMCTL="$(command -v systemctl || true)"
+BIN_TEE="$(command -v tee || true)"
+
+require_cmd() {
+  local name="$1"
+  local path="$2"
+  if [[ -z "$path" ]]; then
+    echo "Error: required command not found: $name"
+    exit 1
+  fi
+}
+
+require_cmd "mkdir" "$BIN_MKDIR"
+require_cmd "chown" "$BIN_CHOWN"
+require_cmd "cp" "$BIN_CP"
+require_cmd "ln" "$BIN_LN"
+require_cmd "sed" "$BIN_SED"
+require_cmd "tee" "$BIN_TEE"
+require_cmd "chmod" "$BIN_CHMOD"
+require_cmd "nginx" "$BIN_NGINX"
+require_cmd "systemctl" "$BIN_SYSTEMCTL"
+require_cmd "logrotate" "$BIN_LOGROTATE"
+
 # PostgreSQL settings
 POSTGRES_DB="${POSTGRES_DB:-lehrerlog}"
 POSTGRES_USER="${POSTGRES_USER:-lehrerlog}"
@@ -61,7 +95,7 @@ fi
 
 # Ensure sudo is non-interactive using a whitelisted command (GitHub Actions has no TTY).
 SUDO_CHECK_DIR="/tmp/lehrerlog-sudo-check-${ENV_NAME}"
-if ! sudo mkdir -p "$SUDO_CHECK_DIR" 2>/dev/null; then
+if ! sudo "$BIN_MKDIR" -p "$SUDO_CHECK_DIR" 2>/dev/null; then
   echo "Error: passwordless sudo is required for deployment."
   echo "Configure sudoers for the deploy user (e.g., aaron) or rerun manually with a TTY."
   exit 1
@@ -148,14 +182,14 @@ fi
 # Create data directories with proper ownership (only if new)
 for DIR in "$DATA_DIR" "$BACKUP_DIR"; do
   if [[ ! -d "$DIR" ]]; then
-    sudo mkdir -p "$DIR"
-    sudo chown "$(id -u):$(id -g)" "$DIR"
+    sudo "$BIN_MKDIR" -p "$DIR"
+    sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$DIR"
   fi
 done
 
 if [[ ! -d "$DB_DATA_DIR" ]]; then
-  sudo mkdir -p "$DB_DATA_DIR"
-  sudo chown 999:999 "$DB_DATA_DIR"  # PostgreSQL container runs as uid 999
+  sudo "$BIN_MKDIR" -p "$DB_DATA_DIR"
+  sudo "$BIN_CHOWN" 999:999 "$DB_DATA_DIR"  # PostgreSQL container runs as uid 999
 fi
 
 # Copy deployment files if available
@@ -185,27 +219,30 @@ echo "Created .env file at $DEPLOY_DIR/.env"
 
 # Setup nginx configuration
 if [[ -f "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" ]]; then
-  sudo cp "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" "/etc/nginx/sites-available/$DOMAIN"
+  sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" "/etc/nginx/sites-available/$DOMAIN"
 else
-  sudo cp "$DEPLOY_DIR/.deploy/nginx/lehrerlog.9d4.de.conf" "/etc/nginx/sites-available/$DOMAIN"
-  sudo sed -i "s/server_name lehrerlog.9d4.de;/server_name $DOMAIN;/" "/etc/nginx/sites-available/$DOMAIN"
+  sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/lehrerlog.9d4.de.conf" "/etc/nginx/sites-available/$DOMAIN"
+  sudo "$BIN_SED" -i "s/server_name lehrerlog.9d4.de;/server_name $DOMAIN;/" "/etc/nginx/sites-available/$DOMAIN"
 fi
-sudo sed -i "s/127.0.0.1:[0-9]*/127.0.0.1:$HOST_PORT/" "/etc/nginx/sites-available/$DOMAIN"
+sudo "$BIN_SED" -i "s/127.0.0.1:[0-9]*/127.0.0.1:$HOST_PORT/" "/etc/nginx/sites-available/$DOMAIN"
 
 # Create symlink if it doesn't exist (use -e to check for symlink existence)
 if [[ ! -e "/etc/nginx/sites-enabled/$DOMAIN" ]]; then
-  sudo ln -s "/etc/nginx/sites-available/$DOMAIN" "/etc/nginx/sites-enabled/$DOMAIN"
+  sudo "$BIN_LN" -s "/etc/nginx/sites-available/$DOMAIN" "/etc/nginx/sites-enabled/$DOMAIN"
 fi
 
 # Install certbot if needed
-if ! command -v certbot >/dev/null 2>&1; then
-  sudo apt-get update
-  sudo apt-get install -y certbot python3-certbot-nginx
+if [[ -z "$BIN_CERTBOT" ]]; then
+  require_cmd "apt-get" "$BIN_APT_GET"
+  sudo "$BIN_APT_GET" update
+  sudo "$BIN_APT_GET" install -y certbot python3-certbot-nginx
+  BIN_CERTBOT="$(command -v certbot || true)"
+  require_cmd "certbot" "$BIN_CERTBOT"
 fi
 
 # Test and reload nginx
-sudo nginx -t
-sudo systemctl reload nginx
+sudo "$BIN_NGINX" -t
+sudo "$BIN_SYSTEMCTL" reload nginx
 
 # DNS check
 if [[ "$SKIP_DNS_CHECK" != "true" ]]; then
@@ -216,10 +253,10 @@ if [[ "$SKIP_DNS_CHECK" != "true" ]]; then
 fi
 
 # Setup SSL certificate
-if ! sudo certbot certificates -d "$DOMAIN" 2>/dev/null | grep -q "Certificate Name"; then
+if ! sudo "$BIN_CERTBOT" certificates -d "$DOMAIN" 2>/dev/null | grep -q "Certificate Name"; then
   echo "Obtaining SSL certificate for $DOMAIN..."
-  sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL"
-  sudo systemctl reload nginx
+  sudo "$BIN_CERTBOT" --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL"
+  sudo "$BIN_SYSTEMCTL" reload nginx
 fi
 
 # Docker login to GHCR
@@ -282,7 +319,7 @@ if [[ "$ENABLE_BACKUP_CRON" == "true" ]]; then
     CRON_MINUTE="0"
   fi
 
-  sudo tee "$CRON_FILE" > /dev/null <<CRON
+  sudo "$BIN_TEE" "$CRON_FILE" > /dev/null <<CRON
 # LehrerLog $ENV_NAME database backup - runs daily
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
@@ -290,11 +327,11 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 $CRON_MINUTE $CRON_HOUR * * * $(whoami) ENV_NAME=$ENV_NAME DEPLOY_DIR=$DEPLOY_DIR BACKUP_DIR=$BACKUP_DIR BACKUP_RETENTION_DAYS=$BACKUP_RETENTION_DAYS POSTGRES_DB=$POSTGRES_DB POSTGRES_USER=$POSTGRES_USER $CRON_SCRIPT >> $LOG_FILE 2>&1
 CRON
 
-  sudo chmod 644 "$CRON_FILE"
+  sudo "$BIN_CHMOD" 644 "$CRON_FILE"
 
   # Setup log rotation (idempotent - overwrites existing config)
   LOGROTATE_FILE="/etc/logrotate.d/lehrerlog-backup-${ENV_NAME}"
-  sudo tee "$LOGROTATE_FILE" > /dev/null <<LOGROTATE
+  sudo "$BIN_TEE" "$LOGROTATE_FILE" > /dev/null <<LOGROTATE
 $LOG_FILE {
     weekly
     rotate 4
@@ -306,7 +343,7 @@ $LOG_FILE {
 }
 LOGROTATE
 
-  sudo chmod 644 "$LOGROTATE_FILE"
+  sudo "$BIN_CHMOD" 644 "$LOGROTATE_FILE"
 
   echo "Backup cron job installed: $CRON_FILE"
   echo "Log rotation installed: $LOGROTATE_FILE"
