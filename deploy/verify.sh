@@ -115,6 +115,8 @@ import json
 import sys
 
 data = sys.stdin.read()
+data = data.encode("utf-8", "ignore").decode("utf-8", "ignore")
+data = "".join(ch for ch in data if ch.isprintable() or ch in "\t\n\r")
 start = data.find("{")
 end = data.rfind("}")
 if start != -1 and end != -1:
@@ -122,8 +124,9 @@ if start != -1 and end != -1:
 data = data.strip()
 try:
     parsed = json.loads(data)
-except Exception:
-    print("")
+except Exception as exc:
+    print("", end="")
+    print(f"PARSE_ERROR:{type(exc).__name__}", file=sys.stderr)
     sys.exit(0)
 print(parsed.get("accessToken", "") or "")
 PY
@@ -143,6 +146,8 @@ import json
 import sys
 
 data = sys.stdin.read()
+data = data.encode("utf-8", "ignore").decode("utf-8", "ignore")
+data = "".join(ch for ch in data if ch.isprintable() or ch in "\t\n\r")
 start = data.find("{")
 end = data.rfind("}")
 if start != -1 and end != -1:
@@ -150,8 +155,9 @@ if start != -1 and end != -1:
 data = data.strip()
 try:
     parsed = json.loads(data)
-except Exception:
-    print("")
+except Exception as exc:
+    print("", end="")
+    print(f"PARSE_ERROR:{type(exc).__name__}", file=sys.stderr)
     sys.exit(0)
 print(parsed.get("email", "") or "")
 PY
