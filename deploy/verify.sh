@@ -114,7 +114,12 @@ PY
 import json
 import sys
 
-data = sys.stdin.read().strip()
+data = sys.stdin.read()
+start = data.find("{")
+end = data.rfind("}")
+if start != -1 and end != -1:
+    data = data[start : end + 1]
+data = data.strip()
 try:
     parsed = json.loads(data)
 except Exception:
@@ -137,7 +142,12 @@ PY
 import json
 import sys
 
-data = sys.stdin.read().strip()
+data = sys.stdin.read()
+start = data.find("{")
+end = data.rfind("}")
+if start != -1 and end != -1:
+    data = data[start : end + 1]
+data = data.strip()
 try:
     parsed = json.loads(data)
 except Exception:
