@@ -83,7 +83,11 @@ PY
   login_attempt=1
   while true; do
     login_body="$(mktemp)"
-    login_code="$(curl -sS -o "$login_body" -w "%{http_code}" -H "Content-Type: application/json" -d "$login_payload" "${BASE_URL}/auth/login" || true)"
+    login_code="$(curl -sS -o "$login_body" -w "%{http_code}" \
+      -H "Content-Type: application/json" \
+      -H "Accept-Encoding: identity" \
+      -d "$login_payload" \
+      "${BASE_URL}/auth/login" || true)"
     if [[ "$login_code" == "200" ]]; then
       login_json="$(cat "$login_body")"
       rm -f "$login_body"
@@ -118,7 +122,7 @@ PY
     exit 1
   fi
 
-  me_email="$(curl -fsS -H "Authorization: Bearer ${access_token}" "${BASE_URL}/auth/me" | python3 - <<'PY'
+  me_email="$(curl -fsS -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/auth/me" | python3 - <<'PY'
 import json
 import sys
 data = json.load(sys.stdin)
@@ -132,7 +136,7 @@ PY
   fi
 
   echo "Verifying class listing..."
-  classes_json="$(curl -fsS -H "Authorization: Bearer ${access_token}" "${BASE_URL}/api/classes")"
+  classes_json="$(curl -fsS -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/api/classes")"
   echo "$classes_json" | grep -q '^\[' || {
     echo "Error: /api/classes did not return a JSON array."
     exit 1
