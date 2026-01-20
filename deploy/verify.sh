@@ -118,6 +118,8 @@ data = sys.stdin.read()
 match = re.search(r'"accessToken"\s*:\s*"([^"]*)"', data)
 if match:
     print(match.group(1))
+else:
+    print("PY_LOGIN_REGEX:no_match", file=sys.stderr)
 PY
   <<< "$login_compact")"
 
@@ -138,6 +140,8 @@ data = sys.stdin.read()
 match = re.search(r'"email"\s*:\s*"([^"]*)"', data)
 if match:
     print(match.group(1))
+else:
+    print("PY_ME_REGEX:no_match", file=sys.stderr)
 PY
   <<< "$me_compact")"
 
