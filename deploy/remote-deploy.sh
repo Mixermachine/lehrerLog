@@ -151,6 +151,25 @@ if [[ -z "$HOST_PORT" ]]; then
   fi
 fi
 
+cleanup_legacy_staging() {
+  if [[ "$ENV_NAME" != "qa" ]]; then
+    return
+  fi
+  local legacy_dir="$HOME/docker/lehrerlog-staging"
+  if [[ -f "$legacy_dir/docker-compose.yml" ]]; then
+    echo "Stopping legacy staging stack at $legacy_dir to free port $HOST_PORT..."
+    (cd "$legacy_dir" && docker compose down) || true
+  fi
+}
+
+cleanup_legacy_staging
+
+if docker ps --format '{{.Names}} {{.Ports}}' | grep -q ":${HOST_PORT}->"; then
+  echo "Error: host port ${HOST_PORT} is already in use by another container:"
+  docker ps --format '  - {{.Names}}: {{.Ports}}' | grep ":${HOST_PORT}->" || true
+  exit 1
+fi
+
 echo "Port: $HOST_PORT"
 echo ""
 
