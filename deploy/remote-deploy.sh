@@ -313,6 +313,15 @@ echo "Waiting for services to be healthy..."
 sleep 5
 docker compose ps
 
+# Optional post-deploy verification
+if [[ -f "$DEPLOY_DIR/.deploy/verify.sh" ]]; then
+  cp "$DEPLOY_DIR/.deploy/verify.sh" "$DEPLOY_DIR/verify.sh"
+  chmod +x "$DEPLOY_DIR/verify.sh"
+  echo ""
+  echo "Running post-deploy verification..."
+  DOMAIN="$DOMAIN" "$DEPLOY_DIR/verify.sh"
+fi
+
 # Setup backup scripts
 if [[ -f "$DEPLOY_DIR/.deploy/backup.sh" ]]; then
   cp "$DEPLOY_DIR/.deploy/backup.sh" "$DEPLOY_DIR/backup.sh"
