@@ -166,9 +166,24 @@ cleanup_legacy_staging() {
 cleanup_legacy_staging
 
 if docker ps --format '{{.Names}} {{.Ports}}' | grep -q ":${HOST_PORT}->"; then
-  echo "Error: host port ${HOST_PORT} is already in use by another container:"
-  docker ps --format '  - {{.Names}}: {{.Ports}}' | grep ":${HOST_PORT}->" || true
-  exit 1
+  echo "Host port ${HOST_PORT} is already in use. Checking for existing LehrerLog containers..."
+  containers="$(docker ps --filter "publish=${HOST_PORT}" --format '{{.Names}}' || true)"
+  non_lehrerlog=""
+  if [[ -n "$containers" ]]; then
+    while read -r container; do
+      [[ -z "$container" ]] && continue
+      if [[ "$container" == lehrerlog-* ]]; then
+        echo "Stopping container ${container} to free port ${HOST_PORT}..."
+        docker rm -f "$container" || true
+      else
+        non_lehrerlog="${non_lehrerlog} ${container}"
+      fi
+    done <<< "$containers"
+  fi
+  if [[ -n "$non_lehrerlog" ]]; then
+    echo "Error: host port ${HOST_PORT} is used by non-LehrerLog containers:${non_lehrerlog}"
+    exit 1
+  fi
 fi
 
 echo "Port: $HOST_PORT"
