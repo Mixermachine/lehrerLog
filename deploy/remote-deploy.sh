@@ -261,10 +261,24 @@ if [[ "$SKIP_DNS_CHECK" != "true" ]]; then
   fi
 fi
 
-# Setup SSL certificate
-if ! sudo "$BIN_CERTBOT" certificates -d "$DOMAIN" 2>/dev/null | grep -q "Certificate Name"; then
-  echo "Obtaining SSL certificate for $DOMAIN..."
-  sudo "$BIN_CERTBOT" --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL"
+# Setup SSL certificate (ensure nginx is actually configured for HTTPS).
+CERT_EXISTS=false
+if sudo "$BIN_CERTBOT" certificates -d "$DOMAIN" 2>/dev/null | grep -q "Certificate Name"; then
+  CERT_EXISTS=true
+fi
+SSL_CONFIGURED=false
+if sudo grep -q "ssl_certificate" "$NGINX_SITE"; then
+  SSL_CONFIGURED=true
+fi
+
+if [[ "$SSL_CONFIGURED" == "false" ]]; then
+  echo "Configuring HTTPS for $DOMAIN..."
+  if [[ "$CERT_EXISTS" == "true" ]]; then
+    sudo "$BIN_CERTBOT" --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL" --reinstall
+  else
+    echo "Obtaining SSL certificate for $DOMAIN..."
+    sudo "$BIN_CERTBOT" --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL"
+  fi
   sudo "$BIN_SYSTEMCTL" reload nginx
 fi
 
