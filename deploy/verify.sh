@@ -82,16 +82,29 @@ PY
 
   login_attempt=1
   while true; do
-    if login_json="$(curl -fsS -H "Content-Type: application/json" -d "$login_payload" "${BASE_URL}/auth/login")"; then
-      break
+    login_body="$(mktemp)"
+    login_code="$(curl -sS -o "$login_body" -w "%{http_code}" -H "Content-Type: application/json" -d "$login_payload" "${BASE_URL}/auth/login" || true)"
+    if [[ "$login_code" == "200" ]]; then
+      login_json="$(cat "$login_body")"
+      rm -f "$login_body"
+      if [[ -n "$login_json" ]]; then
+        break
+      fi
+    else
+      rm -f "$login_body"
     fi
     if [[ "$login_attempt" -ge "$RETRY_COUNT" ]]; then
-      echo "Error: login failed after retries."
+      echo "Error: login failed after retries (last status: $login_code)."
       exit 1
     fi
     sleep "$RETRY_DELAY"
     login_attempt=$((login_attempt + 1))
   done
+  echo "$login_json" | grep -q '"accessToken"' || {
+    echo "Error: login response missing accessToken."
+    exit 1
+  }
+
   access_token="$(python3 - <<'PY'
 import json
 import sys
