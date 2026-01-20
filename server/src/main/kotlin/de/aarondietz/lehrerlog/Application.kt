@@ -27,6 +27,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.Base64
 import java.util.*
 import java.nio.file.Path
 
@@ -135,12 +136,20 @@ data class HealthResponse(
 
 private fun Application.seedTestUserIfConfigured(passwordService: PasswordService) {
     val email = System.getenv("SEED_TEST_USER_EMAIL")?.trim().orEmpty()
-    val password = System.getenv("SEED_TEST_USER_PASSWORD")?.trim().orEmpty()
-    if (email.isBlank() && password.isBlank()) {
+    val password = resolveSeedPassword()
+    val passwordValue = password.orEmpty()
+    if (email.isBlank() && passwordValue.isBlank()) {
         return
     }
-    if (email.isBlank() || password.isBlank()) {
-        environment.log.warn("Seed test user skipped: SEED_TEST_USER_EMAIL and SEED_TEST_USER_PASSWORD must both be set.")
+
+    val hasEncoded = !System.getenv("SEED_TEST_USER_PASSWORD_B64").isNullOrBlank()
+    if (password == null && hasEncoded) {
+        environment.log.warn("Seed test user skipped: SEED_TEST_USER_PASSWORD_B64 is invalid base64.")
+        return
+    }
+
+    if (email.isBlank() || passwordValue.isBlank()) {
+        environment.log.warn("Seed test user skipped: SEED_TEST_USER_EMAIL and password must both be set.")
         return
     }
 
@@ -183,7 +192,7 @@ private fun Application.seedTestUserIfConfigured(passwordService: PasswordServic
 
             Users.insertIgnore {
                 it[Users.email] = email
-                it[Users.passwordHash] = passwordService.hashPassword(password)
+                it[Users.passwordHash] = passwordService.hashPassword(passwordValue)
                 it[Users.firstName] = firstName
                 it[Users.lastName] = lastName
                 it[Users.role] = UserRole.TEACHER
@@ -194,4 +203,16 @@ private fun Application.seedTestUserIfConfigured(passwordService: PasswordServic
     } catch (e: Exception) {
         environment.log.error("Seed test user failed for $email.", e)
     }
+}
+
+private fun resolveSeedPassword(): String? {
+    val encoded = System.getenv("SEED_TEST_USER_PASSWORD_B64")?.trim().orEmpty()
+    if (encoded.isNotBlank()) {
+        return try {
+            String(Base64.getDecoder().decode(encoded)).trim()
+        } catch (e: IllegalArgumentException) {
+            null
+        }
+    }
+    return System.getenv("SEED_TEST_USER_PASSWORD")?.trim()
 }

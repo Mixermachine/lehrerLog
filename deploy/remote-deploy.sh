@@ -22,6 +22,7 @@ BIN_CHMOD="$(command -v chmod || true)"
 BIN_CHOWN="$(command -v chown || true)"
 BIN_CP="$(command -v cp || true)"
 BIN_LN="$(command -v ln || true)"
+BIN_BASE64="$(command -v base64 || true)"
 BIN_LOGROTATE="$(command -v logrotate || true)"
 BIN_MKDIR="$(command -v mkdir || true)"
 BIN_NGINX="$(command -v nginx || true)"
@@ -52,6 +53,7 @@ require_cmd "logrotate" "$BIN_LOGROTATE"
 # Optional seed test user config (useful for staging verification).
 SEED_TEST_USER_EMAIL="${SEED_TEST_USER_EMAIL:-}"
 SEED_TEST_USER_PASSWORD="${SEED_TEST_USER_PASSWORD:-}"
+SEED_TEST_USER_PASSWORD_B64="${SEED_TEST_USER_PASSWORD_B64:-}"
 SEED_TEST_USER_FIRST_NAME="${SEED_TEST_USER_FIRST_NAME:-}"
 SEED_TEST_USER_LAST_NAME="${SEED_TEST_USER_LAST_NAME:-}"
 SEED_TEST_SCHOOL_CODE="${SEED_TEST_SCHOOL_CODE:-}"
@@ -218,6 +220,14 @@ fi
 
 APP_ENV_FILE="$DEPLOY_DIR/app.env"
 if [[ -f "$APP_ENV_FILE" ]]; then
+  if [[ -z "$SEED_TEST_USER_PASSWORD_B64" && -n "$SEED_TEST_USER_PASSWORD" ]]; then
+    if [[ -z "$BIN_BASE64" ]]; then
+      echo "Error: base64 is required to encode SEED_TEST_USER_PASSWORD."
+      exit 1
+    fi
+    SEED_TEST_USER_PASSWORD_B64="$(printf '%s' "$SEED_TEST_USER_PASSWORD" | "$BIN_BASE64" -w0)"
+  fi
+
   upsert_env() {
     local key="$1"
     local value="$2"
@@ -232,7 +242,7 @@ if [[ -f "$APP_ENV_FILE" ]]; then
   }
 
   upsert_env "SEED_TEST_USER_EMAIL" "$SEED_TEST_USER_EMAIL"
-  upsert_env "SEED_TEST_USER_PASSWORD" "$SEED_TEST_USER_PASSWORD"
+  upsert_env "SEED_TEST_USER_PASSWORD_B64" "$SEED_TEST_USER_PASSWORD_B64"
   upsert_env "SEED_TEST_USER_FIRST_NAME" "$SEED_TEST_USER_FIRST_NAME"
   upsert_env "SEED_TEST_USER_LAST_NAME" "$SEED_TEST_USER_LAST_NAME"
   upsert_env "SEED_TEST_SCHOOL_CODE" "$SEED_TEST_SCHOOL_CODE"
