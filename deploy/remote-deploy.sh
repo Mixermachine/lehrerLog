@@ -316,13 +316,29 @@ if [[ -r "$NGINX_SITE" ]] && grep -q "ssl_certificate" "$NGINX_SITE"; then
   SSL_CONFIGURED=true
 fi
 
+run_certbot() {
+  local attempt=1
+  local max_attempts=3
+  while true; do
+    if sudo "$BIN_CERTBOT" "$@"; then
+      return 0
+    fi
+    if [[ "$attempt" -ge "$max_attempts" ]]; then
+      return 1
+    fi
+    echo "Certbot failed (attempt $attempt/$max_attempts). Retrying in 10s..."
+    sleep 10
+    attempt=$((attempt + 1))
+  done
+}
+
 if [[ "$SSL_CONFIGURED" == "false" ]]; then
   echo "Configuring HTTPS for $DOMAIN..."
   if [[ "$CERT_EXISTS" == "true" ]]; then
-    sudo "$BIN_CERTBOT" --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL" --reinstall
+    run_certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL" --reinstall
   else
     echo "Obtaining SSL certificate for $DOMAIN..."
-    sudo "$BIN_CERTBOT" --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL"
+    run_certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL"
   fi
   sudo "$BIN_SYSTEMCTL" reload nginx
 fi
