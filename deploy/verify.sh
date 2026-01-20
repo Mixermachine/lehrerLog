@@ -110,23 +110,9 @@ PY
   }
 
   login_compact="$(printf '%s' "$login_json" | tr -d '\r\n')"
-  access_token="$(python3 - <<'PY'
-import re
-import sys
-
-data = sys.stdin.read()
-match = re.search(r'"accessToken"\s*:\s*"([^"]*)"', data)
-if match:
-    print(match.group(1))
-else:
-    redacted = re.sub(r'"accessToken"\s*:\s*"[^"]*"', '"accessToken":"[redacted]"', data)
-    redacted = re.sub(r'"refreshToken"\s*:\s*"[^"]*"', '"refreshToken":"[redacted]"', redacted)
-    redacted = re.sub(r'"email"\s*:\s*"[^"]*"', '"email":"[redacted]"', redacted)
-    preview = redacted[:500]
-    print(f"PY_LOGIN_DATA:{preview}", file=sys.stderr)
-    print("PY_LOGIN_REGEX:no_match", file=sys.stderr)
-PY
-  <<< "$login_compact")"
+  access_token="$(printf '%s' "$login_compact" | python3 -c "import re,sys; data=sys.stdin.read(); m=re.search(r'\"accessToken\"\\s*:\\s*\"([^\"]*)\"', data); \
+print(m.group(1) if m else ''); \
+sys.stderr.write('PY_LOGIN_REGEX:no_match\\n') if not m else None")"
 
   if [[ -z "$access_token" ]]; then
     echo "Error: login did not return an access token."
@@ -137,18 +123,9 @@ PY
 
   me_json="$(curl -fsS -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/auth/me")"
   me_compact="$(printf '%s' "$me_json" | tr -d '\r\n')"
-  me_email="$(python3 - <<'PY'
-import re
-import sys
-
-data = sys.stdin.read()
-match = re.search(r'"email"\s*:\s*"([^"]*)"', data)
-if match:
-    print(match.group(1))
-else:
-    print("PY_ME_REGEX:no_match", file=sys.stderr)
-PY
-  <<< "$me_compact")"
+  me_email="$(printf '%s' "$me_compact" | python3 -c "import re,sys; data=sys.stdin.read(); m=re.search(r'\"email\"\\s*:\\s*\"([^\"]*)\"', data); \
+print(m.group(1) if m else ''); \
+sys.stderr.write('PY_ME_REGEX:no_match\\n') if not m else None")"
 
   if [[ "$me_email" != "$VERIFY_USER_EMAIL" ]]; then
     echo "Error: /auth/me returned unexpected user email."
