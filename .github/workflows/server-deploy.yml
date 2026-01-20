@@ -69,7 +69,7 @@ jobs:
           script: |
             chmod +x /home/${{ env.DEPLOY_USER }}/docker/lehrerlog/.deploy/remote-deploy.sh
             ENV_NAME=prod \
-            DOMAIN=lehrerlog.9d4.de \
+            DOMAIN=api.lehrerlog.de \
             DEPLOY_DIR=/home/${{ env.DEPLOY_USER }}/docker/lehrerlog \
             IMAGE_NAME=ghcr.io/${{ env.GHCR_OWNER_LOWER }}/lehrerlog-server \
             IMAGE_TAG=${{ github.ref_name }} \
@@ -89,7 +89,7 @@ jobs:
 
       - name: Post-deploy verification
         run: |
-          BASE_URL="https://lehrerlog.9d4.de"
+          BASE_URL="https://api.lehrerlog.de"
           ok=""
           for i in $(seq 1 12); do
             if curl -fsS "$BASE_URL/health" | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"'; then

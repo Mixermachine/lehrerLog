@@ -12,11 +12,11 @@ on:
         default: true
 
 jobs:
-  build-staging-android-jvm-wasm:
+  build-qa-android-jvm-wasm:
     if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
-      SERVER_URL: https://staging.lehrerlog.9d4.de
+      SERVER_URL: https://api.qa.lehrerlog.de
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
@@ -35,7 +35,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3.5.0
 
-      - name: Build Android, JVM, and Wasm targets (staging)
+      - name: Build Android, JVM, and Wasm targets (qa)
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -46,35 +46,35 @@ jobs:
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "${{ runner.temp }}/release.keystore"
           ./gradlew :composeApp:assembleReleaseApk :composeApp:bundleReleaseAab :composeApp:jvmJar :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL
 
-      - name: Upload Android APKs (staging)
+      - name: Upload Android APKs (qa)
         uses: actions/upload-artifact@v6.0.0
         with:
-          name: android-apk-staging
+          name: android-apk-qa
           path: composeApp/build/outputs/apk/releaseApk/*.apk
 
-      - name: Upload Android AAB (staging)
+      - name: Upload Android AAB (qa)
         uses: actions/upload-artifact@v6.0.0
         with:
-          name: android-aab-staging
+          name: android-aab-qa
           path: composeApp/build/outputs/bundle/releaseAab/*.aab
 
-      - name: Upload JVM jar (staging)
+      - name: Upload JVM jar (qa)
         uses: actions/upload-artifact@v6.0.0
         with:
-          name: jvm-jar-staging
+          name: jvm-jar-qa
           path: composeApp/build/libs/*.jar
 
-      - name: Upload Wasm distribution (staging)
+      - name: Upload Wasm distribution (qa)
         uses: actions/upload-artifact@v6.0.0
         with:
-          name: wasm-js-dist-staging
+          name: wasm-js-dist-qa
           path: composeApp/build/dist/wasmJs/**
 
   build-prod-android-jvm-wasm:
     if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.runProd == true)
     runs-on: ubuntu-latest
     env:
-      SERVER_URL: https://lehrerlog.9d4.de
+      SERVER_URL: https://api.lehrerlog.de
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
@@ -128,12 +128,12 @@ jobs:
           name: wasm-js-dist-prod-${{ github.ref_name }}
           path: composeApp/build/dist/wasmJs/**
 
-  build-staging-ios:
+  build-qa-ios:
     if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     timeout-minutes: 30
     env:
-      SERVER_URL: https://staging.lehrerlog.9d4.de
+      SERVER_URL: https://api.qa.lehrerlog.de
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
@@ -155,15 +155,15 @@ jobs:
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3.5.0
 
-      - name: Build iOS target (staging)
+      - name: Build iOS target (qa)
         run: |
           chmod +x ./gradlew
           ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL
 
-      - name: Upload iOS frameworks (staging)
+      - name: Upload iOS frameworks (qa)
         uses: actions/upload-artifact@v6.0.0
         with:
-          name: ios-frameworks-staging
+          name: ios-frameworks-qa
           path: |
             composeApp/build/bin/iosSimulatorArm64/debugFramework/ComposeApp.framework
             composeApp/build/bin/iosArm64/releaseFramework/ComposeApp.framework
@@ -173,7 +173,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 30
     env:
-      SERVER_URL: https://lehrerlog.9d4.de
+      SERVER_URL: https://api.lehrerlog.de
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1

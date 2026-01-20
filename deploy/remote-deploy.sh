@@ -5,7 +5,7 @@ set -euo pipefail
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 # Configuration with defaults
-DOMAIN="${DOMAIN:-lehrerlog.9d4.de}"
+DOMAIN="${DOMAIN:-api.lehrerlog.de}"
 DEPLOY_DIR="${DEPLOY_DIR:-$HOME/docker/lehrerlog}"
 IMAGE_NAME="${IMAGE_NAME:-ghcr.io/${REPO_OWNER:-lehrerlog}/lehrerlog-server}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
@@ -50,7 +50,7 @@ require_cmd "nginx" "$BIN_NGINX"
 require_cmd "systemctl" "$BIN_SYSTEMCTL"
 require_cmd "logrotate" "$BIN_LOGROTATE"
 
-# Optional seed test user config (useful for staging verification).
+# Optional seed test user config (useful for QA verification).
 SEED_TEST_USER_EMAIL="${SEED_TEST_USER_EMAIL:-}"
 SEED_TEST_USER_PASSWORD="${SEED_TEST_USER_PASSWORD:-}"
 SEED_TEST_USER_PASSWORD_B64="${SEED_TEST_USER_PASSWORD_B64:-}"
@@ -144,7 +144,7 @@ echo "Data directory: $DATA_DIR"
 echo "Database directory: $DB_DATA_DIR"
 echo "Backup directory: $BACKUP_DIR"
 if [[ -z "$HOST_PORT" ]]; then
-  if [[ "$ENV_NAME" == "staging" ]]; then
+  if [[ "$ENV_NAME" == "qa" ]]; then
     HOST_PORT=18081
   else
     HOST_PORT=18080
@@ -271,8 +271,8 @@ if [[ ! -f "$NGINX_SITE" ]]; then
   if [[ -f "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" ]]; then
     sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" "$NGINX_SITE"
   else
-    sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/lehrerlog.9d4.de.conf" "$NGINX_SITE"
-    sudo "$BIN_SED" -i "s/server_name lehrerlog.9d4.de;/server_name $DOMAIN;/" "$NGINX_SITE"
+    sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/api.lehrerlog.de.conf" "$NGINX_SITE"
+    sudo "$BIN_SED" -i "s/server_name api.lehrerlog.de;/server_name $DOMAIN;/" "$NGINX_SITE"
   fi
 fi
 # Ensure current domain and upstream port are updated in-place.
@@ -390,8 +390,8 @@ if [[ "$ENABLE_BACKUP_CRON" == "true" ]]; then
   CRON_SCRIPT="$DEPLOY_DIR/backup.sh"
   LOG_FILE="/var/log/lehrerlog-backup-${ENV_NAME}.log"
 
-  # Create cron job that runs daily at 3 AM (stagger staging at 3:30)
-  if [[ "$ENV_NAME" == "staging" ]]; then
+  # Create cron job that runs daily at 3 AM (stagger QA at 3:30)
+  if [[ "$ENV_NAME" == "qa" ]]; then
     CRON_HOUR="3"
     CRON_MINUTE="30"
   else

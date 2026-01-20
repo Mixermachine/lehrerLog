@@ -34,7 +34,7 @@ in your IDE’s toolbar or build it directly from the terminal:
 
 ### Environment Flavors
 
-The client uses a build-time server URL. DEV defaults to localhost; staging and prod are built in CI.
+The client uses a build-time server URL. DEV defaults to localhost; QA and prod are built in CI.
 
 - DEV (local): uses `http://localhost:8080`
   - Override with `-PserverUrl=http://localhost:8080`
@@ -47,8 +47,8 @@ The client uses a build-time server URL. DEV defaults to localhost; staging and 
       ```shell
       .\gradlew.bat :composeApp:assembleDebug -PserverUrl=http://localhost:8080
       ```
-- STAGING: CI builds with `https://staging.lehrerlog.9d4.de`
-- PROD: CI builds with `https://lehrerlog.9d4.de`
+- QA: CI builds with `https://api.qa.lehrerlog.de`
+- PROD: CI builds with `https://api.lehrerlog.de`
 
 ### Build and Run Desktop (JVM) Application
 

@@ -13,7 +13,7 @@ CURL_TIMEOUT="${CURL_TIMEOUT:-20}"
 CURL_CONNECT_TIMEOUT="${CURL_CONNECT_TIMEOUT:-5}"
 
 if [[ -z "$DOMAIN" ]]; then
-  echo "Error: DOMAIN is required (e.g., staging.lehrerlog.9d4.de)."
+  echo "Error: DOMAIN is required (e.g., api.qa.lehrerlog.de)."
   exit 1
 fi
 

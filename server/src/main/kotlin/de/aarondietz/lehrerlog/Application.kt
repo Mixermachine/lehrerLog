@@ -153,10 +153,10 @@ private fun Application.seedTestUserIfConfigured(passwordService: PasswordServic
         return
     }
 
-    val firstName = System.getenv("SEED_TEST_USER_FIRST_NAME")?.trim().orEmpty().ifBlank { "Staging" }
+    val firstName = System.getenv("SEED_TEST_USER_FIRST_NAME")?.trim().orEmpty().ifBlank { "QA" }
     val lastName = System.getenv("SEED_TEST_USER_LAST_NAME")?.trim().orEmpty().ifBlank { "Verifier" }
-    val schoolCode = System.getenv("SEED_TEST_SCHOOL_CODE")?.trim().orEmpty().ifBlank { "STAGING-TEST" }
-    val schoolName = System.getenv("SEED_TEST_SCHOOL_NAME")?.trim().orEmpty().ifBlank { "Staging Test School" }
+    val schoolCode = System.getenv("SEED_TEST_SCHOOL_CODE")?.trim().orEmpty().ifBlank { "QA-TEST" }
+    val schoolName = System.getenv("SEED_TEST_SCHOOL_NAME")?.trim().orEmpty().ifBlank { "QA Test School" }
 
     try {
         transaction {
