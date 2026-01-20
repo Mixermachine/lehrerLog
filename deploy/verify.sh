@@ -109,7 +109,8 @@ PY
     exit 1
   }
 
-  access_token="$(printf '%s' "$login_json" | sed -n 's/.*"accessToken"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p')"
+  login_compact="$(printf '%s' "$login_json" | tr -d '\r\n')"
+  access_token="$(printf '%s' "$login_compact" | sed -n 's/.*"accessToken"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p')"
 
   if [[ -z "$access_token" ]]; then
     echo "Error: login did not return an access token."
@@ -117,7 +118,8 @@ PY
   fi
 
   me_json="$(curl -fsS -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/auth/me")"
-  me_email="$(printf '%s' "$me_json" | sed -n 's/.*"email"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p')"
+  me_compact="$(printf '%s' "$me_json" | tr -d '\r\n')"
+  me_email="$(printf '%s' "$me_compact" | sed -n 's/.*"email"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p')"
 
   if [[ "$me_email" != "$VERIFY_USER_EMAIL" ]]; then
     echo "Error: /auth/me returned unexpected user email."
