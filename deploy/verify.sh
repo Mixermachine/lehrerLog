@@ -111,24 +111,13 @@ PY
 
   login_compact="$(printf '%s' "$login_json" | tr -d '\r\n')"
   access_token="$(python3 - <<'PY'
-import json
+import re
 import sys
 
 data = sys.stdin.read()
-data = data.encode("utf-8", "ignore").decode("utf-8", "ignore")
-data = "".join(ch for ch in data if ch.isprintable() or ch in "\t\n\r")
-start = data.find("{")
-end = data.rfind("}")
-if start != -1 and end != -1:
-    data = data[start : end + 1]
-data = data.strip()
-try:
-    parsed = json.loads(data)
-except Exception as exc:
-    print("", end="")
-    print(f"PARSE_ERROR:{type(exc).__name__}", file=sys.stderr)
-    sys.exit(0)
-print(parsed.get("accessToken", "") or "")
+match = re.search(r'"accessToken"\s*:\s*"([^"]*)"', data)
+if match:
+    print(match.group(1))
 PY
   <<< "$login_compact")"
 
@@ -142,24 +131,13 @@ PY
   me_json="$(curl -fsS -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/auth/me")"
   me_compact="$(printf '%s' "$me_json" | tr -d '\r\n')"
   me_email="$(python3 - <<'PY'
-import json
+import re
 import sys
 
 data = sys.stdin.read()
-data = data.encode("utf-8", "ignore").decode("utf-8", "ignore")
-data = "".join(ch for ch in data if ch.isprintable() or ch in "\t\n\r")
-start = data.find("{")
-end = data.rfind("}")
-if start != -1 and end != -1:
-    data = data[start : end + 1]
-data = data.strip()
-try:
-    parsed = json.loads(data)
-except Exception as exc:
-    print("", end="")
-    print(f"PARSE_ERROR:{type(exc).__name__}", file=sys.stderr)
-    sys.exit(0)
-print(parsed.get("email", "") or "")
+match = re.search(r'"email"\s*:\s*"([^"]*)"', data)
+if match:
+    print(match.group(1))
 PY
   <<< "$me_compact")"
 
