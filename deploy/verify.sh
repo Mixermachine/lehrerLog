@@ -8,6 +8,9 @@ VERIFY_USER_EMAIL="${VERIFY_USER_EMAIL:-}"
 VERIFY_USER_PASSWORD="${VERIFY_USER_PASSWORD:-}"
 RETRY_COUNT="${RETRY_COUNT:-12}"
 RETRY_DELAY="${RETRY_DELAY:-5}"
+VERBOSE="${VERBOSE:-0}"
+CURL_TIMEOUT="${CURL_TIMEOUT:-20}"
+CURL_CONNECT_TIMEOUT="${CURL_CONNECT_TIMEOUT:-5}"
 
 if [[ -z "$DOMAIN" ]]; then
   echo "Error: DOMAIN is required (e.g., staging.lehrerlog.9d4.de)."
@@ -19,13 +22,17 @@ if ! command -v curl >/dev/null 2>&1; then
   exit 1
 fi
 
+CURL_OPTS=(
+  --connect-timeout "${CURL_CONNECT_TIMEOUT}"
+  --max-time "${CURL_TIMEOUT}"
+)
 BASE_URL="https://${DOMAIN}"
 
 retry_curl() {
   local url="$1"
   local attempt=1
   while true; do
-    if response="$(curl -fsS "$url")"; then
+    if response="$(curl -fsS "${CURL_OPTS[@]}" "$url")"; then
       printf "%s" "$response"
       return 0
     fi
@@ -42,7 +49,9 @@ health="$(retry_curl "${BASE_URL}/health")" || {
   echo "Error: health check failed after retries."
   exit 1
 }
-echo "$health"
+if [[ "$VERBOSE" == "1" ]]; then
+  echo "$health"
+fi
 echo "$health" | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"' || {
   echo "Error: health check did not report status=ok."
   exit 1
@@ -53,7 +62,9 @@ schools="$(retry_curl "${BASE_URL}/schools/search?query=${QUERY}&limit=${LIMIT}"
   echo "Error: school search failed after retries."
   exit 1
 }
-echo "$schools"
+if [[ "$VERBOSE" == "1" ]]; then
+  echo "$schools"
+fi
 echo "$schools" | grep -q '"code"' || {
   echo "Error: school search returned no results."
   exit 1
@@ -83,7 +94,7 @@ PY
   login_attempt=1
   while true; do
     login_body="$(mktemp)"
-    login_code="$(curl -sS -o "$login_body" -w "%{http_code}" \
+    login_code="$(curl -sS "${CURL_OPTS[@]}" -o "$login_body" -w "%{http_code}" \
       -H "Content-Type: application/json" \
       -H "Accept-Encoding: identity" \
       -d "$login_payload" \
@@ -110,9 +121,7 @@ PY
   }
 
   login_compact="$(printf '%s' "$login_json" | tr -d '\r\n')"
-  access_token="$(printf '%s' "$login_compact" | python3 -c "import re,sys; data=sys.stdin.read(); m=re.search(r'\"accessToken\"\\s*:\\s*\"([^\"]*)\"', data); \
-print(m.group(1) if m else ''); \
-sys.stderr.write('PY_LOGIN_REGEX:no_match\\n') if not m else None")"
+  access_token="$(printf '%s' "$login_compact" | python3 -c "import re,sys; data=sys.stdin.read(); m=re.search(r'\"accessToken\"\\s*:\\s*\"([^\"]*)\"', data); print(m.group(1) if m else '')")"
 
   if [[ -z "$access_token" ]]; then
     echo "Error: login did not return an access token."
@@ -121,11 +130,9 @@ sys.stderr.write('PY_LOGIN_REGEX:no_match\\n') if not m else None")"
     exit 1
   fi
 
-  me_json="$(curl -fsS -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/auth/me")"
+  me_json="$(curl -fsS "${CURL_OPTS[@]}" -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/auth/me")"
   me_compact="$(printf '%s' "$me_json" | tr -d '\r\n')"
-  me_email="$(printf '%s' "$me_compact" | python3 -c "import re,sys; data=sys.stdin.read(); m=re.search(r'\"email\"\\s*:\\s*\"([^\"]*)\"', data); \
-print(m.group(1) if m else ''); \
-sys.stderr.write('PY_ME_REGEX:no_match\\n') if not m else None")"
+  me_email="$(printf '%s' "$me_compact" | python3 -c "import re,sys; data=sys.stdin.read(); m=re.search(r'\"email\"\\s*:\\s*\"([^\"]*)\"', data); print(m.group(1) if m else '')")"
 
   if [[ "$me_email" != "$VERIFY_USER_EMAIL" ]]; then
     echo "Error: /auth/me returned unexpected user email."
@@ -133,7 +140,7 @@ sys.stderr.write('PY_ME_REGEX:no_match\\n') if not m else None")"
   fi
 
   echo "Verifying class listing..."
-  classes_json="$(curl -fsS -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/api/classes")"
+  classes_json="$(curl -fsS "${CURL_OPTS[@]}" -H "Authorization: Bearer ${access_token}" -H "Accept-Encoding: identity" "${BASE_URL}/api/classes")"
   echo "$classes_json" | grep -q '^\[' || {
     echo "Error: /api/classes did not return a JSON array."
     exit 1
