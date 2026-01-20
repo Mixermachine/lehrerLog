@@ -6,6 +6,8 @@ QUERY="${QUERY:-Ulm}"
 LIMIT="${LIMIT:-5}"
 VERIFY_USER_EMAIL="${VERIFY_USER_EMAIL:-}"
 VERIFY_USER_PASSWORD="${VERIFY_USER_PASSWORD:-}"
+RETRY_COUNT="${RETRY_COUNT:-12}"
+RETRY_DELAY="${RETRY_DELAY:-5}"
 
 if [[ -z "$DOMAIN" ]]; then
   echo "Error: DOMAIN is required (e.g., staging.lehrerlog.9d4.de)."
@@ -19,8 +21,27 @@ fi
 
 BASE_URL="https://${DOMAIN}"
 
+retry_curl() {
+  local url="$1"
+  local attempt=1
+  while true; do
+    if response="$(curl -fsS "$url")"; then
+      printf "%s" "$response"
+      return 0
+    fi
+    if [[ "$attempt" -ge "$RETRY_COUNT" ]]; then
+      return 1
+    fi
+    sleep "$RETRY_DELAY"
+    attempt=$((attempt + 1))
+  done
+}
+
 echo "Verifying health endpoint..."
-health="$(curl -fsS "${BASE_URL}/health")"
+health="$(retry_curl "${BASE_URL}/health")" || {
+  echo "Error: health check failed after retries."
+  exit 1
+}
 echo "$health"
 echo "$health" | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"' || {
   echo "Error: health check did not report status=ok."
@@ -28,7 +49,10 @@ echo "$health" | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"' || {
 }
 
 echo "Verifying school search..."
-schools="$(curl -fsS "${BASE_URL}/schools/search?query=${QUERY}&limit=${LIMIT}")"
+schools="$(retry_curl "${BASE_URL}/schools/search?query=${QUERY}&limit=${LIMIT}")" || {
+  echo "Error: school search failed after retries."
+  exit 1
+}
 echo "$schools"
 echo "$schools" | grep -q '"code"' || {
   echo "Error: school search returned no results."
@@ -56,7 +80,18 @@ print(json.dumps({
 PY
 )"
 
-  login_json="$(curl -fsS -H "Content-Type: application/json" -d "$login_payload" "${BASE_URL}/auth/login")"
+  login_attempt=1
+  while true; do
+    if login_json="$(curl -fsS -H "Content-Type: application/json" -d "$login_payload" "${BASE_URL}/auth/login")"; then
+      break
+    fi
+    if [[ "$login_attempt" -ge "$RETRY_COUNT" ]]; then
+      echo "Error: login failed after retries."
+      exit 1
+    fi
+    sleep "$RETRY_DELAY"
+    login_attempt=$((login_attempt + 1))
+  done
   access_token="$(python3 - <<'PY'
 import json
 import sys
