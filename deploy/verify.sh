@@ -119,6 +119,11 @@ match = re.search(r'"accessToken"\s*:\s*"([^"]*)"', data)
 if match:
     print(match.group(1))
 else:
+    redacted = re.sub(r'"accessToken"\s*:\s*"[^"]*"', '"accessToken":"[redacted]"', data)
+    redacted = re.sub(r'"refreshToken"\s*:\s*"[^"]*"', '"refreshToken":"[redacted]"', redacted)
+    redacted = re.sub(r'"email"\s*:\s*"[^"]*"', '"email":"[redacted]"', redacted)
+    preview = redacted[:500]
+    print(f"PY_LOGIN_DATA:{preview}", file=sys.stderr)
     print("PY_LOGIN_REGEX:no_match", file=sys.stderr)
 PY
   <<< "$login_compact")"
