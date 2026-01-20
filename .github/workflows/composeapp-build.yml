@@ -71,7 +71,7 @@ jobs:
           path: composeApp/build/dist/wasmJs/**
 
   build-prod-android-jvm-wasm:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.runProd == 'true')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.runProd == true)
     runs-on: ubuntu-latest
     env:
       SERVER_URL: https://lehrerlog.9d4.de
@@ -131,6 +131,7 @@ jobs:
   build-staging-ios:
     if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
+    timeout-minutes: 30
     env:
       SERVER_URL: https://staging.lehrerlog.9d4.de
     steps:
@@ -157,19 +158,20 @@ jobs:
       - name: Build iOS target (staging)
         run: |
           chmod +x ./gradlew
-          ./gradlew :composeApp:linkReleaseFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL
+          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL
 
       - name: Upload iOS frameworks (staging)
         uses: actions/upload-artifact@v6.0.0
         with:
           name: ios-frameworks-staging
           path: |
-            composeApp/build/bin/iosSimulatorArm64/releaseFramework/ComposeApp.framework
+            composeApp/build/bin/iosSimulatorArm64/debugFramework/ComposeApp.framework
             composeApp/build/bin/iosArm64/releaseFramework/ComposeApp.framework
 
   build-prod-ios:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.runProd == 'true')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.runProd == true)
     runs-on: macos-latest
+    timeout-minutes: 30
     env:
       SERVER_URL: https://lehrerlog.9d4.de
     steps:
@@ -196,12 +198,12 @@ jobs:
       - name: Build iOS target (prod)
         run: |
           chmod +x ./gradlew
-          ./gradlew :composeApp:linkReleaseFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL
+          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL
 
       - name: Upload iOS frameworks (prod)
         uses: actions/upload-artifact@v6.0.0
         with:
           name: ios-frameworks-prod-${{ github.ref_name }}
           path: |
-            composeApp/build/bin/iosSimulatorArm64/releaseFramework/ComposeApp.framework
+            composeApp/build/bin/iosSimulatorArm64/debugFramework/ComposeApp.framework
             composeApp/build/bin/iosArm64/releaseFramework/ComposeApp.framework
