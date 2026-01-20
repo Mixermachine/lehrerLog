@@ -26,32 +26,38 @@ fun createDatabase(driverFactory: DatabaseDriverFactory): lehrerLog {
 class DatabaseManager(private val driverFactory: DatabaseDriverFactory) {
     private var driver: SqlDriver? = null
     private var database: lehrerLog? = null
+    private val lock = DatabaseLock()
 
     val db: lehrerLog
         get() = getDatabase()
 
-    @Synchronized
     fun getDatabase(): lehrerLog {
-        val existing = database
-        if (existing != null) {
-            return existing
+        return lock.withLock {
+            val existing = database
+            if (existing != null) {
+                return@withLock existing
+            }
+
+            val createdDriver = driverFactory.createDriver()
+            driver = createdDriver
+            val createdDb = lehrerLog(createdDriver)
+            database = createdDb
+            createdDb
         }
-
-        val createdDriver = driverFactory.createDriver()
-        driver = createdDriver
-        val createdDb = lehrerLog(createdDriver)
-        database = createdDb
-        return createdDb
     }
 
-    @Synchronized
     fun reset() {
-        close()
-        driverFactory.deleteDatabase()
+        lock.withLock {
+            closeInternal()
+            driverFactory.deleteDatabase()
+        }
     }
 
-    @Synchronized
     fun close() {
+        lock.withLock { closeInternal() }
+    }
+
+    private fun closeInternal() {
         driver?.close()
         driver = null
         database = null

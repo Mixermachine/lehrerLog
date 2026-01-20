@@ -24,12 +24,13 @@ actual class DatabaseDriverFactory actual constructor(context: Any?) {
         val fileManager = NSFileManager.defaultManager
         val urls = fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask)
         val baseUrl = urls.firstOrNull()
-        val dbUrl = baseUrl?.URLByAppendingPathComponent("lehrerlog.db")
-        val walUrl = baseUrl?.URLByAppendingPathComponent("lehrerlog.db-wal")
-        val shmUrl = baseUrl?.URLByAppendingPathComponent("lehrerlog.db-shm")
+        val basePath = baseUrl?.path ?: return
+        val dbPath = "$basePath/lehrerlog.db"
+        val walPath = "$basePath/lehrerlog.db-wal"
+        val shmPath = "$basePath/lehrerlog.db-shm"
 
-        dbUrl?.path?.let { fileManager.removeItemAtPath(it, null) }
-        walUrl?.path?.let { fileManager.removeItemAtPath(it, null) }
-        shmUrl?.path?.let { fileManager.removeItemAtPath(it, null) }
+        fileManager.removeItemAtPath(dbPath, null)
+        fileManager.removeItemAtPath(walPath, null)
+        fileManager.removeItemAtPath(shmPath, null)
     }
 }
