@@ -2,12 +2,18 @@ name: ComposeApp Build
 
 on:
   push:
-    branches: ["main"]
+    branches: ["master"]
     tags: ["*"]
+  workflow_dispatch:
+    inputs:
+      runProd:
+        description: "Run production targets"
+        type: boolean
+        default: true
 
 jobs:
   build-staging-android-jvm-wasm:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       SERVER_URL: https://staging.lehrerlog.9d4.de
@@ -65,7 +71,7 @@ jobs:
           path: composeApp/build/dist/wasmJs/**
 
   build-prod-android-jvm-wasm:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.runProd == 'true')
     runs-on: ubuntu-latest
     env:
       SERVER_URL: https://lehrerlog.9d4.de
@@ -123,7 +129,7 @@ jobs:
           path: composeApp/build/dist/wasmJs/**
 
   build-staging-ios:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     env:
       SERVER_URL: https://staging.lehrerlog.9d4.de
@@ -154,7 +160,7 @@ jobs:
             composeApp/build/bin/iosArm64/releaseFramework/ComposeApp.framework
 
   build-prod-ios:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.runProd == 'true')
     runs-on: macos-latest
     env:
       SERVER_URL: https://lehrerlog.9d4.de
