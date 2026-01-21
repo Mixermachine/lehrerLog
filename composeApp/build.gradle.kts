@@ -79,6 +79,11 @@ val buildNumber = buildNumberProvider.get().toIntOrNull()
     ?: error("Invalid buildNumber: ${buildNumberProvider.get()}")
 val (versionMajor, versionMinor, versionPatch) = parseSemVer(baseVersion)
 val versionCodeValue = computeVersionCode(versionMajor, versionMinor, versionPatch, buildNumber)
+val desktopPackageVersion = if (versionMajor < 1) {
+    "1.$versionMinor.$versionPatch"
+} else {
+    baseVersion
+}
 
 kotlin {
     androidTarget {
@@ -272,7 +277,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "de.aarondietz.lehrerlog"
-            packageVersion = baseVersion
+            packageVersion = desktopPackageVersion
         }
     }
 }
