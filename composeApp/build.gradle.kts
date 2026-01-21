@@ -52,6 +52,34 @@ val generateServerConfig = tasks.register<GenerateServerConfig>("generateServerC
     outputDir.set(serverConfigDir)
 }
 
+val appVersionNameProvider = providers.gradleProperty("appVersionName").orElse("0.0.1-dev.local")
+val buildNumberProvider = providers.gradleProperty("buildNumber").orElse("1")
+
+fun parseSemVer(version: String): Triple<Int, Int, Int> {
+    val parts = version.split(".")
+    require(parts.size == 3) { "appVersionName must start with MAJOR.MINOR.PATCH, got: $version" }
+    val major = parts[0].toIntOrNull()
+        ?: error("Invalid major version in appVersionName: $version")
+    val minor = parts[1].toIntOrNull()
+        ?: error("Invalid minor version in appVersionName: $version")
+    val patch = parts[2].toIntOrNull()
+        ?: error("Invalid patch version in appVersionName: $version")
+    return Triple(major, minor, patch)
+}
+
+fun computeVersionCode(major: Int, minor: Int, patch: Int, build: Int): Int {
+    val code = major * 100_000_000 + minor * 1_000_000 + patch * 10_000 + build
+    require(code in 1..2_100_000_000) { "versionCode out of range: $code" }
+    return code
+}
+
+val appVersionName = appVersionNameProvider.get()
+val baseVersion = appVersionName.substringBefore("-")
+val buildNumber = buildNumberProvider.get().toIntOrNull()
+    ?: error("Invalid buildNumber: ${buildNumberProvider.get()}")
+val (versionMajor, versionMinor, versionPatch) = parseSemVer(baseVersion)
+val versionCodeValue = computeVersionCode(versionMajor, versionMinor, versionPatch, buildNumber)
+
 kotlin {
     androidTarget {
         compilerOptions {
@@ -176,8 +204,24 @@ android {
         applicationId = "de.aarondietz.lehrerlog"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = versionCodeValue
+        versionName = appVersionName
+    }
+    flavorDimensions += "env"
+    productFlavors {
+        create("prod") {
+            dimension = "env"
+        }
+        create("qa") {
+            dimension = "env"
+            applicationIdSuffix = ".qa"
+            resValue("string", "app_name", "LehrerLog QA")
+        }
+        create("dev") {
+            dimension = "env"
+            applicationIdSuffix = ".dev"
+            resValue("string", "app_name", "LehrerLog Dev")
+        }
     }
     signingConfigs {
         create("releaseApk") {
@@ -228,7 +272,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "de.aarondietz.lehrerlog"
-            packageVersion = "1.0.0"
+            packageVersion = baseVersion
         }
     }
 }

@@ -7,13 +7,22 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 # Configuration with defaults
 DOMAIN="${DOMAIN:-api.lehrerlog.de}"
 DEPLOY_DIR="${DEPLOY_DIR:-$HOME/docker/lehrerlog}"
-IMAGE_NAME="${IMAGE_NAME:-ghcr.io/${REPO_OWNER:-lehrerlog}/lehrerlog-server}"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
+IMAGE_NAME="${IMAGE_NAME:-}"
+IMAGE_TAG="${IMAGE_TAG:-}"
+WEBAPP_IMAGE_NAME="${WEBAPP_IMAGE_NAME:-}"
+WEBAPP_IMAGE_TAG="${WEBAPP_IMAGE_TAG:-}"
+WEBAPP_HOST_PORT="${WEBAPP_HOST_PORT:-}"
+WEBAPP_DOMAIN="${WEBAPP_DOMAIN:-}"
+DEPLOY_WEBAPP_ONLY="${DEPLOY_WEBAPP_ONLY:-false}"
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 GHCR_USERNAME="${GHCR_USERNAME:-}"
 GHCR_TOKEN="${GHCR_TOKEN:-}"
 SKIP_DNS_CHECK="${SKIP_DNS_CHECK:-false}"
 SUDO_PASSWORD="${SUDO_PASSWORD:-}"
+
+if [[ -n "$GHCR_USERNAME" ]]; then
+  GHCR_USERNAME="${GHCR_USERNAME,,}"
+fi
 
 # Resolve command paths for sudoers matching.
 BIN_APT_GET="$(command -v apt-get || true)"
@@ -151,6 +160,22 @@ if [[ -z "$HOST_PORT" ]]; then
   fi
 fi
 
+if [[ -z "$WEBAPP_HOST_PORT" ]]; then
+  if [[ "$ENV_NAME" == "qa" ]]; then
+    WEBAPP_HOST_PORT=18083
+  else
+    WEBAPP_HOST_PORT=18082
+  fi
+fi
+
+if [[ -z "$WEBAPP_DOMAIN" ]]; then
+  if [[ "$ENV_NAME" == "qa" ]]; then
+    WEBAPP_DOMAIN=app.qa.lehrerlog.de
+  else
+    WEBAPP_DOMAIN=app.lehrerlog.de
+  fi
+fi
+
 cleanup_legacy_staging() {
   if [[ "$ENV_NAME" != "qa" ]]; then
     return
@@ -195,8 +220,20 @@ mkdir -p "$DEPLOY_DIR/.deploy"
 
 # Handle POSTGRES_PASSWORD: reuse existing, use provided, or generate new
 EXISTING_PASSWORD=""
+EXISTING_IMAGE_NAME=""
+EXISTING_IMAGE_TAG=""
 if [[ -f "$DEPLOY_DIR/.env" ]]; then
   EXISTING_PASSWORD=$(grep -E '^POSTGRES_PASSWORD=' "$DEPLOY_DIR/.env" | head -1 | cut -d= -f2- || true)
+  EXISTING_IMAGE_NAME=$(grep -E '^IMAGE_NAME=' "$DEPLOY_DIR/.env" | head -1 | cut -d= -f2- || true)
+  EXISTING_IMAGE_TAG=$(grep -E '^IMAGE_TAG=' "$DEPLOY_DIR/.env" | head -1 | cut -d= -f2- || true)
+fi
+EXISTING_WEBAPP_IMAGE_NAME=""
+EXISTING_WEBAPP_IMAGE_TAG=""
+EXISTING_WEBAPP_HOST_PORT=""
+if [[ -f "$DEPLOY_DIR/.env" ]]; then
+  EXISTING_WEBAPP_IMAGE_NAME=$(grep -E '^WEBAPP_IMAGE_NAME=' "$DEPLOY_DIR/.env" | head -1 | cut -d= -f2- || true)
+  EXISTING_WEBAPP_IMAGE_TAG=$(grep -E '^WEBAPP_IMAGE_TAG=' "$DEPLOY_DIR/.env" | head -1 | cut -d= -f2- || true)
+  EXISTING_WEBAPP_HOST_PORT=$(grep -E '^WEBAPP_HOST_PORT=' "$DEPLOY_DIR/.env" | head -1 | cut -d= -f2- || true)
 fi
 
 if [[ -z "$POSTGRES_PASSWORD" ]]; then
@@ -229,6 +266,46 @@ elif [[ -n "$EXISTING_PASSWORD" ]] && [[ "$POSTGRES_PASSWORD" != "$EXISTING_PASS
   else
     echo "FORCE_PASSWORD_CHANGE=true - proceeding with new password!"
   fi
+fi
+
+if [[ -z "$IMAGE_NAME" ]]; then
+  if [[ -n "$EXISTING_IMAGE_NAME" ]]; then
+    IMAGE_NAME="$EXISTING_IMAGE_NAME"
+  elif [[ -n "$GHCR_USERNAME" ]]; then
+    IMAGE_NAME="ghcr.io/${GHCR_USERNAME}/lehrerlog-server"
+  else
+    IMAGE_NAME="ghcr.io/lehrerlog/lehrerlog-server"
+  fi
+fi
+
+if [[ -z "$IMAGE_TAG" ]]; then
+  if [[ -n "$EXISTING_IMAGE_TAG" ]]; then
+    IMAGE_TAG="$EXISTING_IMAGE_TAG"
+  else
+    IMAGE_TAG="latest"
+  fi
+fi
+
+if [[ -z "$WEBAPP_IMAGE_NAME" ]]; then
+  if [[ -n "$EXISTING_WEBAPP_IMAGE_NAME" ]]; then
+    WEBAPP_IMAGE_NAME="$EXISTING_WEBAPP_IMAGE_NAME"
+  elif [[ -n "$GHCR_USERNAME" ]]; then
+    WEBAPP_IMAGE_NAME="ghcr.io/${GHCR_USERNAME}/lehrerlog-webapp"
+  else
+    WEBAPP_IMAGE_NAME="ghcr.io/lehrerlog/lehrerlog-webapp"
+  fi
+fi
+
+if [[ -z "$WEBAPP_IMAGE_TAG" ]]; then
+  if [[ -n "$EXISTING_WEBAPP_IMAGE_TAG" ]]; then
+    WEBAPP_IMAGE_TAG="$EXISTING_WEBAPP_IMAGE_TAG"
+  else
+    WEBAPP_IMAGE_TAG="latest"
+  fi
+fi
+
+if [[ -z "$WEBAPP_HOST_PORT" && -n "$EXISTING_WEBAPP_HOST_PORT" ]]; then
+  WEBAPP_HOST_PORT="$EXISTING_WEBAPP_HOST_PORT"
 fi
 
 # Create data directories with proper ownership (only if new)
@@ -291,6 +368,9 @@ ENV_NAME=$ENV_NAME
 IMAGE_NAME=$IMAGE_NAME
 IMAGE_TAG=$IMAGE_TAG
 HOST_PORT=$HOST_PORT
+WEBAPP_IMAGE_NAME=$WEBAPP_IMAGE_NAME
+WEBAPP_IMAGE_TAG=$WEBAPP_IMAGE_TAG
+WEBAPP_HOST_PORT=$WEBAPP_HOST_PORT
 POSTGRES_DB=$POSTGRES_DB
 POSTGRES_USER=$POSTGRES_USER
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
@@ -301,55 +381,40 @@ EOF
 echo "Created .env file at $DEPLOY_DIR/.env"
 
 # Setup nginx configuration (avoid overwriting certbot-managed SSL blocks).
-NGINX_SITE="/etc/nginx/sites-available/$DOMAIN"
-if [[ ! -f "$NGINX_SITE" ]]; then
-  if [[ -f "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" ]]; then
-    sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/$DOMAIN.conf" "$NGINX_SITE"
-  else
-    sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/api.lehrerlog.de.conf" "$NGINX_SITE"
-    sudo "$BIN_SED" -i "s/server_name api.lehrerlog.de;/server_name $DOMAIN;/" "$NGINX_SITE"
+setup_nginx_site() {
+  local site_domain="$1"
+  local upstream_port="$2"
+  local template="$3"
+  local nginx_site="/etc/nginx/sites-available/${site_domain}"
+
+  if [[ ! -f "$nginx_site" ]]; then
+    if [[ -f "$DEPLOY_DIR/.deploy/nginx/${site_domain}.conf" ]]; then
+      sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/${site_domain}.conf" "$nginx_site"
+    else
+      sudo "$BIN_CP" "$DEPLOY_DIR/.deploy/nginx/${template}" "$nginx_site"
+      sudo "$BIN_SED" -i "s/server_name .*/server_name ${site_domain};/" "$nginx_site"
+    fi
   fi
-fi
-# Ensure current domain and upstream port are updated in-place.
-sudo "$BIN_SED" -i "s/server_name .*/server_name $DOMAIN;/" "$NGINX_SITE"
-sudo "$BIN_SED" -i "s|proxy_pass http://127.0.0.1:[0-9]*;|proxy_pass http://127.0.0.1:$HOST_PORT;|g" "$NGINX_SITE"
-sudo "$BIN_SED" -i "s|proxy_pass http://localhost:[0-9]*;|proxy_pass http://127.0.0.1:$HOST_PORT;|g" "$NGINX_SITE"
 
-# Create symlink if it doesn't exist (use -e to check for symlink existence)
-if [[ ! -e "/etc/nginx/sites-enabled/$DOMAIN" ]]; then
-  sudo "$BIN_LN" -s "/etc/nginx/sites-available/$DOMAIN" "/etc/nginx/sites-enabled/$DOMAIN"
-fi
+  sudo "$BIN_SED" -i "s/server_name .*/server_name ${site_domain};/" "$nginx_site"
+  sudo "$BIN_SED" -i "s|proxy_pass http://127.0.0.1:[0-9]*;|proxy_pass http://127.0.0.1:${upstream_port};|g" "$nginx_site"
+  sudo "$BIN_SED" -i "s|proxy_pass http://localhost:[0-9]*;|proxy_pass http://127.0.0.1:${upstream_port};|g" "$nginx_site"
 
-# Install certbot if needed
-if [[ -z "$BIN_CERTBOT" ]]; then
-  require_cmd "apt-get" "$BIN_APT_GET"
-  sudo "$BIN_APT_GET" update
-  sudo "$BIN_APT_GET" install -y certbot python3-certbot-nginx
-  BIN_CERTBOT="$(command -v certbot || true)"
-  require_cmd "certbot" "$BIN_CERTBOT"
-fi
+  if [[ ! -e "/etc/nginx/sites-enabled/${site_domain}" ]]; then
+    sudo "$BIN_LN" -s "$nginx_site" "/etc/nginx/sites-enabled/${site_domain}"
+  fi
+}
 
-# Test and reload nginx
-sudo "$BIN_NGINX" -t
-sudo "$BIN_SYSTEMCTL" reload nginx
-
-# DNS check
-if [[ "$SKIP_DNS_CHECK" != "true" ]]; then
-  if ! getent hosts "$DOMAIN" >/dev/null 2>&1; then
-    echo "Error: DNS lookup failed for $DOMAIN. Set SKIP_DNS_CHECK=true to bypass."
+check_dns() {
+  local site_domain="$1"
+  if [[ "$SKIP_DNS_CHECK" == "true" ]]; then
+    return 0
+  fi
+  if ! getent hosts "$site_domain" >/dev/null 2>&1; then
+    echo "Error: DNS lookup failed for $site_domain. Set SKIP_DNS_CHECK=true to bypass."
     exit 1
   fi
-fi
-
-# Setup SSL certificate (ensure nginx is actually configured for HTTPS).
-CERT_EXISTS=false
-if sudo "$BIN_CERTBOT" certificates -d "$DOMAIN" 2>/dev/null | grep -q "Certificate Name"; then
-  CERT_EXISTS=true
-fi
-SSL_CONFIGURED=false
-if [[ -r "$NGINX_SITE" ]] && grep -q "ssl_certificate" "$NGINX_SITE"; then
-  SSL_CONFIGURED=true
-fi
+}
 
 run_certbot() {
   local attempt=1
@@ -367,16 +432,54 @@ run_certbot() {
   done
 }
 
-if [[ "$SSL_CONFIGURED" == "false" ]]; then
-  echo "Configuring HTTPS for $DOMAIN..."
-  if [[ "$CERT_EXISTS" == "true" ]]; then
-    run_certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL" --reinstall
-  else
-    echo "Obtaining SSL certificate for $DOMAIN..."
-    run_certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL"
+ensure_ssl() {
+  local site_domain="$1"
+  local nginx_site="/etc/nginx/sites-available/${site_domain}"
+  local cert_exists=false
+  local ssl_configured=false
+  if sudo "$BIN_CERTBOT" certificates -d "$site_domain" 2>/dev/null | grep -q "Certificate Name"; then
+    cert_exists=true
   fi
-  sudo "$BIN_SYSTEMCTL" reload nginx
+  if [[ -r "$nginx_site" ]] && grep -q "ssl_certificate" "$nginx_site"; then
+    ssl_configured=true
+  fi
+  if [[ "$ssl_configured" == "false" ]]; then
+    echo "Configuring HTTPS for ${site_domain}..."
+    if [[ "$cert_exists" == "true" ]]; then
+      run_certbot --nginx -d "$site_domain" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL" --reinstall
+    else
+      echo "Obtaining SSL certificate for ${site_domain}..."
+      run_certbot --nginx -d "$site_domain" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL"
+    fi
+  fi
+}
+
+WEBAPP_TEMPLATE="app.lehrerlog.de.conf"
+if [[ "$ENV_NAME" == "qa" ]]; then
+  WEBAPP_TEMPLATE="app.qa.lehrerlog.de.conf"
 fi
+
+setup_nginx_site "$DOMAIN" "$HOST_PORT" "api.lehrerlog.de.conf"
+setup_nginx_site "$WEBAPP_DOMAIN" "$WEBAPP_HOST_PORT" "$WEBAPP_TEMPLATE"
+
+# Install certbot if needed
+if [[ -z "$BIN_CERTBOT" ]]; then
+  require_cmd "apt-get" "$BIN_APT_GET"
+  sudo "$BIN_APT_GET" update
+  sudo "$BIN_APT_GET" install -y certbot python3-certbot-nginx
+  BIN_CERTBOT="$(command -v certbot || true)"
+  require_cmd "certbot" "$BIN_CERTBOT"
+fi
+
+sudo "$BIN_NGINX" -t
+sudo "$BIN_SYSTEMCTL" reload nginx
+
+check_dns "$DOMAIN"
+check_dns "$WEBAPP_DOMAIN"
+
+ensure_ssl "$DOMAIN"
+ensure_ssl "$WEBAPP_DOMAIN"
+sudo "$BIN_SYSTEMCTL" reload nginx
 
 # Docker login to GHCR
 if [[ -n "$GHCR_USERNAME" ]] && [[ -n "$GHCR_TOKEN" ]]; then
@@ -386,22 +489,32 @@ fi
 # Deploy with docker compose
 cd "$DEPLOY_DIR"
 echo "Pulling latest images..."
-docker compose pull
+if [[ "$DEPLOY_WEBAPP_ONLY" == "true" ]]; then
+  docker compose pull lehrerlog-webapp
+else
+  docker compose pull
+fi
 
 echo "Starting services..."
-docker compose up -d --remove-orphans
+if [[ "$DEPLOY_WEBAPP_ONLY" == "true" ]]; then
+  docker compose up -d lehrerlog-webapp
+else
+  docker compose up -d --remove-orphans
+fi
 
 # Clean up old Docker images to prevent disk bloat
 echo ""
 echo "Cleaning up old Docker images..."
 # Remove dangling images
 docker image prune -f || true
-# Remove old lehrerlog-server images (keep only current)
-CURRENT_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
-docker images "${IMAGE_NAME}" --format "{{.Repository}}:{{.Tag}}" | \
-  grep -v "^${CURRENT_IMAGE}$" | \
-  grep -v "<none>" | \
-  xargs -r docker rmi || true
+if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
+  # Remove old lehrerlog-server images (keep only current)
+  CURRENT_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
+  docker images "${IMAGE_NAME}" --format "{{.Repository}}:{{.Tag}}" | \
+    grep -v "^${CURRENT_IMAGE}$" | \
+    grep -v "<none>" | \
+    xargs -r docker rmi || true
+fi
 
 # Wait for health check
 echo ""
@@ -410,15 +523,23 @@ sleep 5
 docker compose ps
 
 # Optional post-deploy verification
-if [[ -f "$DEPLOY_DIR/.deploy/verify.sh" ]]; then
-  cp "$DEPLOY_DIR/.deploy/verify.sh" "$DEPLOY_DIR/verify.sh"
-  chmod +x "$DEPLOY_DIR/verify.sh"
+if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
+  if [[ -f "$DEPLOY_DIR/.deploy/verify.sh" ]]; then
+    cp "$DEPLOY_DIR/.deploy/verify.sh" "$DEPLOY_DIR/verify.sh"
+    chmod +x "$DEPLOY_DIR/verify.sh"
+    echo ""
+    echo "Running post-deploy verification..."
+    DOMAIN="$DOMAIN" \
+      VERIFY_USER_EMAIL="$VERIFY_USER_EMAIL" \
+      VERIFY_USER_PASSWORD="$VERIFY_USER_PASSWORD" \
+      "$DEPLOY_DIR/verify.sh"
+  fi
+else
   echo ""
-  echo "Running post-deploy verification..."
-  DOMAIN="$DOMAIN" \
-    VERIFY_USER_EMAIL="$VERIFY_USER_EMAIL" \
-    VERIFY_USER_PASSWORD="$VERIFY_USER_PASSWORD" \
-    "$DEPLOY_DIR/verify.sh"
+  echo "Running webapp health check..."
+  if ! curl -fsS "http://localhost:${WEBAPP_HOST_PORT}/health" | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"'; then
+    echo "Warning: webapp health check failed."
+  fi
 fi
 
 # Setup backup scripts

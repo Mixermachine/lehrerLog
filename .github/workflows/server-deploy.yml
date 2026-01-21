@@ -3,7 +3,7 @@ name: Deploy Server
 on:
   push:
     tags:
-      - "*"
+      - "*.*.*-b????"
 
 permissions:
   contents: read
@@ -21,6 +21,23 @@ jobs:
 
       - name: Normalize GHCR owner
         run: echo "GHCR_OWNER_LOWER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
+      - name: Validate release tag
+        run: |
+          BASE_VERSION=$(grep -E '^APP_VERSION=' iosApp/Configuration/Config.xcconfig | head -1 | cut -d= -f2-)
+          if [ -z "$BASE_VERSION" ]; then
+            echo "APP_VERSION missing in iosApp/Configuration/Config.xcconfig" >&2
+            exit 1
+          fi
+          TAG="${{ github.ref_name }}"
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-b[0-9]{4}$ ]]; then
+            echo "Tag must match MAJOR.MINOR.PATCH-bNNNN (e.g. 0.0.1-b0001). Got: $TAG"
+            exit 1
+          fi
+          if [[ "$TAG" != "${BASE_VERSION}-b"* ]]; then
+            echo "Tag base version ($TAG) does not match APP_VERSION ($BASE_VERSION)." >&2
+            exit 1
+          fi
 
       - name: Validate deploy config
         run: |

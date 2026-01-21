@@ -13,13 +13,25 @@ on:
 
 jobs:
   build-qa-android-jvm-wasm:
-    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       SERVER_URL: https://api.qa.lehrerlog.de
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
+
+      - name: Compute version (qa)
+        run: |
+          BASE_VERSION=$(grep -E '^APP_VERSION=' iosApp/Configuration/Config.xcconfig | head -1 | cut -d= -f2-)
+          if [ -z "$BASE_VERSION" ]; then
+            echo "APP_VERSION missing in iosApp/Configuration/Config.xcconfig" >&2
+            exit 1
+          fi
+          DATE=$(date +%Y%m%d)
+          RUN=${{ github.run_number }}
+          echo "APP_VERSION_NAME=${BASE_VERSION}-dev.${DATE}.${RUN}" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=${RUN}" >> $GITHUB_ENV
 
       - name: Set up JDK
         uses: actions/setup-java@v5.1.0
@@ -44,20 +56,20 @@ jobs:
         run: |
           chmod +x ./gradlew
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "${{ runner.temp }}/release.keystore"
-          ./gradlew --no-parallel :composeApp:assembleReleaseApk :composeApp:bundleReleaseAab :composeApp:jvmJar -PserverUrl=$SERVER_URL
-          ./gradlew --no-parallel :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL
+          ./gradlew --no-parallel :composeApp:assembleQaReleaseApk :composeApp:bundleQaReleaseAab :composeApp:jvmJar -PserverUrl=$SERVER_URL -PappVersionName=$APP_VERSION_NAME -PbuildNumber=$BUILD_NUMBER
+          ./gradlew --no-parallel :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL -PappVersionName=$APP_VERSION_NAME -PbuildNumber=$BUILD_NUMBER
 
       - name: Upload Android APKs (qa)
         uses: actions/upload-artifact@v6.0.0
         with:
           name: android-apk-qa
-          path: composeApp/build/outputs/apk/releaseApk/*.apk
+          path: composeApp/build/outputs/apk/qa/releaseApk/*.apk
 
       - name: Upload Android AAB (qa)
         uses: actions/upload-artifact@v6.0.0
         with:
           name: android-aab-qa
-          path: composeApp/build/outputs/bundle/releaseAab/*.aab
+          path: composeApp/build/outputs/bundle/qaReleaseAab/*.aab
 
       - name: Upload JVM jar (qa)
         uses: actions/upload-artifact@v6.0.0
@@ -79,6 +91,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
+
+      - name: Parse version tag (prod)
+        run: |
+          BASE_VERSION=$(grep -E '^APP_VERSION=' iosApp/Configuration/Config.xcconfig | head -1 | cut -d= -f2-)
+          if [ -z "$BASE_VERSION" ]; then
+            echo "APP_VERSION missing in iosApp/Configuration/Config.xcconfig" >&2
+            exit 1
+          fi
+          TAG=${{ github.ref_name }}
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-b[0-9]{4}$ ]]; then
+            echo "Tag must match MAJOR.MINOR.PATCH-bNNNN (e.g. 0.0.1-b0001). Got: $TAG"
+            exit 1
+          fi
+          if [[ "$TAG" != "${BASE_VERSION}-b"* ]]; then
+            echo "Tag base version ($TAG) does not match APP_VERSION ($BASE_VERSION)." >&2
+            exit 1
+          fi
+          BUILD=${TAG##*-b}
+          echo "APP_VERSION_NAME=$TAG" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=$BUILD" >> $GITHUB_ENV
 
       - name: Set up JDK
         uses: actions/setup-java@v5.1.0
@@ -103,20 +135,20 @@ jobs:
         run: |
           chmod +x ./gradlew
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "${{ runner.temp }}/release.keystore"
-          ./gradlew --no-parallel :composeApp:assembleReleaseApk :composeApp:bundleReleaseAab :composeApp:jvmJar -PserverUrl=$SERVER_URL
-          ./gradlew --no-parallel :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL
+          ./gradlew --no-parallel :composeApp:assembleProdReleaseApk :composeApp:bundleProdReleaseAab :composeApp:jvmJar -PserverUrl=$SERVER_URL -PappVersionName=$APP_VERSION_NAME -PbuildNumber=$BUILD_NUMBER
+          ./gradlew --no-parallel :composeApp:wasmJsBrowserDistribution -PserverUrl=$SERVER_URL -PappVersionName=$APP_VERSION_NAME -PbuildNumber=$BUILD_NUMBER
 
       - name: Upload Android APKs (prod)
         uses: actions/upload-artifact@v6.0.0
         with:
           name: android-apk-prod-${{ github.ref_name }}
-          path: composeApp/build/outputs/apk/releaseApk/*.apk
+          path: composeApp/build/outputs/apk/prod/releaseApk/*.apk
 
       - name: Upload Android AAB (prod)
         uses: actions/upload-artifact@v6.0.0
         with:
           name: android-aab-prod-${{ github.ref_name }}
-          path: composeApp/build/outputs/bundle/releaseAab/*.aab
+          path: composeApp/build/outputs/bundle/prodReleaseAab/*.aab
 
       - name: Upload JVM jar (prod)
         uses: actions/upload-artifact@v6.0.0
@@ -131,7 +163,7 @@ jobs:
           path: composeApp/build/dist/wasmJs/**
 
   build-qa-ios:
-    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     timeout-minutes: 30
     env:
@@ -139,6 +171,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
+
+      - name: Compute version (qa)
+        run: |
+          BASE_VERSION=$(grep -E '^APP_VERSION=' iosApp/Configuration/Config.xcconfig | head -1 | cut -d= -f2-)
+          if [ -z "$BASE_VERSION" ]; then
+            echo "APP_VERSION missing in iosApp/Configuration/Config.xcconfig" >&2
+            exit 1
+          fi
+          DATE=$(date +%Y%m%d)
+          RUN=${{ github.run_number }}
+          echo "APP_VERSION_NAME=${BASE_VERSION}-dev.${DATE}.${RUN}" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=${RUN}" >> $GITHUB_ENV
 
       - name: Set up JDK
         uses: actions/setup-java@v5.1.0
@@ -160,7 +204,7 @@ jobs:
       - name: Build iOS target (qa)
         run: |
           chmod +x ./gradlew
-          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL
+          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL -PappVersionName=$APP_VERSION_NAME -PbuildNumber=$BUILD_NUMBER
 
       - name: Upload iOS frameworks (qa)
         uses: actions/upload-artifact@v6.0.0
@@ -179,6 +223,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
+
+      - name: Parse version tag (prod)
+        run: |
+          BASE_VERSION=$(grep -E '^APP_VERSION=' iosApp/Configuration/Config.xcconfig | head -1 | cut -d= -f2-)
+          if [ -z "$BASE_VERSION" ]; then
+            echo "APP_VERSION missing in iosApp/Configuration/Config.xcconfig" >&2
+            exit 1
+          fi
+          TAG=${{ github.ref_name }}
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-b[0-9]{4}$ ]]; then
+            echo "Tag must match MAJOR.MINOR.PATCH-bNNNN (e.g. 0.0.1-b0001). Got: $TAG"
+            exit 1
+          fi
+          if [[ "$TAG" != "${BASE_VERSION}-b"* ]]; then
+            echo "Tag base version ($TAG) does not match APP_VERSION ($BASE_VERSION)." >&2
+            exit 1
+          fi
+          BUILD=${TAG##*-b}
+          echo "APP_VERSION_NAME=$TAG" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=$BUILD" >> $GITHUB_ENV
 
       - name: Set up JDK
         uses: actions/setup-java@v5.1.0
@@ -200,7 +264,7 @@ jobs:
       - name: Build iOS target (prod)
         run: |
           chmod +x ./gradlew
-          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL
+          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL -PappVersionName=$APP_VERSION_NAME -PbuildNumber=$BUILD_NUMBER
 
       - name: Upload iOS frameworks (prod)
         uses: actions/upload-artifact@v6.0.0

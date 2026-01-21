@@ -1,0 +1,69 @@
+name: Create Release Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      baseVersion:
+        description: "Base semver (defaults to APP_VERSION in iosApp/Configuration/Config.xcconfig)"
+        required: false
+        type: string
+      dryRun:
+        description: "Compute next tag but do not create it"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Compute next tag
+        id: next_tag
+        run: |
+          BASE_VERSION="${{ inputs.baseVersion }}"
+          if [ -z "$BASE_VERSION" ]; then
+            BASE_VERSION=$(grep -E '^APP_VERSION=' iosApp/Configuration/Config.xcconfig | head -1 | cut -d= -f2-)
+          fi
+          if [ -z "$BASE_VERSION" ]; then
+            echo "APP_VERSION missing in iosApp/Configuration/Config.xcconfig" >&2
+            exit 1
+          fi
+          LAST_TAG=$(git tag --list "${BASE_VERSION}-b[0-9][0-9][0-9][0-9]" --sort=-v:refname | head -n1 || true)
+          if [ -z "$LAST_TAG" ]; then
+            NEXT_BUILD=1
+          else
+            LAST_BUILD=${LAST_TAG##*-b}
+            NEXT_BUILD=$((10#$LAST_BUILD + 1))
+          fi
+          if [ "$NEXT_BUILD" -gt 9999 ]; then
+            echo "Next build number exceeds 9999. Bump patch before tagging again." >&2
+            exit 1
+          fi
+          NEXT_PADDED=$(printf "%04d" "$NEXT_BUILD")
+          NEXT_TAG="${BASE_VERSION}-b${NEXT_PADDED}"
+          echo "tag=$NEXT_TAG" >> "$GITHUB_OUTPUT"
+          echo "next_tag=$NEXT_TAG"
+
+      - name: Create tag
+        if: ${{ inputs.dryRun != true }}
+        run: |
+          TAG="${{ steps.next_tag.outputs.tag }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Create release
+        if: ${{ inputs.dryRun != true }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.next_tag.outputs.tag }}
+          name: ${{ steps.next_tag.outputs.tag }}
+          generate_release_notes: true

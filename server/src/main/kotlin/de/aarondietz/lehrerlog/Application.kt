@@ -21,6 +21,7 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
@@ -68,6 +69,32 @@ fun Application.module() {
             isLenient = true
             ignoreUnknownKeys = true
         })
+    }
+
+    install(CORS) {
+        allowHost("app.lehrerlog.de", schemes = listOf("https"))
+        allowHost("app.qa.lehrerlog.de", schemes = listOf("https"))
+
+        allowHost("localhost:8080", schemes = listOf("http"))
+        allowHost("localhost:8081", schemes = listOf("http"))
+        allowHost("127.0.0.1:8080", schemes = listOf("http"))
+        allowHost("127.0.0.1:8081", schemes = listOf("http"))
+
+        allowCredentials = true
+        allowNonSimpleContentTypes = true
+
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Authorization)
+        allowHeader(HttpHeaders.Accept)
+
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Delete)
+        allowMethod(HttpMethod.Patch)
+        allowMethod(HttpMethod.Options)
+
+        maxAgeInSeconds = 3600
     }
 
     install(Authentication) {

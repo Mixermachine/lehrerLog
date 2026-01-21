@@ -27,6 +27,21 @@ services:
     networks:
       - lehrerlog-net
 
+  lehrerlog-webapp:
+    container_name: lehrerlog-${ENV_NAME:-prod}-webapp
+    image: ${WEBAPP_IMAGE_NAME:-ghcr.io/your-username/lehrerlog-webapp}:${WEBAPP_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEBAPP_HOST_PORT:-8082}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - lehrerlog-net
+
   db:
     container_name: lehrerlog-${ENV_NAME:-prod}-db
     image: postgres:16-alpine
@@ -49,4 +64,5 @@ services:
 
 networks:
   lehrerlog-net:
+    name: lehrerlog-${ENV_NAME:-prod}-net
     driver: bridge

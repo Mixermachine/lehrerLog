@@ -1,0 +1,183 @@
+name: Webapp Build and Deploy
+
+on:
+  push:
+    branches: ["master"]
+    tags: ["*.*.*-b????"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        type: choice
+        options:
+          - qa
+          - prod
+          - both
+        default: qa
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-qa:
+    if: github.ref == 'refs/heads/master' || (github.event_name == 'workflow_dispatch' && inputs.environment != 'prod')
+    runs-on: ubuntu-latest
+    env:
+      SERVER_URL: https://api.qa.lehrerlog.de
+    outputs:
+      webapp_tag: ${{ steps.tag.outputs.tag }}
+      image_name: ${{ steps.image_name.outputs.name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Normalize GHCR owner
+        id: image_name
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lehrerlog-webapp" >> "$GITHUB_OUTPUT"
+
+      - name: Set tag (qa)
+        id: tag
+        run: echo "tag=qa-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (qa)
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: composeApp/Dockerfile
+          push: true
+          tags: ${{ steps.image_name.outputs.name }}:${{ steps.tag.outputs.tag }}
+          build-args: |
+            SERVER_URL=${{ env.SERVER_URL }}
+            BUILD_VERSION=${{ steps.tag.outputs.tag }}
+
+  build-prod:
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.environment != 'qa')
+    runs-on: ubuntu-latest
+    env:
+      SERVER_URL: https://api.lehrerlog.de
+    outputs:
+      webapp_tag: ${{ steps.tag.outputs.tag }}
+      image_name: ${{ steps.image_name.outputs.name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Normalize GHCR owner
+        id: image_name
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lehrerlog-webapp" >> "$GITHUB_OUTPUT"
+
+      - name: Validate and set tag (prod)
+        id: tag
+        run: |
+          TAG=${{ github.ref_name }}
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-b[0-9]{4}$ ]]; then
+            echo "Tag must match MAJOR.MINOR.PATCH-bNNNN (e.g. 0.0.1-b0001). Got: $TAG"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (prod)
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: composeApp/Dockerfile
+          push: true
+          tags: ${{ steps.image_name.outputs.name }}:${{ steps.tag.outputs.tag }}
+          build-args: |
+            SERVER_URL=${{ env.SERVER_URL }}
+            BUILD_VERSION=${{ steps.tag.outputs.tag }}
+
+  deploy-qa:
+    needs: build-qa
+    if: needs.build-qa.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload deploy assets
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "deploy/**"
+          target: "/home/${{ vars.DEPLOY_USER }}/docker/lehrerlog-qa/.deploy"
+          strip_components: 1
+
+      - name: Deploy webapp (qa)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          request_pty: true
+          script: |
+            chmod +x /home/${{ vars.DEPLOY_USER }}/docker/lehrerlog-qa/.deploy/remote-deploy.sh
+            ENV_NAME=qa \
+            DOMAIN=api.qa.lehrerlog.de \
+            WEBAPP_DOMAIN=app.qa.lehrerlog.de \
+            DEPLOY_DIR=/home/${{ vars.DEPLOY_USER }}/docker/lehrerlog-qa \
+            WEBAPP_IMAGE_NAME=${{ needs.build-qa.outputs.image_name }} \
+            WEBAPP_IMAGE_TAG=${{ needs.build-qa.outputs.webapp_tag }} \
+            WEBAPP_HOST_PORT=18083 \
+            POSTGRES_DB=lehrerlog_qa \
+            POSTGRES_USER=lehrerlog \
+            POSTGRES_PASSWORD=${{ secrets.QA_DB_PASSWORD }} \
+            LETSENCRYPT_EMAIL=${{ secrets.LETSENCRYPT_EMAIL }} \
+            GHCR_USERNAME=${{ github.repository_owner }} \
+            GHCR_TOKEN=${{ secrets.GHCR_TOKEN }} \
+            DEPLOY_WEBAPP_ONLY=true \
+            /home/${{ vars.DEPLOY_USER }}/docker/lehrerlog-qa/.deploy/remote-deploy.sh
+
+  deploy-prod:
+    needs: build-prod
+    if: needs.build-prod.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload deploy assets
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "deploy/**"
+          target: "/home/${{ vars.DEPLOY_USER }}/docker/lehrerlog/.deploy"
+          strip_components: 1
+
+      - name: Deploy webapp (prod)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          request_pty: true
+          script: |
+            chmod +x /home/${{ vars.DEPLOY_USER }}/docker/lehrerlog/.deploy/remote-deploy.sh
+            ENV_NAME=prod \
+            DOMAIN=api.lehrerlog.de \
+            WEBAPP_DOMAIN=app.lehrerlog.de \
+            DEPLOY_DIR=/home/${{ vars.DEPLOY_USER }}/docker/lehrerlog \
+            WEBAPP_IMAGE_NAME=${{ needs.build-prod.outputs.image_name }} \
+            WEBAPP_IMAGE_TAG=${{ needs.build-prod.outputs.webapp_tag }} \
+            WEBAPP_HOST_PORT=18082 \
+            POSTGRES_DB=lehrerlog_prod \
+            POSTGRES_USER=lehrerlog \
+            POSTGRES_PASSWORD=${{ secrets.PROD_DB_PASSWORD }} \
+            LETSENCRYPT_EMAIL=${{ secrets.LETSENCRYPT_EMAIL }} \
+            GHCR_USERNAME=${{ github.repository_owner }} \
+            GHCR_TOKEN=${{ secrets.GHCR_TOKEN }} \
+            DEPLOY_WEBAPP_ONLY=true \
+            /home/${{ vars.DEPLOY_USER }}/docker/lehrerlog/.deploy/remote-deploy.sh
