@@ -3,7 +3,7 @@ name: Webapp Build and Deploy
 on:
   push:
     branches: ["master"]
-    tags: ["*.*.*-b????"]
+    tags: ["*.*.*-b*"]
   workflow_dispatch:
     inputs:
       environment:
