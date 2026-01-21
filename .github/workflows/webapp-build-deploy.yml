@@ -106,6 +106,9 @@ jobs:
     needs: build-qa
     if: needs.build-qa.result == 'success'
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-qa-${{ vars.DEPLOY_HOST }}
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
@@ -149,6 +152,9 @@ jobs:
     needs: build-prod
     if: needs.build-prod.result == 'success'
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-prod-${{ vars.DEPLOY_HOST }}
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
