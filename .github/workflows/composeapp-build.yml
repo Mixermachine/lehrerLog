@@ -47,6 +47,10 @@ jobs:
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3.5.0
 
+      - name: Reset Kotlin/JS toolchain cache (qa)
+        run: |
+          rm -rf ~/.gradle/yarn ~/.gradle/nodejs ~/.gradle/kotlin-js-store
+
       - name: Build Android, JVM, and Wasm targets (qa)
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
@@ -125,6 +129,10 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3.5.0
+
+      - name: Reset Kotlin/JS toolchain cache (prod)
+        run: |
+          rm -rf ~/.gradle/yarn ~/.gradle/nodejs ~/.gradle/kotlin-js-store
 
       - name: Build Android, JVM, and Wasm targets (prod)
         env:
