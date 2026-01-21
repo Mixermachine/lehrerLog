@@ -527,6 +527,31 @@ echo "Waiting for services to be healthy..."
 sleep 5
 docker compose ps
 
+# Wait for server container health when deploying API
+if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
+  SERVER_CONTAINER="lehrerlog-${ENV_NAME}-server"
+  echo "Waiting for ${SERVER_CONTAINER} to report healthy..."
+  SERVER_HEALTH=""
+  for attempt in $(seq 1 24); do
+    SERVER_HEALTH="$(docker inspect --format '{{.State.Health.Status}}' "$SERVER_CONTAINER" 2>/dev/null || true)"
+    if [[ "$SERVER_HEALTH" == "healthy" ]]; then
+      break
+    fi
+    if [[ "$SERVER_HEALTH" == "unhealthy" ]]; then
+      echo "Error: ${SERVER_CONTAINER} reported unhealthy."
+      docker logs "$SERVER_CONTAINER" --tail 200 || true
+      exit 1
+    fi
+    sleep 5
+  done
+
+  if [[ "$SERVER_HEALTH" != "healthy" ]]; then
+    echo "Error: ${SERVER_CONTAINER} did not become healthy in time."
+    docker logs "$SERVER_CONTAINER" --tail 200 || true
+    exit 1
+  fi
+fi
+
 # Optional post-deploy verification
 if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
   if [[ -f "$DEPLOY_DIR/.deploy/verify.sh" ]]; then
@@ -537,7 +562,11 @@ if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
     DOMAIN="$DOMAIN" \
       VERIFY_USER_EMAIL="$VERIFY_USER_EMAIL" \
       VERIFY_USER_PASSWORD="$VERIFY_USER_PASSWORD" \
-      "$DEPLOY_DIR/verify.sh"
+      "$DEPLOY_DIR/verify.sh" || {
+        echo "Post-deploy verification failed. Recent server logs:"
+        docker logs "lehrerlog-${ENV_NAME}-server" --tail 200 || true
+        exit 1
+      }
   fi
 else
   echo ""
