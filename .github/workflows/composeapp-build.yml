@@ -165,9 +165,11 @@ jobs:
   build-qa-ios:
     if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       SERVER_URL: https://api.qa.lehrerlog.de
+      ORG_GRADLE_JVMARGS: -Xmx6g -Dfile.encoding=UTF-8
+      KOTLIN_DAEMON_JVMARGS: -Xmx4g
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
@@ -204,7 +206,7 @@ jobs:
       - name: Build iOS target (qa)
         run: |
           chmod +x ./gradlew
-          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 :composeApp:linkReleaseFrameworkIosArm64 -PserverUrl=$SERVER_URL -PappVersionName=$APP_VERSION_NAME -PbuildNumber=$BUILD_NUMBER
+          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 :composeApp:linkDebugFrameworkIosArm64 -PserverUrl=$SERVER_URL -PappVersionName=$APP_VERSION_NAME -PbuildNumber=$BUILD_NUMBER
 
       - name: Upload iOS frameworks (qa)
         uses: actions/upload-artifact@v6.0.0
@@ -212,14 +214,16 @@ jobs:
           name: ios-frameworks-qa
           path: |
             composeApp/build/bin/iosSimulatorArm64/debugFramework/ComposeApp.framework
-            composeApp/build/bin/iosArm64/releaseFramework/ComposeApp.framework
+            composeApp/build/bin/iosArm64/debugFramework/ComposeApp.framework
 
   build-prod-ios:
     if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.runProd == true)
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       SERVER_URL: https://api.lehrerlog.de
+      ORG_GRADLE_JVMARGS: -Xmx6g -Dfile.encoding=UTF-8
+      KOTLIN_DAEMON_JVMARGS: -Xmx4g
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
