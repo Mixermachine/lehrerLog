@@ -22,6 +22,7 @@ dependencies {
     implementation("io.insert-koin:koin-ktor:3.5.6")
     implementation("io.insert-koin:koin-logger-slf4j:3.5.6")
     implementation("io.ktor:ktor-server-content-negotiation:3.3.1")
+    implementation("io.ktor:ktor-server-cors:3.3.1")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.1")
     implementation("dev.hayden:khealth:3.0.2")
     implementation("io.ktor:ktor-server-compression:3.3.1")
