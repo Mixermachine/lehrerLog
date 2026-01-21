@@ -1,0 +1,67 @@
+name: Server Diagnostics
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to inspect"
+        type: choice
+        options:
+          - qa
+          - prod
+        default: qa
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+    steps:
+      - name: Run diagnostics
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          request_pty: true
+          script: |
+            set -euo pipefail
+            ENV_NAME="${{ inputs.environment }}"
+            if [[ "$ENV_NAME" == "qa" ]]; then
+              DEPLOY_DIR="/home/${{ env.DEPLOY_USER }}/docker/lehrerlog-qa"
+            else
+              DEPLOY_DIR="/home/${{ env.DEPLOY_USER }}/docker/lehrerlog"
+            fi
+
+            echo "=== Host info ==="
+            uname -a
+            uptime
+            free -m || true
+            df -h || true
+
+            echo "=== Docker status ==="
+            docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+            echo ""
+            if [[ -d "$DEPLOY_DIR" ]]; then
+              echo "=== Compose status (${ENV_NAME}) ==="
+              cd "$DEPLOY_DIR"
+              docker compose ps || true
+            else
+              echo "Deploy directory not found: $DEPLOY_DIR"
+            fi
+
+            SERVER_CONTAINER="lehrerlog-${ENV_NAME}-server"
+            if docker ps -a --format '{{.Names}}' | grep -q "^${SERVER_CONTAINER}$"; then
+              echo ""
+              echo "=== Server logs (${SERVER_CONTAINER}) ==="
+              docker logs "$SERVER_CONTAINER" --tail 200 || true
+              echo ""
+              echo "=== Server inspect (${SERVER_CONTAINER}) ==="
+              docker inspect "$SERVER_CONTAINER" --format '{{json .State}}' || true
+            else
+              echo "Server container not found: ${SERVER_CONTAINER}"
+            fi
