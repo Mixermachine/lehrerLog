@@ -40,6 +40,17 @@ jobs:
         id: tag
         run: echo "tag=qa-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
 
+      - name: Compute QA build version
+        run: |
+          BASE_VERSION=$(grep -E '^APP_VERSION=' iosApp/Configuration/Config.xcconfig | head -1 | cut -d= -f2-)
+          if [ -z "$BASE_VERSION" ]; then
+            echo "APP_VERSION missing in iosApp/Configuration/Config.xcconfig" >&2
+            exit 1
+          fi
+          DATE=$(date +%Y%m%d)
+          RUN=${{ github.run_number }}
+          echo "BUILD_VERSION=${BASE_VERSION}-dev.${DATE}.${RUN}" >> "$GITHUB_ENV"
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -56,7 +67,7 @@ jobs:
           tags: ${{ steps.image_name.outputs.name }}:${{ steps.tag.outputs.tag }}
           build-args: |
             SERVER_URL=${{ env.SERVER_URL }}
-            BUILD_VERSION=${{ steps.tag.outputs.tag }}
+            BUILD_VERSION=${{ env.BUILD_VERSION }}
 
   build-prod:
     if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.environment != 'qa')
