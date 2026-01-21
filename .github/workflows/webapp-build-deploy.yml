@@ -107,6 +107,9 @@ jobs:
     if: needs.build-qa.result == 'success'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
       - name: Upload deploy assets
         uses: appleboy/scp-action@v1.0.0
         with:
@@ -147,6 +150,9 @@ jobs:
     if: needs.build-prod.result == 'success'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
       - name: Upload deploy assets
         uses: appleboy/scp-action@v1.0.0
         with:
