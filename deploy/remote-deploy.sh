@@ -14,6 +14,7 @@ WEBAPP_IMAGE_TAG="${WEBAPP_IMAGE_TAG:-}"
 WEBAPP_HOST_PORT="${WEBAPP_HOST_PORT:-}"
 WEBAPP_DOMAIN="${WEBAPP_DOMAIN:-}"
 DEPLOY_WEBAPP_ONLY="${DEPLOY_WEBAPP_ONLY:-false}"
+DEPLOY_SERVER_ONLY="${DEPLOY_SERVER_ONLY:-false}"
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 GHCR_USERNAME="${GHCR_USERNAME:-}"
 GHCR_TOKEN="${GHCR_TOKEN:-}"
@@ -491,6 +492,8 @@ cd "$DEPLOY_DIR"
 echo "Pulling latest images..."
 if [[ "$DEPLOY_WEBAPP_ONLY" == "true" ]]; then
   docker compose pull lehrerlog-webapp
+elif [[ "$DEPLOY_SERVER_ONLY" == "true" ]]; then
+  docker compose pull lehrerlog-server db
 else
   docker compose pull
 fi
@@ -498,6 +501,8 @@ fi
 echo "Starting services..."
 if [[ "$DEPLOY_WEBAPP_ONLY" == "true" ]]; then
   docker compose up -d lehrerlog-webapp
+elif [[ "$DEPLOY_SERVER_ONLY" == "true" ]]; then
+  docker compose up -d lehrerlog-server db
 else
   docker compose up -d --remove-orphans
 fi

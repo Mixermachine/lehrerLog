@@ -102,6 +102,7 @@ jobs:
             GHCR_USERNAME=${{ env.GHCR_OWNER_LOWER }} \
             GHCR_TOKEN=${{ secrets.GHCR_TOKEN }} \
             SUDO_PASSWORD=${{ secrets.SUDO_PASSWORD }} \
+            DEPLOY_SERVER_ONLY=true \
             /home/${{ env.DEPLOY_USER }}/docker/lehrerlog/.deploy/remote-deploy.sh
 
       - name: Post-deploy verification
