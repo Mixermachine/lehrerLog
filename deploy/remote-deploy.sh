@@ -489,15 +489,52 @@ if [[ -n "$GHCR_USERNAME" ]] && [[ -n "$GHCR_TOKEN" ]]; then
   echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 fi
 
+# Deploy the webapp container (used for both full and webapp-only deployments).
+deploy_webapp() {
+  local port="$1"
+  local skip_pull="${2:-false}"
+
+  echo ""
+  echo "=== Deploying webapp (${ENV_NAME}) ==="
+  if [[ "$skip_pull" != "true" ]]; then
+    docker compose pull lehrerlog-webapp
+  fi
+  docker compose up -d lehrerlog-webapp
+
+  echo "Waiting for webapp health (port ${port})..."
+  local attempt=0
+  local max_attempts=30
+  while [[ $attempt -lt $max_attempts ]]; do
+    if curl -fsS "http://localhost:${port}/health" >/dev/null 2>&1; then
+      local version
+      version="$(curl -fsS "http://localhost:${port}/version" 2>/dev/null || true)"
+      echo "Webapp is healthy on port ${port} (${version:-unknown})"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+  done
+
+  echo "Error: Webapp health check failed after ${max_attempts} attempts"
+  docker logs "lehrerlog-${ENV_NAME}-webapp" --tail 20 || true
+  return 1
+}
+
 # Deploy with docker compose
 cd "$DEPLOY_DIR"
 echo "Pulling latest images..."
 if [[ "$DEPLOY_WEBAPP_ONLY" == "true" ]]; then
   docker compose pull lehrerlog-webapp
+  deploy_webapp "$WEBAPP_HOST_PORT"
+  exit $?
 elif [[ "$DEPLOY_SERVER_ONLY" == "true" ]]; then
   docker compose pull lehrerlog-server db
 else
   docker compose pull
+fi
+
+if [[ "$DEPLOY_WEBAPP_ONLY" == "true" ]]; then
+  exit 0
 fi
 
 echo "Starting services..."
@@ -552,6 +589,10 @@ if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
     docker logs "$SERVER_CONTAINER" --tail 200 || true
     exit 1
   fi
+fi
+
+if [[ "$DEPLOY_SERVER_ONLY" != "true" ]]; then
+  deploy_webapp "$WEBAPP_HOST_PORT" "true" || exit 1
 fi
 
 # Optional post-deploy verification
