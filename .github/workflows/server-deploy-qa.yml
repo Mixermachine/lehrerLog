@@ -33,6 +33,17 @@ jobs:
             exit 1
           fi
 
+      - name: Compute QA version tag
+        run: |
+          BASE_VERSION=$(grep -E '^APP_VERSION=' iosApp/Configuration/Config.xcconfig | head -1 | cut -d= -f2-)
+          if [ -z "$BASE_VERSION" ]; then
+            echo "APP_VERSION missing in iosApp/Configuration/Config.xcconfig" >&2
+            exit 1
+          fi
+          DATE=$(date +%Y%m%d)
+          RUN=${{ github.run_number }}
+          echo "QA_TAG=${BASE_VERSION}-dev.${DATE}.${RUN}" >> "$GITHUB_ENV"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -50,8 +61,7 @@ jobs:
           file: server/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ env.GHCR_OWNER_LOWER }}/lehrerlog-server:qa
-            ghcr.io/${{ env.GHCR_OWNER_LOWER }}/lehrerlog-server:qa-${{ github.sha }}
+            ghcr.io/${{ env.GHCR_OWNER_LOWER }}/lehrerlog-server:${{ env.QA_TAG }}
 
       - name: Upload deploy assets
         uses: appleboy/scp-action@v1.0.0
@@ -76,7 +86,7 @@ jobs:
             DOMAIN=api.qa.lehrerlog.de \
             DEPLOY_DIR=/home/${{ env.DEPLOY_USER }}/docker/lehrerlog-qa \
             IMAGE_NAME=ghcr.io/${{ env.GHCR_OWNER_LOWER }}/lehrerlog-server \
-            IMAGE_TAG=qa \
+            IMAGE_TAG=${{ env.QA_TAG }} \
             HOST_PORT=18081 \
             POSTGRES_DB=lehrerlog_qa \
             POSTGRES_USER=lehrerlog \

@@ -36,11 +36,8 @@ jobs:
         id: image_name
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lehrerlog-webapp" >> "$GITHUB_OUTPUT"
 
-      - name: Set tag (qa)
-        id: tag
-        run: echo "tag=qa-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
-
       - name: Compute QA build version
+        id: tag
         run: |
           BASE_VERSION=$(grep -E '^APP_VERSION=' iosApp/Configuration/Config.xcconfig | head -1 | cut -d= -f2-)
           if [ -z "$BASE_VERSION" ]; then
@@ -49,7 +46,9 @@ jobs:
           fi
           DATE=$(date +%Y%m%d)
           RUN=${{ github.run_number }}
-          echo "BUILD_VERSION=${BASE_VERSION}-dev.${DATE}.${RUN}" >> "$GITHUB_ENV"
+          TAG="${BASE_VERSION}-dev.${DATE}.${RUN}"
+          echo "BUILD_VERSION=${TAG}" >> "$GITHUB_ENV"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
