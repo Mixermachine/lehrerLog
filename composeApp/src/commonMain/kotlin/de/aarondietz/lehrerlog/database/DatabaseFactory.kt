@@ -8,14 +8,14 @@ import de.aarondietz.lehrerlog.lehrerLog
  * Platform-specific implementations provide the SqlDriver.
  */
 expect class DatabaseDriverFactory(context: Any?) {
-    fun createDriver(): SqlDriver
+    suspend fun createDriver(): SqlDriver
     fun deleteDatabase()
 }
 
 /**
  * Create lehrerLog database instance.
  */
-fun createDatabase(driverFactory: DatabaseDriverFactory): lehrerLog {
+suspend fun createDatabase(driverFactory: DatabaseDriverFactory): lehrerLog {
     val driver = driverFactory.createDriver()
     return lehrerLog(driver)
 }
@@ -28,10 +28,7 @@ class DatabaseManager(private val driverFactory: DatabaseDriverFactory) {
     private var database: lehrerLog? = null
     private val lock = DatabaseLock()
 
-    val db: lehrerLog
-        get() = getDatabase()
-
-    fun getDatabase(): lehrerLog {
+    suspend fun getDatabase(): lehrerLog {
         return lock.withLock {
             val existing = database
             if (existing != null) {
@@ -46,14 +43,14 @@ class DatabaseManager(private val driverFactory: DatabaseDriverFactory) {
         }
     }
 
-    fun reset() {
+    suspend fun reset() {
         lock.withLock {
             closeInternal()
             driverFactory.deleteDatabase()
         }
     }
 
-    fun close() {
+    suspend fun close() {
         lock.withLock { closeInternal() }
     }
 

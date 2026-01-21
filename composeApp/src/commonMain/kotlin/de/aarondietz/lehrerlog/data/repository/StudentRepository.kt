@@ -26,17 +26,16 @@ class StudentRepository(
     private val databaseManager: DatabaseManager,
     private val baseUrl: String,
     private val logger: Logger
-) {
-    private val database
-        get() = databaseManager.db
+)  {
+    private suspend fun database() = databaseManager.getDatabase()
 
     /**
      * Get all students for the current school from local database.
      * Returns a Flow that emits updates when data changes.
      */
-    fun getStudentsFlow(schoolId: String): Flow<List<StudentDto>> {
+    suspend fun getStudentsFlow(schoolId: String): Flow<List<StudentDto>> {
         val now = currentTimeMillis()
-        return database.studentClassQueries
+        return database().studentClassQueries
             .getStudentsWithClassesBySchool(now, schoolId)
             .asFlow()
             .mapToList(Dispatchers.Default)
@@ -71,7 +70,7 @@ class StudentRepository(
             // Update local database
             students.forEach { student ->
                 val now = currentTimeMillis()
-                database.studentQueries.insertStudent(
+                database().studentQueries.insertStudent(
                     id = student.id,
                     schoolId = student.schoolId,
                     firstName = student.firstName,
@@ -82,9 +81,9 @@ class StudentRepository(
                     createdAt = student.createdAt.toLongOrNull() ?: now,
                     updatedAt = student.updatedAt.toLongOrNull() ?: now
                 )
-                database.studentClassQueries.deleteClassesForStudent(student.id)
+                database().studentClassQueries.deleteClassesForStudent(student.id)
                 student.classIds.forEach { classId ->
-                    database.studentClassQueries.insertStudentClass(
+                    database().studentClassQueries.insertStudentClass(
                         studentId = student.id,
                         classId = classId,
                         validFrom = now,
@@ -117,7 +116,7 @@ class StudentRepository(
             val now = currentTimeMillis()
 
             // Save to local database first
-            database.studentQueries.insertStudent(
+            database().studentQueries.insertStudent(
                 id = studentId,
                 schoolId = schoolId,
                 firstName = firstName,
@@ -130,7 +129,7 @@ class StudentRepository(
             )
 
             // Queue for sync
-            database.pendingSyncQueries.insertPendingSync(
+            database().pendingSyncQueries.insertPendingSync(
                 entityType = "STUDENT",
                 entityId = studentId,
                 operation = "CREATE",
@@ -138,7 +137,7 @@ class StudentRepository(
             )
 
             if (!classId.isNullOrBlank()) {
-                database.studentClassQueries.insertStudentClass(
+                database().studentClassQueries.insertStudentClass(
                     studentId = studentId,
                     classId = classId,
                     validFrom = now,
@@ -171,11 +170,11 @@ class StudentRepository(
     suspend fun deleteStudent(studentId: String): Result<Unit> {
         return try {
             // Delete from local database
-            database.studentQueries.deleteStudent(studentId)
-            database.studentClassQueries.deleteClassesForStudent(studentId)
+            database().studentQueries.deleteStudent(studentId)
+            database().studentClassQueries.deleteClassesForStudent(studentId)
 
             // Queue for sync
-            database.pendingSyncQueries.insertPendingSync(
+            database().pendingSyncQueries.insertPendingSync(
                 entityType = "STUDENT",
                 entityId = studentId,
                 operation = "DELETE",

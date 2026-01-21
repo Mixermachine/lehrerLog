@@ -24,8 +24,7 @@ class SyncManager(
     private val connectivityMonitor: ConnectivityMonitor,
     private val logger: Logger
 ) {
-    private val database
-        get() = databaseManager.db
+    private suspend fun database() = databaseManager.getDatabase()
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
@@ -171,7 +170,7 @@ class SyncManager(
     private suspend fun pushLocalChanges(): Boolean {
         return withContext(Dispatchers.Default) {
             try {
-                val pendingChanges = database.pendingSyncQueries.getAllPending().executeAsList()
+                val pendingChanges = database().pendingSyncQueries.getAllPending().executeAsList()
 
                 logger.d { "Found ${pendingChanges.size} pending changes to push" }
 
@@ -215,7 +214,7 @@ class SyncManager(
                 response.results.forEach { result ->
                     if (result.success) {
                         // Remove from pending queue
-                        database.pendingSyncQueries.deletePendingByEntityId(result.entityId)
+                        database().pendingSyncQueries.deletePendingByEntityId(result.entityId)
 
                         // Mark entity as synced
                         markEntityAsSynced(result.entityId)
@@ -223,7 +222,7 @@ class SyncManager(
                         // Handle conflict - for now, just increment retry count
                         val pending = pendingChanges.find { it.entityId == result.entityId }
                         if (pending != null) {
-                            database.pendingSyncQueries.incrementRetryCount(
+                            database().pendingSyncQueries.incrementRetryCount(
                                 lastError = result.errorMessage ?: "Conflict",
                                 id = pending.id
                             )
@@ -252,12 +251,12 @@ class SyncManager(
                 var totalItemsSynced = 0
 
                 // Get last sync ID for each entity type
-                val studentLastSyncId = database.syncMetadataQueries
+                val studentLastSyncId = database().syncMetadataQueries
                     .getLastSyncId("STUDENT")
                     .executeAsOneOrNull()
                     ?.lastSyncLogId ?: 0L
 
-                val classLastSyncId = database.syncMetadataQueries
+                val classLastSyncId = database().syncMetadataQueries
                     .getLastSyncId("SCHOOL_CLASS")
                     .executeAsOneOrNull()
                     ?.lastSyncLogId ?: 0L
@@ -268,7 +267,7 @@ class SyncManager(
 
                 // Update last sync ID
                 if (response.changes.isNotEmpty()) {
-                    database.syncMetadataQueries.updateLastSyncId(
+                    database().syncMetadataQueries.updateLastSyncId(
                         lastSyncLogId = response.lastSyncId,
                         lastSyncTimestamp = currentTimeMillis(),
                         entityType = "STUDENT"
@@ -281,7 +280,7 @@ class SyncManager(
 
                 // Update last sync ID
                 if (response.changes.isNotEmpty()) {
-                    database.syncMetadataQueries.updateLastSyncId(
+                    database().syncMetadataQueries.updateLastSyncId(
                         lastSyncLogId = response.lastSyncId,
                         lastSyncTimestamp = currentTimeMillis(),
                         entityType = "SCHOOL_CLASS"
@@ -329,7 +328,7 @@ class SyncManager(
                 // For now, just mark as synced if exists
             }
             "DELETE" -> {
-                database.studentQueries.deleteStudent(change.entityId)
+                database().studentQueries.deleteStudent(change.entityId)
             }
         }
     }
@@ -344,7 +343,7 @@ class SyncManager(
                 // For now, just mark as synced if exists
             }
             "DELETE" -> {
-                database.schoolClassQueries.deleteClass(change.entityId)
+                database().schoolClassQueries.deleteClass(change.entityId)
             }
         }
     }
@@ -354,10 +353,10 @@ class SyncManager(
      */
     private suspend fun markEntityAsSynced(entityId: String) {
         try {
-            database.studentQueries.markAsSynced(entityId)
+            database().studentQueries.markAsSynced(entityId)
         } catch (e: Exception) {
             try {
-                database.schoolClassQueries.markAsSynced(entityId)
+                database().schoolClassQueries.markAsSynced(entityId)
             } catch (e: Exception) {
                 // Entity not found
             }
@@ -367,9 +366,9 @@ class SyncManager(
     /**
      * Get the count of pending changes.
      */
-    private fun getPendingChangesCount(): Int {
+    private suspend fun getPendingChangesCount(): Int {
         return try {
-            database.pendingSyncQueries.countPending().executeAsOne().toInt()
+            database().pendingSyncQueries.countPending().executeAsOne().toInt()
         } catch (e: Exception) {
             0
         }
@@ -378,15 +377,15 @@ class SyncManager(
     /**
      * Fetch entity data from local database as JSON string.
      */
-    private fun fetchEntityData(entityType: String, entityId: String): String? {
+    private suspend fun fetchEntityData(entityType: String, entityId: String): String? {
         return try {
             val json = Json { encodeDefaults = true }
             when (entityType) {
                 "STUDENT" -> {
-                    val student = database.studentQueries.getStudentById(entityId).executeAsOneOrNull()
+                    val student = database().studentQueries.getStudentById(entityId).executeAsOneOrNull()
                     student?.let {
                         val now = currentTimeMillis()
-                        val classIds = database.studentClassQueries
+                        val classIds = database().studentClassQueries
                             .getClassIdsForStudent(entityId, now)
                             .executeAsList()
                         val dto = StudentDto(
@@ -403,7 +402,7 @@ class SyncManager(
                     }
                 }
                 "SCHOOL_CLASS" -> {
-                    val schoolClass = database.schoolClassQueries.getClassById(entityId).executeAsOneOrNull()
+                    val schoolClass = database().schoolClassQueries.getClassById(entityId).executeAsOneOrNull()
                     schoolClass?.let {
                         val dto = SchoolClassDto(
                             id = it.id,
@@ -428,14 +427,14 @@ class SyncManager(
     /**
      * Get entity version from local database.
      */
-    private fun getEntityVersion(entityType: String, entityId: String): Long {
+    private suspend fun getEntityVersion(entityType: String, entityId: String): Long {
         return try {
             when (entityType) {
                 "STUDENT" -> {
-                    database.studentQueries.getStudentById(entityId).executeAsOneOrNull()?.version ?: 1L
+                    database().studentQueries.getStudentById(entityId).executeAsOneOrNull()?.version ?: 1L
                 }
                 "SCHOOL_CLASS" -> {
-                    database.schoolClassQueries.getClassById(entityId).executeAsOneOrNull()?.version ?: 1L
+                    database().schoolClassQueries.getClassById(entityId).executeAsOneOrNull()?.version ?: 1L
                 }
                 else -> 1L
             }

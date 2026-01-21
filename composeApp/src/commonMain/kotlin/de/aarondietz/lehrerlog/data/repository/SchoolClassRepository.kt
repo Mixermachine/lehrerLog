@@ -26,14 +26,13 @@ class SchoolClassRepository(
     private val baseUrl: String,
     private val logger: Logger
 ) {
-    private val database
-        get() = databaseManager.db
+    private suspend fun database() = databaseManager.getDatabase()
 
     /**
      * Get all classes for the current school from local database.
      */
-    fun getClassesFlow(schoolId: String): Flow<List<SchoolClassDto>> {
-        return database.schoolClassQueries
+    suspend fun getClassesFlow(schoolId: String): Flow<List<SchoolClassDto>> {
+        return database().schoolClassQueries
             .getClassesBySchool(schoolId)
             .asFlow()
             .mapToList(Dispatchers.Default)
@@ -64,7 +63,7 @@ class SchoolClassRepository(
 
             // Update local database
             classes.forEach { schoolClass ->
-                database.schoolClassQueries.insertClass(
+                database().schoolClassQueries.insertClass(
                     id = schoolClass.id,
                     schoolId = schoolClass.schoolId,
                     name = schoolClass.name,
@@ -100,7 +99,7 @@ class SchoolClassRepository(
             logger.d { "Generated classId=$classId, inserting into local database" }
 
             // Save to local database first
-            database.schoolClassQueries.insertClass(
+            database().schoolClassQueries.insertClass(
                 id = classId,
                 schoolId = schoolId,
                 name = name,
@@ -115,7 +114,7 @@ class SchoolClassRepository(
             logger.d { "Class saved to local database, queuing for sync" }
 
             // Queue for sync
-            database.pendingSyncQueries.insertPendingSync(
+            database().pendingSyncQueries.insertPendingSync(
                 entityType = "SCHOOL_CLASS",
                 entityId = classId,
                 operation = "CREATE",
@@ -147,10 +146,10 @@ class SchoolClassRepository(
     suspend fun deleteClass(classId: String): Result<Unit> {
         return try {
             // Delete from local database
-            database.schoolClassQueries.deleteClass(classId)
+            database().schoolClassQueries.deleteClass(classId)
 
             // Queue for sync
-            database.pendingSyncQueries.insertPendingSync(
+            database().pendingSyncQueries.insertPendingSync(
                 entityType = "SCHOOL_CLASS",
                 entityId = classId,
                 operation = "DELETE",

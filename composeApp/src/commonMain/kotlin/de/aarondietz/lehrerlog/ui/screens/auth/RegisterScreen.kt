@@ -12,8 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -57,7 +58,14 @@ private fun RegisterScreenContent(
     onSchoolSelected: (de.aarondietz.lehrerlog.data.SchoolSearchResultDto) -> Unit,
     onRegisterClick: () -> Unit
 ) {
-    val focusManager = LocalFocusManager.current
+    val schoolFocus = remember { FocusRequester() }
+    val firstNameFocus = remember { FocusRequester() }
+    val lastNameFocus = remember { FocusRequester() }
+    val emailFocus = remember { FocusRequester() }
+    val passwordFocus = remember { FocusRequester() }
+    val confirmPasswordFocus = remember { FocusRequester() }
+    val registerButtonFocus = remember { FocusRequester() }
+    val loginButtonFocus = remember { FocusRequester() }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     val suggestionScrollState = rememberScrollState()
@@ -102,9 +110,14 @@ private fun RegisterScreenContent(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                onNext = { firstNameFocus.requestFocus() }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(schoolFocus)
+                .focusProperties {
+                    next = firstNameFocus
+                },
             enabled = !registerState.isLoading
         )
 
@@ -134,6 +147,7 @@ private fun RegisterScreenContent(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .focusProperties { canFocus = false }
                                 .clickable(
                                     enabled = !registerState.isLoading
                                 ) {
@@ -182,9 +196,15 @@ private fun RegisterScreenContent(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                onNext = { lastNameFocus.requestFocus() }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(firstNameFocus)
+                .focusProperties {
+                    previous = schoolFocus
+                    next = lastNameFocus
+                },
             enabled = !registerState.isLoading
         )
 
@@ -198,9 +218,15 @@ private fun RegisterScreenContent(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                onNext = { emailFocus.requestFocus() }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(lastNameFocus)
+                .focusProperties {
+                    previous = firstNameFocus
+                    next = emailFocus
+                },
             enabled = !registerState.isLoading
         )
 
@@ -217,9 +243,15 @@ private fun RegisterScreenContent(
                 imeAction = ImeAction.Next
             ),
             keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                onNext = { passwordFocus.requestFocus() }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(emailFocus)
+                .focusProperties {
+                    previous = lastNameFocus
+                    next = passwordFocus
+                },
             enabled = !registerState.isLoading
         )
 
@@ -245,9 +277,15 @@ private fun RegisterScreenContent(
                 imeAction = ImeAction.Next
             ),
             keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                onNext = { confirmPasswordFocus.requestFocus() }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(passwordFocus)
+                .focusProperties {
+                    previous = emailFocus
+                    next = confirmPasswordFocus
+                },
             enabled = !registerState.isLoading
         )
 
@@ -270,12 +308,18 @@ private fun RegisterScreenContent(
             visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Next
+                imeAction = ImeAction.Done
             ),
             keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                onDone = { registerButtonFocus.requestFocus() }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(confirmPasswordFocus)
+                .focusProperties {
+                    previous = passwordFocus
+                    next = registerButtonFocus
+                },
             enabled = !registerState.isLoading
         )
 
@@ -294,7 +338,13 @@ private fun RegisterScreenContent(
 
         Button(
             onClick = onRegisterClick,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(registerButtonFocus)
+                .focusProperties {
+                    previous = confirmPasswordFocus
+                    next = loginButtonFocus
+                },
             enabled = !registerState.isLoading
         ) {
             if (registerState.isLoading) {
@@ -309,7 +359,14 @@ private fun RegisterScreenContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TextButton(onClick = onNavigateToLogin) {
+        TextButton(
+            onClick = onNavigateToLogin,
+            modifier = Modifier
+                .focusRequester(loginButtonFocus)
+                .focusProperties {
+                    previous = registerButtonFocus
+                }
+        ) {
             Text(stringResource(Res.string.have_account) + " ")
             Text(
                 text = stringResource(Res.string.login),

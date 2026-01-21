@@ -11,7 +11,7 @@ import de.aarondietz.lehrerlog.lehrerLog
   * Uses AndroidSqliteDriver with application context.
   */
   actual class DatabaseDriverFactory actual constructor(private val context: Any?) {
-      actual fun createDriver(): SqlDriver {
+      actual suspend fun createDriver(): SqlDriver {
           val androidContext = context as? Context
               ?: error("Android context is required to create the SQLDelight driver.")
           return AndroidSqliteDriver(

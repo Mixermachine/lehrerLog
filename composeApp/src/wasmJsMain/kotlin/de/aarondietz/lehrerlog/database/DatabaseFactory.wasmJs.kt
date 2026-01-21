@@ -14,14 +14,15 @@ private val sqljsWorkerUrl: String = js(
 )
 
 actual class DatabaseDriverFactory actual constructor(context: Any?) {
-    actual fun createDriver(): SqlDriver {
-        return WebWorkerDriver(
+    actual suspend fun createDriver(): SqlDriver {
+        val driver = WebWorkerDriver(
             Worker(
                 sqljsWorkerUrl
             )
-        ).also { driver ->
-            lehrerLog.Schema.create(driver)
-        }
+        )
+        // Await async schema creation - WebWorkerDriver is inherently async
+        lehrerLog.Schema.create(driver).await()
+        return driver
     }
 
     actual fun deleteDatabase() {

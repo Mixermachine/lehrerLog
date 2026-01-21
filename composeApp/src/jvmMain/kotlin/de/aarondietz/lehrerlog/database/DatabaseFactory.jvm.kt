@@ -11,7 +11,7 @@ import java.io.File
  * Uses JdbcSqliteDriver with file-based database.
  */
 actual class DatabaseDriverFactory actual constructor(context: Any?) {
-    actual fun createDriver(): SqlDriver {
+    actual suspend fun createDriver(): SqlDriver {
         val databasePath = File(System.getProperty("user.home"), ".lehrerlog")
         databasePath.mkdirs()
 

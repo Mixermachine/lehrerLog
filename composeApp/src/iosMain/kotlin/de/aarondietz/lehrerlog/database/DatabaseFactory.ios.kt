@@ -15,7 +15,7 @@ import platform.Foundation.NSUserDomainMask
  * Uses NativeSqliteDriver for iOS/Native platforms.
  */
 actual class DatabaseDriverFactory actual constructor(context: Any?) {
-    actual fun createDriver(): SqlDriver {
+    actual suspend fun createDriver(): SqlDriver {
         return NativeSqliteDriver(
             schema = lehrerLog.Schema.synchronous(),
             name = "lehrerlog.db"

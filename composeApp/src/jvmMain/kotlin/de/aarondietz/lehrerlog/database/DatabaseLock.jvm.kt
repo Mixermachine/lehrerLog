@@ -1,16 +1,14 @@
 package de.aarondietz.lehrerlog.database
 
-import java.util.concurrent.locks.ReentrantLock
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 actual class DatabaseLock {
-    private val lock = ReentrantLock()
+    private val mutex = Mutex()
 
-    actual fun <T> withLock(block: () -> T): T {
-        lock.lock()
-        return try {
+    actual suspend fun <T> withLock(block: suspend () -> T): T {
+        return mutex.withLock {
             block()
-        } finally {
-            lock.unlock()
         }
     }
 }

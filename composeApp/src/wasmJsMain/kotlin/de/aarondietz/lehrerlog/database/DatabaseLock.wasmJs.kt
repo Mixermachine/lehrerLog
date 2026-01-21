@@ -1,5 +1,14 @@
 package de.aarondietz.lehrerlog.database
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 actual class DatabaseLock {
-    actual fun <T> withLock(block: () -> T): T = block()
+    private val mutex = Mutex()
+
+    actual suspend fun <T> withLock(block: suspend () -> T): T {
+        return mutex.withLock {
+            block()
+        }
+    }
 }
