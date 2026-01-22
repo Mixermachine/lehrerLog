@@ -1,4 +1,6 @@
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+-- PostgreSQL: Enable pgcrypto extension for gen_random_uuid()
+-- H2: gen_random_uuid() is natively supported in PostgreSQL mode
+-- CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE schools (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

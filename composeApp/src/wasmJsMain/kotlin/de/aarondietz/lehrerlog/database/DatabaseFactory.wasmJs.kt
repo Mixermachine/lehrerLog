@@ -4,6 +4,7 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.worker.WebWorkerDriver
 import de.aarondietz.lehrerlog.lehrerLog
 import org.w3c.dom.Worker
+import org.w3c.dom.WorkerOptions
 
 /**
  * WasmJS implementation of DatabaseDriverFactory.
@@ -13,11 +14,14 @@ private val sqljsWorkerUrl: String = js(
     "new URL('@cashapp/sqldelight-sqljs-worker/sqljs.worker.js', import.meta.url).toString()"
 )
 
+private val workerOptions: WorkerOptions = js("{ type: 'module' }")
+
 actual class DatabaseDriverFactory actual constructor(context: Any?) {
     actual suspend fun createDriver(): SqlDriver {
         val driver = WebWorkerDriver(
             Worker(
-                sqljsWorkerUrl
+                sqljsWorkerUrl,
+                workerOptions
             )
         )
         // Await async schema creation - WebWorkerDriver is inherently async

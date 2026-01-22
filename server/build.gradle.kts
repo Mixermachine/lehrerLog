@@ -60,3 +60,10 @@ repositories {
         name = "jitpack"
     }
 }
+
+tasks.register<JavaExec>("flywayRepair") {
+    group = "database"
+    description = "Runs Flyway repair against the configured local database."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("de.aarondietz.lehrerlog.db.FlywayRepair")
+}
