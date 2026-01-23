@@ -87,9 +87,10 @@ jobs:
               POSTGRES_USER="$POSTGRES_USER" \
               POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
               docker compose run --rm \
+              --entrypoint java \
               -e DB_MODE=postgres \
               -e DATABASE_URL="jdbc:postgresql://db:5432/${POSTGRES_DB}" \
               -e DATABASE_USER="${POSTGRES_USER}" \
               -e DATABASE_PASSWORD="${POSTGRES_PASSWORD}" \
               lehrerlog-server \
-              java -cp "/app/lib/*" de.aarondietz.lehrerlog.db.FlywayRepair
+              -cp "/app/lib/*" de.aarondietz.lehrerlog.db.FlywayRepair
