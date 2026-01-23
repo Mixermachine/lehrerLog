@@ -52,16 +52,16 @@ jobs:
             fi
 
             cd "$DEPLOY_DIR"
-            if [ -f ./app.env ]; then
+            if [ -f ./.env ]; then
               get_env_value() {
-                grep -m1 "^${1}=" ./app.env | cut -d= -f2-
+                grep -m1 "^${1}=" ./.env | cut -d= -f2-
               }
-              app_db="$(get_env_value POSTGRES_DB)"
-              app_user="$(get_env_value POSTGRES_USER)"
-              app_pass="$(get_env_value POSTGRES_PASSWORD)"
-              if [ -n "$app_db" ]; then POSTGRES_DB="$app_db"; fi
-              if [ -n "$app_user" ]; then POSTGRES_USER="$app_user"; fi
-              if [ -n "$app_pass" ]; then POSTGRES_PASSWORD="$app_pass"; fi
+              env_db="$(get_env_value POSTGRES_DB)"
+              env_user="$(get_env_value POSTGRES_USER)"
+              env_pass="$(get_env_value POSTGRES_PASSWORD)"
+              if [ -n "$env_db" ]; then POSTGRES_DB="$env_db"; fi
+              if [ -n "$env_user" ]; then POSTGRES_USER="$env_user"; fi
+              if [ -n "$env_pass" ]; then POSTGRES_PASSWORD="$env_pass"; fi
             fi
 
             if [ -z "$POSTGRES_PASSWORD" ]; then
