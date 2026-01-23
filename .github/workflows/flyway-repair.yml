@@ -45,15 +45,23 @@ jobs:
               DEPLOY_DIR="/home/${{ env.DEPLOY_USER }}/docker/lehrerlog-qa"
               POSTGRES_DB="lehrerlog_qa"
               POSTGRES_USER="lehrerlog"
-              POSTGRES_PASSWORD="${{ secrets.QA_DB_PASSWORD }}"
             else
               DEPLOY_DIR="/home/${{ env.DEPLOY_USER }}/docker/lehrerlog"
               POSTGRES_DB="lehrerlog_prod"
               POSTGRES_USER="lehrerlog"
-              POSTGRES_PASSWORD="${{ secrets.PROD_DB_PASSWORD }}"
             fi
 
             cd "$DEPLOY_DIR"
+            if [ -f ./app.env ]; then
+              set -a
+              . ./app.env
+              set +a
+            fi
+
+            if [ -z "$POSTGRES_PASSWORD" ]; then
+              echo "POSTGRES_PASSWORD not set. Ensure app.env exists in $DEPLOY_DIR." >&2
+              exit 1
+            fi
             ENV_NAME="$ENV_NAME" \
               POSTGRES_DB="$POSTGRES_DB" \
               POSTGRES_USER="$POSTGRES_USER" \
