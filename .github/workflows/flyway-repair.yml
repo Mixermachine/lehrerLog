@@ -1,0 +1,81 @@
+name: Flyway Repair
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        required: true
+        options:
+          - qa
+          - prod
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flyway-repair-${{ inputs.environment }}-${{ vars.DEPLOY_HOST }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+    steps:
+      - name: Validate deploy config
+        run: |
+          if [ -z "${DEPLOY_HOST}" ] || [ -z "${DEPLOY_USER}" ]; then
+            echo "DEPLOY_HOST and DEPLOY_USER must be set via repo variables." >&2
+            exit 1
+          fi
+
+      - name: Run Flyway repair on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          request_pty: true
+          script: |
+            ENV_NAME="${{ inputs.environment }}"
+            if [ "$ENV_NAME" = "qa" ]; then
+              DEPLOY_DIR="/home/${{ env.DEPLOY_USER }}/docker/lehrerlog-qa"
+              POSTGRES_DB="lehrerlog_qa"
+              POSTGRES_USER="lehrerlog"
+              POSTGRES_PASSWORD="${{ secrets.QA_DB_PASSWORD }}"
+            else
+              DEPLOY_DIR="/home/${{ env.DEPLOY_USER }}/docker/lehrerlog"
+              POSTGRES_DB="lehrerlog_prod"
+              POSTGRES_USER="lehrerlog"
+              POSTGRES_PASSWORD="${{ secrets.PROD_DB_PASSWORD }}"
+            fi
+
+            cd "$DEPLOY_DIR"
+            ENV_NAME="$ENV_NAME" \
+              POSTGRES_DB="$POSTGRES_DB" \
+              POSTGRES_USER="$POSTGRES_USER" \
+              POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+              docker compose up -d db
+
+            for attempt in $(seq 1 12); do
+              DB_HEALTH="$(docker inspect --format '{{.State.Health.Status}}' "lehrerlog-${ENV_NAME}-db" 2>/dev/null || true)"
+              if [ "$DB_HEALTH" = "healthy" ]; then
+                break
+              fi
+              sleep 2
+            done
+
+            ENV_NAME="$ENV_NAME" \
+              POSTGRES_DB="$POSTGRES_DB" \
+              POSTGRES_USER="$POSTGRES_USER" \
+              POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+              docker compose run --rm \
+              -e DB_MODE=postgres \
+              -e DATABASE_URL="jdbc:postgresql://db:5432/${POSTGRES_DB}" \
+              -e DATABASE_USER="${POSTGRES_USER}" \
+              -e DATABASE_PASSWORD="${POSTGRES_PASSWORD}" \
+              lehrerlog-server \
+              java -cp "/app/lib/*" de.aarondietz.lehrerlog.db.FlywayRepair
