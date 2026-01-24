@@ -103,6 +103,29 @@ All authenticated routes must validate `principal.schoolId`:
 - Use unique test prefixes: `testing${(10000..99999).random()}`
 - Clean up test data in `@AfterTest` using pattern matching
 
+### ROBORAZZI & COMPOSE UI
+
+1. **DETERMINISM:**
+   - NEVER use `delay()` or `Thread.sleep()`.
+   - Set `composeTestRule.mainClock.autoAdvance = false`.
+   - Use `composeTestRule.mainClock.advanceTimeBy(millis)` for state progression.
+   - Force `motionDurationScale = 0` to kill animations.
+2. **DATA INTEGRITY:**
+   - NO inline mock data or magic strings (e.g., "John Doe").
+   - Import strictly from `SharedTestFixtures.kt`. You may add new static values and functions (create if missing).
+3. **DESIGN CONSISTENCY:**
+   - NO raw values (e.g., `12.dp`, `Color.Red`) in productive code. Allowed for tests.
+   - MUST use `MaterialTheme` tokens (spacing, typography, colorScheme). Add reusable tokens if needed.
+4. **FAILURE HANDLING:**
+   - If snapshot verification fails, report the diff percentage.
+   - DO NOT modify UI padding/layout to force a pass.
+5. **NAMING:**
+   - `captureRoboImage("src/commonTest/snapshots/${TestClass}_${Scenario}.png")`
+6. **IO MOCKING:**
+   - For file upload limits, mock the response of the server.
+   - DO NOT generate actual 100MB dummy files in tests.
+   - Use MockFileSystem to simulate file sizes.
+
 ## Environments
 
 | Environment | Server URL |
@@ -118,6 +141,7 @@ Override with: `-PserverUrl=https://...`
 - Version source: `iosApp/Configuration/Config.xcconfig` (`APP_VERSION`)
 - Release tag format: `MAJOR.MINOR.PATCH-bNNNN` (e.g., `0.0.1-b0001`)
 - Android signing secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS_APK`, `ANDROID_KEY_ALIAS_AAB`
+- Entire project targets JDK 21 (build/runtime)
 - Flavors: Android `prod/qa/dev` with `applicationIdSuffix` (`.qa`, `.dev`); iOS uses `BUNDLE_SUFFIX` in `iosApp/Configuration/Config.xcconfig`
 - Flyway: never edit applied migrations; use new migrations. Repair only with `:server:flywayRepair` (local) or `.github/workflows/flyway-repair.yml` (QA/PROD)
 - Deploy scripts: `deploy/` folder (Docker Compose, nginx, backup/restore)

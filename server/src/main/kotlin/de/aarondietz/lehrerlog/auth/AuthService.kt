@@ -114,7 +114,11 @@ class AuthService(
                 (RefreshTokens.expiresAt greater now)
             }
             .toList()
-            .find { row -> tokenService.verifyRefreshToken(refreshToken, row[RefreshTokens.tokenHash]) }
+            .find { row ->
+                runCatching {
+                    tokenService.verifyRefreshToken(refreshToken, row[RefreshTokens.tokenHash])
+                }.getOrDefault(false)
+            }
             ?: throw AuthException("Invalid or expired refresh token")
 
         val userId = tokenRow[RefreshTokens.userId].value

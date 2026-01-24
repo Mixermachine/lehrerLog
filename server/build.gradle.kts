@@ -7,6 +7,22 @@ plugins {
 
 group = "de.aarondietz.lehrerlog"
 version = "1.0.0"
+
+kotlin {
+    jvmToolchain(21)
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
 application {
     mainClass.set("de.aarondietz.lehrerlog.ApplicationKt")
 
