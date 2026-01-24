@@ -14,7 +14,6 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
-    alias(libs.plugins.sqlDelight)
     kotlin("plugin.serialization") version libs.versions.kotlin.get()
 
 }
@@ -114,8 +113,14 @@ kotlin {
         val commonMain by getting {
             kotlin.srcDir(serverConfigDir)
         }
+        val commonTest by getting
         val nonWasmMain by creating {
             dependsOn(commonMain)
+        }
+        val wasmJsTest by getting {
+            dependsOn(commonTest)
+            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+            dependencies { implementation(compose.uiTest) }
         }
         val nativeMain by creating {
             dependsOn(nonWasmMain)
@@ -133,11 +138,9 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
-            implementation(libs.sqldelight.android)
             implementation(libs.ktor.client.okhttp)
         }
         iosMain.dependencies {
-            implementation(libs.sqldelight.native)
             implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
@@ -152,8 +155,6 @@ kotlin {
             implementation(projects.shared)
             implementation(libs.navigation.compose)
             implementation(libs.material.icons.extended)
-            implementation(libs.sqldelight.coroutines)
-
             // Ktor Client
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
@@ -175,24 +176,11 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
-            implementation(libs.sqldelight.jvm)
             implementation(libs.ktor.client.cio)
         }
         wasmJsMain.dependencies {
-            implementation("app.cash.sqldelight:web-worker-driver-wasm-js:2.2.1")
-            implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.1.0"))
-            implementation(npm("sql.js", "1.13.0"))
             implementation(devNpm("copy-webpack-plugin", "13.0.1"))
             implementation(libs.ktor.client.js)
-        }
-    }
-}
-
-sqldelight {
-    databases {
-        create("lehrerLog") { // IDE displays error but this is fine
-            packageName = "de.aarondietz.lehrerlog"
-            generateAsync.set(true)
         }
     }
 }

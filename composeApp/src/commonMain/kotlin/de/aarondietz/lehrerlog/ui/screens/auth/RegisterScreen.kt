@@ -158,7 +158,7 @@ private fun RegisterScreenContent(
                             Text(text = displayLabel, style = MaterialTheme.typography.bodyMedium)
                         }
                         if (index < registerState.schoolSuggestions.lastIndex) {
-                            Divider()
+                            HorizontalDivider()
                         }
                     }
                 }

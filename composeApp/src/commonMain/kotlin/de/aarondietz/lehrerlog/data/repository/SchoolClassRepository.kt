@@ -1,58 +1,35 @@
 package de.aarondietz.lehrerlog.data.repository
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
 import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.auth.TokenStorage
-import de.aarondietz.lehrerlog.currentTimeMillis
 import de.aarondietz.lehrerlog.data.SchoolClassDto
-import de.aarondietz.lehrerlog.database.DatabaseManager
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Repository for SchoolClass data with offline-first capabilities.
+ * Repository for SchoolClass data (online-first).
  */
 class SchoolClassRepository(
     private val httpClient: HttpClient,
     private val tokenStorage: TokenStorage,
-    private val databaseManager: DatabaseManager,
     private val baseUrl: String,
     private val logger: Logger
 ) {
-    private suspend fun database() = databaseManager.getDatabase()
+    private val classesState = MutableStateFlow<List<SchoolClassDto>>(emptyList())
 
     /**
-     * Get all classes for the current school from local database.
+     * Get classes from in-memory state.
      */
-    suspend fun getClassesFlow(schoolId: String): Flow<List<SchoolClassDto>> {
-        return database().schoolClassQueries
-            .getClassesBySchool(schoolId)
-            .asFlow()
-            .mapToList(Dispatchers.Default)
-            .map { classes ->
-                classes.map { schoolClass ->
-                    SchoolClassDto(
-                        id = schoolClass.id,
-                        schoolId = schoolClass.schoolId,
-                        name = schoolClass.name,
-                        alternativeName = schoolClass.alternativeName,
-                        version = schoolClass.version,
-                        createdAt = schoolClass.createdAt.toString(),
-                        updatedAt = schoolClass.updatedAt.toString()
-                    )
-                }
-            }
+    suspend fun getClassesFlow(): Flow<List<SchoolClassDto>> {
+        return classesState.asStateFlow()
     }
 
     /**
-     * Load classes from server and update local database.
+     * Load classes from server and update in-memory state.
      */
     suspend fun refreshClasses(schoolId: String): Result<List<SchoolClassDto>> {
         return try {
@@ -61,20 +38,7 @@ class SchoolClassRepository(
                 tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }.body<List<SchoolClassDto>>()
 
-            // Update local database
-            classes.forEach { schoolClass ->
-                database().schoolClassQueries.insertClass(
-                    id = schoolClass.id,
-                    schoolId = schoolClass.schoolId,
-                    name = schoolClass.name,
-                    alternativeName = schoolClass.alternativeName,
-                    version = schoolClass.version,
-                    isSynced = 1,
-                    localUpdatedAt = currentTimeMillis(),
-                    createdAt = schoolClass.createdAt.toLongOrNull() ?: currentTimeMillis(),
-                    updatedAt = schoolClass.updatedAt.toLongOrNull() ?: currentTimeMillis()
-                )
-            }
+            classesState.value = classes
 
             Result.success(classes)
         } catch (e: Exception) {
@@ -83,55 +47,25 @@ class SchoolClassRepository(
     }
 
     /**
-     * Create a new class (offline-first).
+     * Create a new class on the server.
      */
-    @OptIn(ExperimentalUuidApi::class)
     suspend fun createClass(
-        schoolId: String,
         name: String,
         alternativeName: String? = null
     ): Result<SchoolClassDto> {
-        logger.d { "createClass called: schoolId=$schoolId, name=$name, alternativeName=$alternativeName" }
+        logger.d { "createClass called: name=$name, alternativeName=$alternativeName" }
         return try {
-            val classId = Uuid.random().toString()
-            val now = currentTimeMillis()
+            val schoolClass = httpClient.post("$baseUrl/api/classes") {
+                setBody(
+                    de.aarondietz.lehrerlog.data.CreateSchoolClassRequest(
+                        name = name,
+                        alternativeName = alternativeName
+                    )
+                )
+                tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
+            }.body<SchoolClassDto>()
 
-            logger.d { "Generated classId=$classId, inserting into local database" }
-
-            // Save to local database first
-            database().schoolClassQueries.insertClass(
-                id = classId,
-                schoolId = schoolId,
-                name = name,
-                alternativeName = alternativeName,
-                version = 1L,
-                isSynced = 0,
-                localUpdatedAt = now,
-                createdAt = now,
-                updatedAt = now
-            )
-
-            logger.d { "Class saved to local database, queuing for sync" }
-
-            // Queue for sync
-            database().pendingSyncQueries.insertPendingSync(
-                entityType = "SCHOOL_CLASS",
-                entityId = classId,
-                operation = "CREATE",
-                createdAt = now
-            )
-
-            logger.i { "Class created successfully and queued for sync: classId=$classId" }
-
-            val schoolClass = SchoolClassDto(
-                id = classId,
-                schoolId = schoolId,
-                name = name,
-                alternativeName = alternativeName,
-                version = 1L,
-                createdAt = now.toString(),
-                updatedAt = now.toString()
-            )
+            classesState.value = classesState.value + schoolClass
 
             Result.success(schoolClass)
         } catch (e: Exception) {
@@ -141,20 +75,14 @@ class SchoolClassRepository(
     }
 
     /**
-     * Delete a class (offline-first).
+     * Delete a class on the server.
      */
     suspend fun deleteClass(classId: String): Result<Unit> {
         return try {
-            // Delete from local database
-            database().schoolClassQueries.deleteClass(classId)
-
-            // Queue for sync
-            database().pendingSyncQueries.insertPendingSync(
-                entityType = "SCHOOL_CLASS",
-                entityId = classId,
-                operation = "DELETE",
-                createdAt = currentTimeMillis()
-            )
+            httpClient.delete("$baseUrl/api/classes/$classId") {
+                tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
+            }
+            classesState.value = classesState.value.filterNot { it.id == classId }
 
             Result.success(Unit)
         } catch (e: Exception) {

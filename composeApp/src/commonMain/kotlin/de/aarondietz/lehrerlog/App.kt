@@ -12,7 +12,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import de.aarondietz.lehrerlog.sync.SyncManager
 import de.aarondietz.lehrerlog.ui.navigation.BottomBarEntry
 import de.aarondietz.lehrerlog.ui.screens.auth.AuthState
 import de.aarondietz.lehrerlog.ui.screens.auth.AuthViewModel
@@ -25,7 +24,6 @@ import de.aarondietz.lehrerlog.ui.screens.tasks.TasksScreen
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.KoinApplication
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -105,22 +103,6 @@ private fun AuthNavigation(authViewModel: AuthViewModel) {
 private fun MainAppContent(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
     val items = listOf(BottomBarEntry.Home, BottomBarEntry.Tasks, BottomBarEntry.Students, BottomBarEntry.Settings)
-    val syncManager: SyncManager = koinInject()
-
-    // Start sync when authenticated
-    DisposableEffect(Unit) {
-        syncManager.startAutoSync()
-        onDispose {
-            syncManager.stopAutoSync()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        when (syncManager.syncAndReport()) {
-            is SyncManager.SyncResult.Unauthorized -> authViewModel.logout()
-            else -> Unit
-        }
-    }
 
     Scaffold(
         bottomBar = {

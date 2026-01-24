@@ -36,7 +36,7 @@ class TasksViewModel(
 
     val classes: StateFlow<List<SchoolClassDto>> = _schoolId
         .filterNotNull()
-        .flatMapLatest { id -> schoolClassRepository.getClassesFlow(id) }
+        .flatMapLatest { _ -> schoolClassRepository.getClassesFlow() }
         .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

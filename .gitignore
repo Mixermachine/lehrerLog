@@ -36,6 +36,7 @@ __pycache__/
 
 # Server runtime data
 server/data/
+server/bin/
 
 # Deploy environment files (contain secrets)
 deploy/.env

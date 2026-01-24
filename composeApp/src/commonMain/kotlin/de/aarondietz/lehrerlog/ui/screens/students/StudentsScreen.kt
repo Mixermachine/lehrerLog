@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
@@ -32,6 +33,7 @@ fun StudentsScreen(
     val expandedClasses = remember { mutableStateMapOf<String, Boolean>() }
     var showAddClassDialog by remember { mutableStateOf(false) }
     var selectedClassForStudent by remember { mutableStateOf<SchoolClassDto?>(null) }
+    var confirmDeleteStudent by remember { mutableStateOf<de.aarondietz.lehrerlog.data.StudentDto?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
@@ -98,7 +100,7 @@ fun StudentsScreen(
                                     viewModel.deleteClass(schoolClass.id)
                                 },
                                 onDeleteStudent = { student ->
-                                    viewModel.deleteStudent(student.id)
+                                    confirmDeleteStudent = student
                                 }
                             )
                         }
@@ -132,6 +134,29 @@ fun StudentsScreen(
             onConfirm = { student ->
                 viewModel.createStudent(schoolClass.id, student.firstName, student.lastName)
                 selectedClassForStudent = null
+            }
+        )
+    }
+
+    confirmDeleteStudent?.let { student ->
+        AlertDialog(
+            onDismissRequest = { confirmDeleteStudent = null },
+            title = { Text("Delete student") },
+            text = { Text("Delete ${student.firstName} ${student.lastName}?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteStudent(student.id)
+                        confirmDeleteStudent = null
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDeleteStudent = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -182,7 +207,7 @@ private fun ClassCard(
                     ) {
                         Text("${student.firstName} ${student.lastName}")
                         IconButton(onClick = { onDeleteStudent(student) }) {
-                            Icon(Icons.Default.Add, "Delete") // TODO: Use delete icon
+                            Icon(Icons.Default.Delete, "Delete")
                         }
                     }
                 }

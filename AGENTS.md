@@ -14,7 +14,7 @@ Kotlin Multiplatform (KMP) + Compose Multiplatform application for teachers.
 - **DI:** Koin (`module { }`, `koinViewModel()` in Composables)
 - **Navigation:** Jetpack Navigation (`NavHost`, `rememberNavController`, `composable`)
 - **Database:**
-    - Client: SQLDelight (`.sq` files in `composeApp/src/commonMain/sqldelight/`)
+    - Client: online-first (SQLDelight/offline sync is being removed; do not add new SQLDelight code)
     - Server: Exposed + PostgreSQL + Flyway (`server/src/main/resources/db/migration/`)
 - **Network:** Ktor Client (OkHttp/Android, Darwin/iOS, CIO/JVM, JS/Wasm)
 - **Logging:** Kermit
@@ -90,64 +90,10 @@ All authenticated routes must validate `principal.schoolId`:
 - 403 Forbidden: User not associated with school
 - 409 Conflict: Version mismatch (optimistic locking)
 
-## Offline-First Sync
+## Offline Sync (deprecated)
 
-The app uses offline-first architecture with automatic synchronization.
-
-### Key Concepts
-
-- **Client-generated UUIDs:** Entities created offline use client UUIDs preserved by server
-- **SyncLog:** Server maintains append-only log of all changes (CREATE, UPDATE, DELETE)
-- **Optimistic Locking:** Version fields prevent concurrent update conflicts
-- **School Isolation:** All operations enforce multi-tenant data separation
-
-### Server Pattern
-
-```kotlin
-// Service methods with UUID preservation for sync
-fun createStudent(studentId: UUID, schoolId: UUID, ..., userId: UUID): StudentDto {
-    return transaction {
-        Students.insert { it[id] = studentId; ... }
-        SyncLog.insert { /* log CREATE */ }
-        getStudent(studentId, schoolId)!!
-    }
-}
-
-// Version-based conflict detection
-fun updateStudent(..., version: Long, ...): UpdateResult {
-    return transaction {
-        if (existing[Students.version] != version) {
-            return@transaction UpdateResult.VersionConflict
-        }
-        Students.update { it[Students.version] = version + 1; ... }
-        SyncLog.insert { /* log UPDATE */ }
-    }
-}
-```
-
-### Client SQLDelight Schema
-
-All synced entities must include:
-```sql
-CREATE TABLE IF NOT EXISTS Entity (
-    id TEXT PRIMARY KEY NOT NULL,
-    version INTEGER NOT NULL DEFAULT 1,
-    isSynced INTEGER NOT NULL DEFAULT 0,
-    localUpdatedAt INTEGER NOT NULL,
-    createdAt INTEGER NOT NULL,
-    updatedAt INTEGER NOT NULL
-);
-```
-
-Supporting tables: `SyncMetadata.sq` (tracks lastSyncLogId), `PendingSync.sq` (queues unsynced changes)
-
-### Platform Connectivity
-
-`expect class ConnectivityMonitor` with `actual` implementations:
-- Android: `ConnectivityManager` + `NetworkCallback`
-- iOS: `NWPathMonitor`
-- Desktop: Periodic socket checks
-- Web: `navigator.onLine` + event listeners
+- Offline-first client sync is being removed; do not add new sync/SQLDelight work.
+- Keep server `version` fields and `SyncLog` for possible future reintroduction.
 
 ## Testing
 
@@ -156,14 +102,6 @@ Supporting tables: `SyncMetadata.sq` (tracks lastSyncLogId), `PendingSync.sq` (q
 - Naming: `*ServiceEndToEndTest.kt`, `*SyncTest.kt`
 - Use unique test prefixes: `testing${(10000..99999).random()}`
 - Clean up test data in `@AfterTest` using pattern matching
-
-### Required Sync Test Coverage
-
-1. Server CRUD tests (verify sync logs created)
-2. Push/pull endpoint tests with pagination
-3. Offline-to-online workflow tests
-4. Version conflict resolution tests
-5. School isolation tests
 
 ## Environments
 

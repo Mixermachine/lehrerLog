@@ -36,8 +36,8 @@ class StudentsViewModel(
     // Classes with their students
     val classes: StateFlow<List<SchoolClassDto>> = schoolId
         .filterNotNull()
-        .flatMapLatest { id ->
-            schoolClassRepository.getClassesFlow(id)
+        .flatMapLatest { _ ->
+            schoolClassRepository.getClassesFlow()
         }
         .stateIn(
             scope = viewModelScope,
@@ -47,8 +47,8 @@ class StudentsViewModel(
 
     val students: StateFlow<List<StudentDto>> = schoolId
         .filterNotNull()
-        .flatMapLatest { id ->
-            studentRepository.getStudentsFlow(id)
+        .flatMapLatest { _ ->
+            studentRepository.getStudentsFlow()
         }
         .stateIn(
             scope = viewModelScope,
@@ -114,17 +114,8 @@ class StudentsViewModel(
 
     fun createClass(name: String, alternativeName: String? = null) {
         logger.i { "createClass called: name=$name, alternativeName=$alternativeName" }
-        val currentSchoolId = _schoolId.value
-        if (currentSchoolId == null) {
-            logger.w { "Cannot create class: schoolId is null" }
-            _error.value = "Cannot create class without a school. Please contact your administrator."
-            return
-        }
-
-        logger.d { "Creating class for schoolId=$currentSchoolId" }
-
         viewModelScope.launch {
-            val result = schoolClassRepository.createClass(currentSchoolId, name, alternativeName)
+            val result = schoolClassRepository.createClass(name, alternativeName)
             result
                 .onSuccess {
                     logger.i { "Class created successfully: ${it.id}" }
@@ -147,10 +138,8 @@ class StudentsViewModel(
     }
 
     fun createStudent(classId: String, firstName: String, lastName: String) {
-        val currentSchoolId = _schoolId.value ?: return
-
         viewModelScope.launch {
-            studentRepository.createStudent(currentSchoolId, classId, firstName, lastName)
+            studentRepository.createStudent(classId, firstName, lastName)
                 .onFailure { e ->
                     logger.e(e) { "Failed to create student" }
                     _error.value = "Failed to create student: ${e.message}"
