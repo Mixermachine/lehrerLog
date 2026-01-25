@@ -404,7 +404,7 @@ Account
 
 - Every feature includes:\r
   - Unit tests (service/repository logic)\r
-  - API tests (Ktor test host)\r
+  - API tests (Ktor test host, end-to-end)\r
   - Compose UI tests (ExperimentalTestApi)\r
   - Roborazzi snapshots for stable UI states\r
 - Every new UI element must have explicit UI coverage (Compose UI test or snapshot).
