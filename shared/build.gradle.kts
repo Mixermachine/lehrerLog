@@ -34,12 +34,20 @@ kotlin {
     }
 
     sourceSets {
+        val commonMain by getting
+        val commonTest by getting
+        val iosMain by creating {
+            dependsOn(commonMain)
+        }
         commonMain.dependencies {
             implementation(libs.kotlinx.serialization.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
+
+        iosArm64Main.get().dependsOn(iosMain)
+        iosSimulatorArm64Main.get().dependsOn(iosMain)
     }
 }
 

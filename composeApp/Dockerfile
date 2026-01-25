@@ -1,4 +1,4 @@
-FROM gradle:8.7-jdk17 AS build
+FROM gradle:8.14.4-jdk17 AS build
 
 WORKDIR /workspace
 
@@ -9,6 +9,11 @@ COPY shared/build.gradle.kts shared/
 COPY composeApp/build.gradle.kts composeApp/
 
 RUN chmod +x gradlew
+
+# Node tooling used by Kotlin/Wasm requires libatomic.
+RUN apt-get update \
+    && apt-get install -y libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Download dependencies (cacheable layer).
 RUN ./gradlew dependencies --no-daemon || true
