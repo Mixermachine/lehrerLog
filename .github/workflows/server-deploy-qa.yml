@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - master
+    paths:
+      - server/**
+      - shared/**
+      - gradle/**
+      - gradle.properties
+      - settings.gradle.kts
+      - build.gradle.kts
+      - deploy/**
+      - .github/workflows/server-deploy-qa.yml
 
 permissions:
   contents: read

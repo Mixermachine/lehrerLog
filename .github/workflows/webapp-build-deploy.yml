@@ -4,6 +4,16 @@ on:
   push:
     branches: ["master"]
     tags: ["*.*.*-b*"]
+    paths:
+      - composeApp/**
+      - shared/**
+      - commonMain/**
+      - gradle/**
+      - gradle.properties
+      - settings.gradle.kts
+      - build.gradle.kts
+      - deploy/**
+      - .github/workflows/webapp-build-deploy.yml
   workflow_dispatch:
     inputs:
       environment:

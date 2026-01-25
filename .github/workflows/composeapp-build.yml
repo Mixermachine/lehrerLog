@@ -4,6 +4,18 @@ on:
   push:
     branches: ["master"]
     tags: ["*"]
+    paths:
+      - composeApp/**
+      - shared/**
+      - iosApp/**
+      - commonMain/**
+      - gradle/**
+      - gradle.properties
+      - settings.gradle.kts
+      - build.gradle.kts
+      - gradlew
+      - gradlew.bat
+      - .github/workflows/composeapp-build.yml
   workflow_dispatch:
     inputs:
       runProd:
