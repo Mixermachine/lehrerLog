@@ -7,6 +7,7 @@ import org.gradle.api.tasks.TaskAction
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.net.URI
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -14,6 +15,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.roborazzi)
     kotlin("plugin.serialization") version libs.versions.kotlin.get()
 
 }
@@ -43,6 +45,66 @@ abstract class GenerateServerConfig : DefaultTask() {
     }
 }
 
+abstract class PrepareRobolectricAndroidAll : DefaultTask() {
+    @get:Input
+    abstract val repoUrl: Property<String>
+
+    @get:Input
+    abstract val groupId: Property<String>
+
+    @get:Input
+    abstract val artifact: Property<String>
+
+    @get:Input
+    abstract val version: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun download() {
+        val repo = repoUrl.get().trimEnd('/')
+        val groupPath = groupId.get().replace('.', '/')
+        val artifactId = artifact.get()
+        val artifactVersion = version.get()
+        val artifactPath = "$groupPath/$artifactId/$artifactVersion"
+        val baseName = "$artifactId-$artifactVersion"
+        val files = listOf(
+            "$baseName.jar",
+            "$baseName.pom",
+            "$baseName.jar.sha512",
+            "$baseName.pom.sha512"
+        )
+        val targetDir = outputDir.get().asFile.resolve(artifactPath)
+        targetDir.mkdirs()
+        files.forEach { fileName ->
+            val targetFile = targetDir.resolve(fileName)
+            if (targetFile.exists()) {
+                return@forEach
+            }
+            val downloadUrl = "$repo/$artifactPath/$fileName"
+            var lastError: Exception? = null
+            repeat(3) { attempt ->
+                try {
+                    URI(downloadUrl).toURL().openStream().use { input ->
+                        targetFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    return@forEach
+                } catch (e: Exception) {
+                    lastError = e
+                    targetFile.delete()
+                    if (attempt < 2) {
+                        Thread.sleep(500L * (attempt + 1))
+                    }
+                }
+            }
+            throw lastError ?: IllegalStateException("Failed to download $downloadUrl")
+        }
+    }
+}
+
 val serverUrlProvider = providers.gradleProperty("serverUrl").orElse("http://localhost:8080")
 val serverConfigDir = layout.buildDirectory.dir("generated/source/serverConfig")
 
@@ -53,6 +115,13 @@ val generateServerConfig = tasks.register<GenerateServerConfig>("generateServerC
 
 val appVersionNameProvider = providers.gradleProperty("appVersionName").orElse("0.0.1-dev.local")
 val buildNumberProvider = providers.gradleProperty("buildNumber").orElse("1")
+
+val robolectricAndroidAllVersion = "13-robolectric-9030017-i7"
+val robolectricAndroidAllArtifact = "android-all-instrumented"
+val robolectricAndroidAllGroup = "org.robolectric"
+val robolectricAndroidAllRepo = providers.gradleProperty("robolectric.dependency.repo.url")
+    .orElse("https://repo.maven.apache.org/maven2")
+val robolectricDepsDir = layout.buildDirectory.dir("robolectric-deps")
 
 fun parseSemVer(version: String): Triple<Int, Int, Int> {
     val parts = version.split(".")
@@ -82,6 +151,14 @@ val desktopPackageVersion = if (versionMajor < 1) {
     "1.$versionMinor.$versionPatch"
 } else {
     baseVersion
+}
+
+val prepareRobolectricAndroidAll = tasks.register<PrepareRobolectricAndroidAll>("prepareRobolectricAndroidAll") {
+    repoUrl.set(robolectricAndroidAllRepo)
+    groupId.set(robolectricAndroidAllGroup)
+    artifact.set(robolectricAndroidAllArtifact)
+    version.set(robolectricAndroidAllVersion)
+    outputDir.set(robolectricDepsDir)
 }
 
 kotlin {
@@ -114,13 +191,24 @@ kotlin {
             kotlin.srcDir(serverConfigDir)
         }
         val commonTest by getting
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.compose.ui)
+                implementation(libs.androidx.compose.ui.test.junit4)
+                implementation(libs.robolectric)
+                implementation(libs.roborazzi)
+                implementation(libs.roborazzi.compose)
+                implementation(libs.roborazzi.junit.rule)
+                implementation(libs.kotlin.testJunit)
+            }
+        }
         val nonWasmMain by creating {
             dependsOn(commonMain)
         }
         val wasmJsTest by getting {
             dependsOn(commonTest)
             @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-            dependencies { implementation(compose.uiTest) }
+            dependencies { implementation(libs.compose.ui.test) }
         }
         val nativeMain by creating {
             dependsOn(nonWasmMain)
@@ -136,7 +224,7 @@ kotlin {
         iosSimulatorArm64Main.get().dependsOn(iosMain)
 
         androidMain.dependencies {
-            implementation(compose.preview)
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
         }
@@ -144,12 +232,12 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.components.ui.tooling.preview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(projects.shared)
@@ -248,6 +336,18 @@ android {
             signingConfig = signingConfigs.getByName("releaseAab")
         }
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all {
+                it.systemProperty(
+                    "robolectric.dependency.repo.url",
+                    robolectricDepsDir.get().asFile.toURI().toString()
+                )
+                it.systemProperty("robolectric.dependency.repo.id", "local")
+            }
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -255,7 +355,17 @@ android {
 }
 
 dependencies {
-    debugImplementation(compose.uiTooling)
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+tasks.withType<Test>().configureEach {
+    dependsOn(prepareRobolectricAndroidAll)
+    if (name.contains("Release", ignoreCase = true)) {
+        filter {
+            excludeTestsMatching("de.aarondietz.lehrerlog.ui.composables.RoborazziSmokeTest")
+        }
+    }
 }
 
 compose.desktop {

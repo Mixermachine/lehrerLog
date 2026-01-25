@@ -163,7 +163,7 @@ fun StudentsScreen(
 }
 
 @Composable
-private fun ClassCard(
+internal fun ClassCard(
     schoolClass: SchoolClassDto,
     students: List<de.aarondietz.lehrerlog.data.StudentDto>,
     isExpanded: Boolean,

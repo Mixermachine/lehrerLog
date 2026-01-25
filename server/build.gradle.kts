@@ -31,39 +31,40 @@ application {
 }
 
 dependencies {
+    implementation(platform(libs.ktor.bom))
+    testImplementation(platform(libs.ktor.bom))
     implementation(projects.shared)
     implementation(libs.logback)
     implementation(libs.ktor.serverCore)
     implementation(libs.ktor.serverNetty)
-    implementation("io.insert-koin:koin-ktor:3.5.6")
-    implementation("io.insert-koin:koin-logger-slf4j:3.5.6")
-    implementation("io.ktor:ktor-server-content-negotiation:3.3.1")
-    implementation("io.ktor:ktor-server-cors:3.3.1")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.1")
-    implementation("dev.hayden:khealth:3.0.2")
-    implementation("io.ktor:ktor-server-compression:3.3.1")
-    implementation("io.ktor:ktor-server-swagger:3.3.1")
-    implementation("io.ktor:ktor-server-websockets:3.3.1")
-    implementation("io.ktor:ktor-server-core:3.3.1")
+    implementation(libs.koin.ktor)
+    implementation(libs.koin.logger.slf4j)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.server.cors)
+    implementation(libs.ktor.server.serialization.json)
+    implementation(libs.khealth)
+    implementation(libs.ktor.server.compression)
+    implementation(libs.ktor.server.swagger)
+    implementation(libs.ktor.server.websockets)
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
-    testImplementation("io.ktor:ktor-client-content-negotiation:3.3.1")
-    testImplementation("io.ktor:ktor-serialization-kotlinx-json:3.3.1")
+    testImplementation(libs.ktor.client.content.negotiation)
+    testImplementation(libs.ktor.client.serialization.json)
 
     // Authentication
-    implementation("io.ktor:ktor-server-auth:3.3.1")
-    implementation("io.ktor:ktor-server-auth-jwt:3.3.1")
-    implementation("org.mindrot:jbcrypt:0.4")
+    implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.auth.jwt)
+    implementation(libs.jbcrypt)
 
     // Exposed ORM
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.dao)
-    implementation("org.jetbrains.exposed:exposed-java-time:0.58.0")
+    implementation(libs.exposed.java.time)
 
     // Flyway migrations
     implementation(libs.flyway.core)
-    implementation("org.flywaydb:flyway-database-postgresql:11.17.0")
+    implementation(libs.flyway.database.postgresql)
 
     // Database drivers
     implementation(libs.postgres)
