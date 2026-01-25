@@ -49,7 +49,7 @@ jobs:
         uses: actions/setup-java@v5.1.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       - name: Set up Node
         uses: actions/setup-node@v6.2.0
@@ -132,7 +132,7 @@ jobs:
         uses: actions/setup-java@v5.1.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       - name: Set up Node
         uses: actions/setup-node@v6.2.0
@@ -210,7 +210,7 @@ jobs:
         uses: actions/setup-java@v5.1.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       - name: Cache Kotlin/Native
         uses: actions/cache@v4
@@ -272,7 +272,7 @@ jobs:
         uses: actions/setup-java@v5.1.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       - name: Cache Kotlin/Native
         uses: actions/cache@v4
