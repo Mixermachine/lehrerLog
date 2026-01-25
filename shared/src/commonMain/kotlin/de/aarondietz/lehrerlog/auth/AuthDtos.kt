@@ -70,5 +70,6 @@ data class SuccessResponse(
 enum class UserRole {
     ADMIN,
     SCHOOL_ADMIN,
-    TEACHER
+    TEACHER,
+    PARENT
 }

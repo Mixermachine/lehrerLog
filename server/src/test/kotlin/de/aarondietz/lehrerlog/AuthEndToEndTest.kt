@@ -41,8 +41,8 @@ class AuthEndToEndTest {
 
     companion object {
         private var testSchoolId: UUID? = null
-        private var isInitialized = false
         private var catalogPath: Path? = null
+        private var isInitialized = false
 
         // Generate unique prefix for this test run (e.g., "testing93821")
         private val TEST_PREFIX = "testing${(10000..99999).random()}"
@@ -53,7 +53,6 @@ class AuthEndToEndTest {
 
     @BeforeTest
     fun setup() {
-        // Initialize test database once (works with both H2 and PostgreSQL)
         if (!isInitialized) {
             DatabaseFactory.init()
             isInitialized = true

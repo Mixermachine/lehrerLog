@@ -7,7 +7,8 @@ import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
 enum class UserRole {
     ADMIN,
     SCHOOL_ADMIN,
-    TEACHER
+    TEACHER,
+    PARENT
 }
 
 object Users : UUIDTable("users") {

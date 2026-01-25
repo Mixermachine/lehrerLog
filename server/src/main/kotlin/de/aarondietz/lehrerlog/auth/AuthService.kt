@@ -2,6 +2,10 @@ package de.aarondietz.lehrerlog.auth
 
 import de.aarondietz.lehrerlog.db.tables.RefreshTokens
 import de.aarondietz.lehrerlog.db.tables.Schools
+import de.aarondietz.lehrerlog.db.tables.StorageOwnerType
+import de.aarondietz.lehrerlog.db.tables.StoragePlans
+import de.aarondietz.lehrerlog.db.tables.StorageSubscriptions
+import de.aarondietz.lehrerlog.db.tables.StorageUsage
 import de.aarondietz.lehrerlog.db.tables.UserRole
 import de.aarondietz.lehrerlog.db.tables.Users
 import de.aarondietz.lehrerlog.schools.SchoolCatalogService
@@ -251,9 +255,37 @@ class AuthService(
         val catalogEntry = schoolCatalogService.findByCode(schoolCode)
             ?: throw AuthException("Invalid school code")
 
-        return Schools.insertAndGetId {
+        val schoolId = Schools.insertAndGetId {
             it[Schools.name] = catalogEntry.name
             it[Schools.code] = catalogEntry.code
         }.value
+
+        ensureSchoolStorageDefaults(schoolId)
+        return schoolId
+    }
+
+    private fun ensureSchoolStorageDefaults(schoolId: UUID) {
+        val defaultPlanId = UUID.fromString("00000000-0000-0000-0000-000000000001")
+
+        StoragePlans.insertIgnore {
+            it[id] = defaultPlanId
+            it[name] = "Default"
+            it[maxTotalBytes] = 100L * 1024L * 1024L
+            it[maxFileBytes] = 5L * 1024L * 1024L
+        }
+
+        StorageSubscriptions.insertIgnore {
+            it[id] = schoolId
+            it[ownerType] = StorageOwnerType.SCHOOL.name
+            it[ownerId] = schoolId
+            it[planId] = defaultPlanId
+            it[active] = true
+        }
+
+        StorageUsage.insertIgnore {
+            it[ownerType] = StorageOwnerType.SCHOOL.name
+            it[ownerId] = schoolId
+            it[usedTotalBytes] = 0
+        }
     }
 }

@@ -3,11 +3,19 @@ package de.aarondietz.lehrerlog
 import de.aarondietz.lehrerlog.auth.*
 import de.aarondietz.lehrerlog.db.DatabaseFactory
 import de.aarondietz.lehrerlog.db.tables.Schools
+import de.aarondietz.lehrerlog.db.tables.StorageOwnerType
+import de.aarondietz.lehrerlog.db.tables.StoragePlans
+import de.aarondietz.lehrerlog.db.tables.StorageSubscriptions
+import de.aarondietz.lehrerlog.db.tables.StorageUsage
 import de.aarondietz.lehrerlog.db.tables.UserRole
 import de.aarondietz.lehrerlog.db.tables.Users
 import de.aarondietz.lehrerlog.routes.authRoute
+import de.aarondietz.lehrerlog.routes.fileRoute
+import de.aarondietz.lehrerlog.routes.latePolicyRoute
+import de.aarondietz.lehrerlog.routes.parentRoute
 import de.aarondietz.lehrerlog.routes.schoolClassRoute
 import de.aarondietz.lehrerlog.routes.schoolRoute
+import de.aarondietz.lehrerlog.routes.storageRoute
 import de.aarondietz.lehrerlog.routes.studentRoute
 import de.aarondietz.lehrerlog.routes.syncRoute
 import de.aarondietz.lehrerlog.routes.taskRoute
@@ -150,6 +158,10 @@ fun Application.module() {
         schoolRoute(schoolCatalogService)
         studentRoute()
         taskRoute()
+        fileRoute()
+        storageRoute()
+        latePolicyRoute()
+        parentRoute()
         syncRoute()
         userRoute()
     }
@@ -217,6 +229,8 @@ private fun Application.seedTestUserIfConfigured(passwordService: PasswordServic
                 return@transaction
             }
 
+            ensureSchoolStorageDefaults(schoolId)
+
             Users.insertIgnore {
                 it[Users.email] = email
                 it[Users.passwordHash] = passwordService.hashPassword(passwordValue)
@@ -229,6 +243,31 @@ private fun Application.seedTestUserIfConfigured(passwordService: PasswordServic
         environment.log.info("Seed test user ensured for $email (school=$schoolCode).")
     } catch (e: Exception) {
         environment.log.error("Seed test user failed for $email.", e)
+    }
+}
+
+private fun ensureSchoolStorageDefaults(schoolId: UUID) {
+    val defaultPlanId = UUID.fromString("00000000-0000-0000-0000-000000000001")
+
+    StoragePlans.insertIgnore {
+        it[id] = defaultPlanId
+        it[name] = "Default"
+        it[maxTotalBytes] = 100L * 1024L * 1024L
+        it[maxFileBytes] = 5L * 1024L * 1024L
+    }
+
+    StorageSubscriptions.insertIgnore {
+        it[id] = schoolId
+        it[ownerType] = StorageOwnerType.SCHOOL.name
+        it[ownerId] = schoolId
+        it[planId] = defaultPlanId
+        it[active] = true
+    }
+
+    StorageUsage.insertIgnore {
+        it[ownerType] = StorageOwnerType.SCHOOL.name
+        it[ownerId] = schoolId
+        it[usedTotalBytes] = 0
     }
 }
 

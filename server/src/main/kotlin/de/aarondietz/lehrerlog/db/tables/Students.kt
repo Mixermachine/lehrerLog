@@ -11,6 +11,7 @@ object Students : UUIDTable("students") {
     val lastName = varchar("last_name", 100)
     val createdBy = reference("created_by", Users)
     val version = long("version").default(1)
+    val deletedAt = timestampWithTimeZone("deleted_at").nullable()
     val createdAt = timestampWithTimeZone("created_at").defaultExpression(CurrentTimestampWithTimeZone)
     val updatedAt = timestampWithTimeZone("updated_at").defaultExpression(CurrentTimestampWithTimeZone)
 }

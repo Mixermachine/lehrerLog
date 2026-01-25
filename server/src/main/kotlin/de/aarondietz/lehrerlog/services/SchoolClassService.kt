@@ -17,7 +17,7 @@ class SchoolClassService {
     fun getClassesBySchool(schoolId: UUID): List<SchoolClassDto> {
         return transaction {
             SchoolClasses.selectAll()
-                .where { SchoolClasses.schoolId eq schoolId }
+                .where { (SchoolClasses.schoolId eq schoolId) and SchoolClasses.archivedAt.isNull() }
                 .map { it.toSchoolClassDto() }
         }
     }
@@ -28,7 +28,11 @@ class SchoolClassService {
     fun getClass(classId: UUID, schoolId: UUID): SchoolClassDto? {
         return transaction {
             SchoolClasses.selectAll()
-                .where { (SchoolClasses.id eq classId) and (SchoolClasses.schoolId eq schoolId) }
+                .where {
+                    (SchoolClasses.id eq classId) and
+                        (SchoolClasses.schoolId eq schoolId) and
+                        SchoolClasses.archivedAt.isNull()
+                }
                 .firstOrNull()
                 ?.toSchoolClassDto()
         }
@@ -113,7 +117,11 @@ class SchoolClassService {
         return transaction {
             // Check if class exists and belongs to school
             val existing = SchoolClasses.selectAll()
-                .where { (SchoolClasses.id eq classId) and (SchoolClasses.schoolId eq schoolId) }
+                .where {
+                    (SchoolClasses.id eq classId) and
+                        (SchoolClasses.schoolId eq schoolId) and
+                        SchoolClasses.archivedAt.isNull()
+                }
                 .firstOrNull() ?: return@transaction ClassUpdateResult.NotFound
 
             // Optimistic locking check
@@ -154,7 +162,11 @@ class SchoolClassService {
         return transaction {
             // Check if class exists and belongs to school
             val existing = SchoolClasses.selectAll()
-                .where { (SchoolClasses.id eq classId) and (SchoolClasses.schoolId eq schoolId) }
+                .where {
+                    (SchoolClasses.id eq classId) and
+                        (SchoolClasses.schoolId eq schoolId) and
+                        SchoolClasses.archivedAt.isNull()
+                }
                 .firstOrNull() ?: return@transaction false
 
             // Log the deletion to sync log BEFORE deleting
@@ -166,9 +178,11 @@ class SchoolClassService {
                 it[SyncLog.userId] = userId
             }
 
-            // Delete the class
-            val count = SchoolClasses.deleteWhere {
-                (SchoolClasses.id eq classId) and (SchoolClasses.schoolId eq schoolId)
+            val now = OffsetDateTime.now(ZoneOffset.UTC)
+            val count = SchoolClasses.update({ SchoolClasses.id eq classId }) {
+                it[SchoolClasses.archivedAt] = now
+                it[SchoolClasses.updatedAt] = now
+                it[SchoolClasses.version] = existing[SchoolClasses.version] + 1
             }
 
             count > 0

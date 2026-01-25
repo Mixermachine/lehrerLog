@@ -17,7 +17,7 @@ class StudentService {
     fun getStudentsBySchool(schoolId: UUID): List<StudentDto> {
         return transaction {
             val students = Students.selectAll()
-                .where { Students.schoolId eq schoolId }
+                .where { (Students.schoolId eq schoolId) and Students.deletedAt.isNull() }
                 .toList()
             val studentIds = students.map { it[Students.id].value }
             val classIdsByStudent = loadClassIdsByStudent(schoolId, studentIds)
@@ -34,7 +34,11 @@ class StudentService {
     fun getStudent(studentId: UUID, schoolId: UUID): StudentDto? {
         return transaction {
             Students.selectAll()
-                .where { (Students.id eq studentId) and (Students.schoolId eq schoolId) }
+                .where {
+                    (Students.id eq studentId) and
+                        (Students.schoolId eq schoolId) and
+                        Students.deletedAt.isNull()
+                }
                 .firstOrNull()
                 ?.let { row ->
                     val classIds = loadClassIdsByStudent(schoolId, listOf(studentId))[studentId].orEmpty()
@@ -129,7 +133,11 @@ class StudentService {
         return transaction {
             // Check if student exists and belongs to school
             val existing = Students.selectAll()
-                .where { (Students.id eq studentId) and (Students.schoolId eq schoolId) }
+                .where {
+                    (Students.id eq studentId) and
+                        (Students.schoolId eq schoolId) and
+                        Students.deletedAt.isNull()
+                }
                 .firstOrNull() ?: return@transaction UpdateResult.NotFound
 
             // Optimistic locking check
@@ -172,7 +180,11 @@ class StudentService {
         return transaction {
             // Check if student exists and belongs to school
             val existing = Students.selectAll()
-                .where { (Students.id eq studentId) and (Students.schoolId eq schoolId) }
+                .where {
+                    (Students.id eq studentId) and
+                        (Students.schoolId eq schoolId) and
+                        Students.deletedAt.isNull()
+                }
                 .firstOrNull() ?: return@transaction false
 
             // Log the deletion to sync log BEFORE deleting
@@ -184,9 +196,11 @@ class StudentService {
                 it[SyncLog.userId] = userId
             }
 
-            // Delete the student
-            val count = Students.deleteWhere {
-                (Students.id eq studentId) and (Students.schoolId eq schoolId)
+            val now = OffsetDateTime.now(ZoneOffset.UTC)
+            val count = Students.update({ Students.id eq studentId }) {
+                it[Students.deletedAt] = now
+                it[Students.updatedAt] = now
+                it[Students.version] = existing[Students.version] + 1
             }
 
             count > 0
@@ -230,7 +244,11 @@ class StudentService {
         if (parsedIds.isEmpty()) return emptyList()
         return SchoolClasses
             .selectAll()
-            .where { (SchoolClasses.id inList parsedIds) and (SchoolClasses.schoolId eq schoolId) }
+            .where {
+                (SchoolClasses.id inList parsedIds) and
+                    (SchoolClasses.schoolId eq schoolId) and
+                    SchoolClasses.archivedAt.isNull()
+            }
             .map { it[SchoolClasses.id].value }
     }
 
@@ -242,11 +260,14 @@ class StudentService {
         val result = mutableMapOf<UUID, MutableList<String>>()
         StudentClasses
             .innerJoin(SchoolClasses)
+            .innerJoin(Students)
             .select(StudentClasses.studentId, StudentClasses.schoolClassId)
             .where {
                 (StudentClasses.studentId inList studentIds) and
                     (SchoolClasses.schoolId eq schoolId) and
-                    StudentClasses.validTill.isNull()
+                    StudentClasses.validTill.isNull() and
+                    SchoolClasses.archivedAt.isNull() and
+                    Students.deletedAt.isNull()
             }
             .forEach { row ->
                 val studentId = row[StudentClasses.studentId].value
