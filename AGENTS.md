@@ -102,6 +102,9 @@ All authenticated routes must validate `principal.schoolId`:
 - Naming: `*ServiceEndToEndTest.kt`, `*SyncTest.kt`
 - Use unique test prefixes: `testing${(10000..99999).random()}`
 - Clean up test data in `@AfterTest` using pattern matching
+- Every new UI element must have explicit UI coverage (Compose UI test or Roborazzi snapshot).
+- Every server service requires tests for its public behavior.
+- Before finishing work, required tests must be implemented and executed successfully.
 
 ### ROBORAZZI & COMPOSE UI
 
@@ -151,3 +154,4 @@ Override with: `-PserverUrl=https://...`
 - Always `git add` new files immediately after creating them
 - Stage files before finishing a task
 - Only commit/push when explicitly requested
+
