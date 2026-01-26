@@ -348,6 +348,14 @@ if [[ ! -d "$GARAGE_DIR" ]]; then
   sudo "$BIN_MKDIR" -p "$GARAGE_DIR"
   sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$GARAGE_DIR"
 fi
+if [[ ! -d "$GARAGE_DIR/data" ]]; then
+  sudo "$BIN_MKDIR" -p "$GARAGE_DIR/data"
+  sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$GARAGE_DIR/data"
+fi
+if [[ ! -d "$GARAGE_DIR/meta" ]]; then
+  sudo "$BIN_MKDIR" -p "$GARAGE_DIR/meta"
+  sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$GARAGE_DIR/meta"
+fi
 
 if [[ ! -d "$DB_DATA_DIR" ]]; then
   sudo "$BIN_MKDIR" -p "$DB_DATA_DIR"
