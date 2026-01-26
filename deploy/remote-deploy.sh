@@ -579,7 +579,7 @@ if [[ "$DEPLOY_WEBAPP_ONLY" == "true" ]]; then
   deploy_webapp "$WEBAPP_HOST_PORT"
   exit $?
 elif [[ "$DEPLOY_SERVER_ONLY" == "true" ]]; then
-  docker compose pull lehrerlog-server db
+  docker compose pull lehrerlog-server db garage
 else
   docker compose pull
 fi
@@ -592,7 +592,7 @@ echo "Starting services..."
 if [[ "$DEPLOY_WEBAPP_ONLY" == "true" ]]; then
   docker compose up -d lehrerlog-webapp
 elif [[ "$DEPLOY_SERVER_ONLY" == "true" ]]; then
-  docker compose up -d lehrerlog-server db
+  docker compose up -d lehrerlog-server db garage
 else
   docker compose up -d --remove-orphans
 fi
