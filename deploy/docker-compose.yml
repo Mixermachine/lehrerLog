@@ -66,6 +66,7 @@ services:
     container_name: lehrerlog-${ENV_NAME:-prod}-garage
     image: ${GARAGE_IMAGE:-dxflrs/garage:v2.2.0}
     restart: unless-stopped
+    command: ["server", "--config", "/etc/garage/garage.toml"]
     environment:
       - GARAGE_CONFIG=/etc/garage/garage.toml
     volumes:
