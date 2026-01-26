@@ -62,6 +62,27 @@ services:
       - lehrerlog-net
     # Database is not exposed to host - only accessible within docker network
 
+  garage:
+    container_name: lehrerlog-${ENV_NAME:-prod}-garage
+    image: ${GARAGE_IMAGE:-ghcr.io/deuxfleurs/garage:v1.0.0}
+    restart: unless-stopped
+    environment:
+      - GARAGE_CONFIG=/etc/garage/garage.toml
+    volumes:
+      - ${GARAGE_DIR:-./garage}:/garage
+      - ${GARAGE_CONFIG_PATH:-./garage/garage.toml}:/etc/garage/garage.toml:ro
+    ports:
+      - "127.0.0.1:${GARAGE_API_PORT:-3900}:3900"
+      - "127.0.0.1:${GARAGE_ADMIN_PORT:-3903}:3903"
+    healthcheck:
+      test: ["CMD-SHELL", "garage status --config /etc/garage/garage.toml >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - lehrerlog-net
+
 networks:
   lehrerlog-net:
     name: lehrerlog-${ENV_NAME:-prod}-net

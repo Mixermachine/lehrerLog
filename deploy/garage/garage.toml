@@ -1,0 +1,12 @@
+data_dir = "/garage/data"
+metadata_dir = "/garage/meta"
+
+[replication]
+mode = "none"
+
+[s3_api]
+bind_addr = "0.0.0.0:3900"
+
+[admin]
+bind_addr = "0.0.0.0:3903"
+token = "__GARAGE_ADMIN_TOKEN__"

@@ -2,7 +2,10 @@ package de.aarondietz.lehrerlog
 
 import de.aarondietz.lehrerlog.auth.TokenService
 import de.aarondietz.lehrerlog.data.CreateTaskRequest
+import de.aarondietz.lehrerlog.data.CreateTaskSubmissionRequest
 import de.aarondietz.lehrerlog.data.TaskDto
+import de.aarondietz.lehrerlog.data.TaskSubmissionDto
+import de.aarondietz.lehrerlog.data.TaskSubmissionType
 import de.aarondietz.lehrerlog.data.FileMetadataDto
 import de.aarondietz.lehrerlog.db.DatabaseFactory
 import de.aarondietz.lehrerlog.db.tables.SchoolClasses
@@ -11,6 +14,9 @@ import de.aarondietz.lehrerlog.db.tables.StorageOwnerType
 import de.aarondietz.lehrerlog.db.tables.StoragePlans
 import de.aarondietz.lehrerlog.db.tables.StorageSubscriptions
 import de.aarondietz.lehrerlog.db.tables.StorageUsage
+import de.aarondietz.lehrerlog.db.tables.ParentStudentLinks
+import de.aarondietz.lehrerlog.db.tables.StudentClasses
+import de.aarondietz.lehrerlog.db.tables.Students
 import de.aarondietz.lehrerlog.db.tables.Users
 import de.aarondietz.lehrerlog.db.tables.UserRole
 import io.ktor.client.call.body
@@ -31,9 +37,12 @@ import io.ktor.server.testing.testApplication
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -47,6 +56,8 @@ class FileRouteEndToEndTest {
     private var schoolId: UUID? = null
     private var userId: UUID? = null
     private var classId: UUID? = null
+    private var studentId: UUID? = null
+    private var parentId: UUID? = null
     private var isInitialized = false
 
     @BeforeTest
@@ -80,6 +91,22 @@ class FileRouteEndToEndTest {
                 it[createdBy] = userId!!
             }.value
 
+            studentId = Students.insertAndGetId {
+                it[Students.schoolId] = schoolIdValue
+                it[firstName] = "Student"
+                it[lastName] = "One"
+                it[createdBy] = userId!!
+            }.value
+            val studentIdValue = studentId!!
+            val classIdValue = classId!!
+
+            StudentClasses.insert {
+                it[StudentClasses.studentId] = studentIdValue
+                it[StudentClasses.schoolClassId] = classIdValue
+                it[validFrom] = OffsetDateTime.now(ZoneOffset.UTC)
+                it[validTill] = null
+            }
+
             val defaultPlanId = UUID.fromString("00000000-0000-0000-0000-000000000001")
             StoragePlans.insertIgnore {
                 it[id] = defaultPlanId
@@ -105,6 +132,12 @@ class FileRouteEndToEndTest {
     @AfterTest
     fun teardown() {
         transaction {
+            parentId?.let { id -> Users.deleteWhere { Users.id eq id } }
+            studentId?.let { id ->
+                ParentStudentLinks.deleteWhere { ParentStudentLinks.studentId eq id }
+                StudentClasses.deleteWhere { StudentClasses.studentId eq id }
+                Students.deleteWhere { Students.id eq id }
+            }
             classId?.let { id -> SchoolClasses.deleteWhere { SchoolClasses.id eq id } }
             userId?.let { id -> Users.deleteWhere { Users.id eq id } }
             schoolId?.let { id ->
@@ -176,5 +209,132 @@ class FileRouteEndToEndTest {
         assertEquals(HttpStatusCode.OK, downloadResponse.status)
         val downloadedBytes = downloadResponse.body<ByteArray>()
         assertEquals(fileBytes.size, downloadedBytes.size)
+    }
+
+    @Test
+    fun `parent can download linked assignment and submission files`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) {
+                json()
+            }
+        }
+
+        val teacherToken = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "teacher@example.com",
+            role = UserRole.TEACHER,
+            schoolId = schoolId
+        )
+
+        val taskResponse = client.post("/api/tasks") {
+            header("Authorization", "Bearer $teacherToken")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = classId!!.toString(),
+                    title = "Homework",
+                    description = "Page 1",
+                    dueAt = "2026-02-01"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, taskResponse.status)
+        val task = taskResponse.body<TaskDto>()
+
+        val submissionResponse = client.post("/api/tasks/${task.id}/submissions") {
+            header("Authorization", "Bearer $teacherToken")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskSubmissionRequest(
+                    studentId = studentId!!.toString(),
+                    submissionType = TaskSubmissionType.FILE,
+                    grade = null,
+                    note = null
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, submissionResponse.status)
+        val submission = submissionResponse.body<TaskSubmissionDto>()
+
+        val fileBytes = "pdf-content".encodeToByteArray()
+        val assignmentUpload = client.post("/api/tasks/${task.id}/files") {
+            header("Authorization", "Bearer $teacherToken")
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "file",
+                            fileBytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "application/pdf")
+                                append(HttpHeaders.ContentDisposition, "filename=\"assignment.pdf\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, assignmentUpload.status)
+        val assignmentFile = assignmentUpload.body<FileMetadataDto>()
+
+        val submissionUpload = client.post("/api/tasks/${task.id}/submissions/${submission.id}/files") {
+            header("Authorization", "Bearer $teacherToken")
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "file",
+                            fileBytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "application/pdf")
+                                append(HttpHeaders.ContentDisposition, "filename=\"submission.pdf\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, submissionUpload.status)
+        val submissionFile = submissionUpload.body<FileMetadataDto>()
+
+        val parentEmail = "parent.${(10000..99999).random()}@example.com"
+        val studentIdValue = studentId!!
+        transaction {
+            parentId = Users.insertAndGetId {
+                it[email] = parentEmail
+                it[passwordHash] = "test"
+                it[firstName] = "Parent"
+                it[lastName] = "User"
+                it[role] = UserRole.PARENT
+                it[Users.schoolId] = null
+                it[isActive] = true
+            }.value
+
+            ParentStudentLinks.insert {
+                it[ParentStudentLinks.parentUserId] = parentId!!
+                it[ParentStudentLinks.studentId] = studentIdValue
+                it[ParentStudentLinks.status] = "ACTIVE"
+                it[ParentStudentLinks.createdBy] = userId!!
+            }
+        }
+
+        val parentToken = tokenService.generateAccessToken(
+            userId = parentId!!,
+            email = parentEmail,
+            role = UserRole.PARENT,
+            schoolId = null
+        )
+
+        val parentAssignmentDownload = client.get("/api/files/${assignmentFile.id}") {
+            header("Authorization", "Bearer $parentToken")
+        }
+        assertEquals(HttpStatusCode.OK, parentAssignmentDownload.status)
+
+        val parentSubmissionDownload = client.get("/api/files/${submissionFile.id}") {
+            header("Authorization", "Bearer $parentToken")
+        }
+        assertEquals(HttpStatusCode.OK, parentSubmissionDownload.status)
     }
 }

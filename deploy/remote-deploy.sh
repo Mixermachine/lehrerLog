@@ -86,6 +86,12 @@ DB_DATA_DIR="${DB_DATA_DIR:-/var/lib/lehrerlog/${ENV_NAME}/pgdata}"
 BACKUP_DIR="${BACKUP_DIR:-/var/lib/lehrerlog/${ENV_NAME}/backups}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 ENABLE_BACKUP_CRON="${ENABLE_BACKUP_CRON:-true}"
+GARAGE_DIR="${GARAGE_DIR:-/var/lib/lehrerlog/${ENV_NAME}/garage}"
+GARAGE_CONFIG_PATH="${GARAGE_CONFIG_PATH:-$DEPLOY_DIR/garage/garage.toml}"
+GARAGE_IMAGE="${GARAGE_IMAGE:-ghcr.io/deuxfleurs/garage:v1.0.0}"
+GARAGE_API_PORT="${GARAGE_API_PORT:-}"
+GARAGE_ADMIN_PORT="${GARAGE_ADMIN_PORT:-}"
+GARAGE_ADMIN_TOKEN="${GARAGE_ADMIN_TOKEN:-}"
 
 # Lock file for preventing concurrent deployments
 LOCK_FILE="/tmp/lehrerlog-deploy-${ENV_NAME}.lock"
@@ -174,6 +180,22 @@ if [[ -z "$WEBAPP_DOMAIN" ]]; then
     WEBAPP_DOMAIN=app.qa.lehrerlog.de
   else
     WEBAPP_DOMAIN=app.lehrerlog.de
+  fi
+fi
+
+if [[ -z "$GARAGE_API_PORT" ]]; then
+  if [[ "$ENV_NAME" == "qa" ]]; then
+    GARAGE_API_PORT=3910
+  else
+    GARAGE_API_PORT=3900
+  fi
+fi
+
+if [[ -z "$GARAGE_ADMIN_PORT" ]]; then
+  if [[ "$ENV_NAME" == "qa" ]]; then
+    GARAGE_ADMIN_PORT=3913
+  else
+    GARAGE_ADMIN_PORT=3903
   fi
 fi
 
@@ -319,6 +341,11 @@ for DIR in "$DATA_DIR" "$BACKUP_DIR"; do
   fi
 done
 
+if [[ ! -d "$GARAGE_DIR" ]]; then
+  sudo "$BIN_MKDIR" -p "$GARAGE_DIR"
+  sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$GARAGE_DIR"
+fi
+
 if [[ ! -d "$DB_DATA_DIR" ]]; then
   sudo "$BIN_MKDIR" -p "$DB_DATA_DIR"
   sudo "$BIN_CHOWN" 999:999 "$DB_DATA_DIR"  # PostgreSQL container runs as uid 999
@@ -329,8 +356,26 @@ if [[ -f "$DEPLOY_DIR/.deploy/docker-compose.yml" ]]; then
   cp "$DEPLOY_DIR/.deploy/docker-compose.yml" "$DEPLOY_DIR/docker-compose.yml"
 fi
 
+if [[ ! -d "$DEPLOY_DIR/garage" ]]; then
+  mkdir -p "$DEPLOY_DIR/garage"
+fi
+
+if [[ ! -f "$GARAGE_CONFIG_PATH" ]] && [[ -f "$DEPLOY_DIR/.deploy/garage/garage.toml" ]]; then
+  cp "$DEPLOY_DIR/.deploy/garage/garage.toml" "$GARAGE_CONFIG_PATH"
+fi
+
+if [[ -n "$GARAGE_ADMIN_TOKEN" ]] && [[ -f "$GARAGE_CONFIG_PATH" ]]; then
+  "$BIN_SED" -i "s|__GARAGE_ADMIN_TOKEN__|$GARAGE_ADMIN_TOKEN|g" "$GARAGE_CONFIG_PATH"
+fi
+
 if [[ -f "$DEPLOY_DIR/.deploy/app.env.example" ]] && [[ ! -f "$DEPLOY_DIR/app.env" ]]; then
   cp "$DEPLOY_DIR/.deploy/app.env.example" "$DEPLOY_DIR/app.env"
+fi
+
+if [[ -z "$GARAGE_ADMIN_TOKEN" ]]; then
+  set +o pipefail
+  GARAGE_ADMIN_TOKEN=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
+  set -o pipefail
 fi
 
 APP_ENV_FILE="$DEPLOY_DIR/app.env"
@@ -374,6 +419,12 @@ HOST_PORT=$HOST_PORT
 WEBAPP_IMAGE_NAME=$WEBAPP_IMAGE_NAME
 WEBAPP_IMAGE_TAG=$WEBAPP_IMAGE_TAG
 WEBAPP_HOST_PORT=$WEBAPP_HOST_PORT
+GARAGE_IMAGE=$GARAGE_IMAGE
+GARAGE_DIR=$GARAGE_DIR
+GARAGE_CONFIG_PATH=$GARAGE_CONFIG_PATH
+GARAGE_API_PORT=$GARAGE_API_PORT
+GARAGE_ADMIN_PORT=$GARAGE_ADMIN_PORT
+GARAGE_ADMIN_TOKEN=$GARAGE_ADMIN_TOKEN
 POSTGRES_DB=$POSTGRES_DB
 POSTGRES_USER=$POSTGRES_USER
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
@@ -588,6 +639,25 @@ if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
     echo "Error: ${SERVER_CONTAINER} did not become healthy in time."
     docker logs "$SERVER_CONTAINER" --tail 200 || true
     exit 1
+  fi
+fi
+
+if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
+  echo "Waiting for Garage to respond on port ${GARAGE_ADMIN_PORT}..."
+  GARAGE_READY=false
+  for attempt in $(seq 1 20); do
+    status_code="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${GARAGE_ADMIN_PORT}/health" || true)"
+    if [[ "$status_code" =~ ^[0-9]+$ ]] && [[ "$status_code" -ge 200 ]] && [[ "$status_code" -lt 500 ]]; then
+      GARAGE_READY=true
+      break
+    fi
+    sleep 2
+  done
+  if [[ "$GARAGE_READY" != "true" ]]; then
+    echo "Warning: Garage health check did not respond on port ${GARAGE_ADMIN_PORT}."
+    docker logs "lehrerlog-${ENV_NAME}-garage" --tail 100 || true
+  else
+    echo "Garage is reachable on port ${GARAGE_ADMIN_PORT}."
   fi
 fi
 
