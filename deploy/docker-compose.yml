@@ -69,8 +69,8 @@ services:
     environment:
       - GARAGE_CONFIG=/etc/garage/garage.toml
     volumes:
-      - ${GARAGE_DIR:-./garage}/data:/garage/data
-      - ${GARAGE_DIR:-./garage}/meta:/garage/meta
+      - ${GARAGE_DIR:-./garage}/data:/data
+      - ${GARAGE_DIR:-./garage}/meta:/meta
       - ${GARAGE_CONFIG_PATH:-./garage/garage.toml}:/etc/garage/garage.toml:ro
     ports:
       - "127.0.0.1:${GARAGE_API_PORT:-3900}:3900"

@@ -1,5 +1,5 @@
-data_dir = "/garage/data"
-metadata_dir = "/garage/meta"
+data_dir = "/data"
+metadata_dir = "/meta"
 
 [replication]
 mode = "none"
