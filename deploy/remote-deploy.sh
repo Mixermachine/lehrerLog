@@ -341,6 +341,9 @@ for DIR in "$DATA_DIR" "$BACKUP_DIR"; do
   fi
 done
 
+if [[ -e "$GARAGE_DIR" ]] && [[ ! -d "$GARAGE_DIR" ]]; then
+  sudo rm -f "$GARAGE_DIR"
+fi
 if [[ ! -d "$GARAGE_DIR" ]]; then
   sudo "$BIN_MKDIR" -p "$GARAGE_DIR"
   sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$GARAGE_DIR"
@@ -360,6 +363,11 @@ if [[ ! -d "$DEPLOY_DIR/garage" ]]; then
   mkdir -p "$DEPLOY_DIR/garage"
 fi
 
+GARAGE_CONFIG_DIR="$(dirname "$GARAGE_CONFIG_PATH")"
+if [[ ! -d "$GARAGE_CONFIG_DIR" ]]; then
+  sudo "$BIN_MKDIR" -p "$GARAGE_CONFIG_DIR"
+  sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$GARAGE_CONFIG_DIR"
+fi
 if [[ ! -f "$GARAGE_CONFIG_PATH" ]] && [[ -f "$DEPLOY_DIR/.deploy/garage/garage.toml" ]]; then
   cp "$DEPLOY_DIR/.deploy/garage/garage.toml" "$GARAGE_CONFIG_PATH"
 fi
