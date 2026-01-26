@@ -372,10 +372,6 @@ if [[ ! -f "$GARAGE_CONFIG_PATH" ]] && [[ -f "$DEPLOY_DIR/.deploy/garage/garage.
   cp "$DEPLOY_DIR/.deploy/garage/garage.toml" "$GARAGE_CONFIG_PATH"
 fi
 
-if [[ -n "$GARAGE_ADMIN_TOKEN" ]] && [[ -f "$GARAGE_CONFIG_PATH" ]]; then
-  "$BIN_SED" -i "s|__GARAGE_ADMIN_TOKEN__|$GARAGE_ADMIN_TOKEN|g" "$GARAGE_CONFIG_PATH"
-fi
-
 if [[ -f "$DEPLOY_DIR/.deploy/app.env.example" ]] && [[ ! -f "$DEPLOY_DIR/app.env" ]]; then
   cp "$DEPLOY_DIR/.deploy/app.env.example" "$DEPLOY_DIR/app.env"
 fi
@@ -384,6 +380,14 @@ if [[ -z "$GARAGE_ADMIN_TOKEN" ]]; then
   set +o pipefail
   GARAGE_ADMIN_TOKEN=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
   set -o pipefail
+fi
+
+if [[ -f "$GARAGE_CONFIG_PATH" ]]; then
+  "$BIN_SED" -i "s|__GARAGE_ADMIN_TOKEN__|$GARAGE_ADMIN_TOKEN|g" "$GARAGE_CONFIG_PATH"
+  if grep -q "__GARAGE_ADMIN_TOKEN__" "$GARAGE_CONFIG_PATH"; then
+    echo "Error: Garage admin token placeholder still present in $GARAGE_CONFIG_PATH."
+    exit 1
+  fi
 fi
 
 APP_ENV_FILE="$DEPLOY_DIR/app.env"
