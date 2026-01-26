@@ -376,7 +376,7 @@ if [[ ! -d "$GARAGE_CONFIG_DIR" ]]; then
   sudo "$BIN_MKDIR" -p "$GARAGE_CONFIG_DIR"
   sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$GARAGE_CONFIG_DIR"
 fi
-if [[ ! -f "$GARAGE_CONFIG_PATH" ]] && [[ -f "$DEPLOY_DIR/.deploy/garage/garage.toml" ]]; then
+if [[ -f "$DEPLOY_DIR/.deploy/garage/garage.toml" ]]; then
   cp "$DEPLOY_DIR/.deploy/garage/garage.toml" "$GARAGE_CONFIG_PATH"
 fi
 
