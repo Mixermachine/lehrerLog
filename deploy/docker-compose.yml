@@ -64,7 +64,7 @@ services:
 
   garage:
     container_name: lehrerlog-${ENV_NAME:-prod}-garage
-    image: ${GARAGE_IMAGE:-ghcr.io/deuxfleurs/garage:v1.0.0}
+    image: ${GARAGE_IMAGE:-ghcr.io/deuxfleurs/garage:v0.9.0}
     restart: unless-stopped
     environment:
       - GARAGE_CONFIG=/etc/garage/garage.toml
