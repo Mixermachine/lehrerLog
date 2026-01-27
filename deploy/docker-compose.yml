@@ -69,11 +69,11 @@ services:
     entrypoint: ["/garage"]
     command: ["server"]
     environment:
-      - GARAGE_CONFIG=/garage/garage.toml
+      - GARAGE_CONFIG=/config/garage.toml
     volumes:
       - ${GARAGE_DIR:-./garage}/data:/data
       - ${GARAGE_DIR:-./garage}/meta:/meta
-      - ${GARAGE_CONFIG_PATH:-./garage/garage.toml}:/garage/garage.toml:ro
+      - ${GARAGE_CONFIG_DIR:-./garage}:/config:ro
     ports:
       - "127.0.0.1:${GARAGE_API_PORT:-3900}:3900"
       - "127.0.0.1:${GARAGE_ADMIN_PORT:-3903}:3903"
