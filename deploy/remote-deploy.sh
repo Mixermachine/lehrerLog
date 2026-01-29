@@ -415,7 +415,7 @@ if [[ -z "$GARAGE_RPC_SECRET" ]]; then
   set -o pipefail
 fi
 
-GARAGE_RPC_SECRET="$(printf '%s' "$GARAGE_RPC_SECRET" | tr -dc 'a-fA-F0-9' | head -c 64)"
+GARAGE_RPC_SECRET="$(printf '%s' "$GARAGE_RPC_SECRET" | tr -dc 'a-fA-F0-9' | tr 'A-F' 'a-f' | head -c 64)"
 if [[ ${#GARAGE_RPC_SECRET} -ne 64 ]]; then
   echo "Error: GARAGE_RPC_SECRET must be 64 hex characters."
   exit 1
@@ -442,6 +442,17 @@ api_bind_addr = "[::]:3903"
 admin_token = "$GARAGE_ADMIN_TOKEN"
 metrics_token = "$GARAGE_METRICS_TOKEN"
 EOF
+
+rpc_line="$(grep '^rpc_secret' "$GARAGE_CONFIG_PATH" || true)"
+rpc_value="${rpc_line#*= }"
+rpc_value="${rpc_value#\"}"
+rpc_value="${rpc_value%\"}"
+rpc_len=${#rpc_value}
+echo "Garage rpc_secret length: ${rpc_len}"
+if [[ ! "$rpc_value" =~ ^[0-9a-fA-F]{64}$ ]]; then
+  echo "Error: rpc_secret in config is invalid."
+  exit 1
+fi
 APP_ENV_FILE="$DEPLOY_DIR/app.env"
 if [[ -f "$APP_ENV_FILE" ]]; then
   if [[ -z "$SEED_TEST_USER_PASSWORD_B64" && -n "$SEED_TEST_USER_PASSWORD" ]]; then
@@ -690,25 +701,26 @@ init_garage_layout() {
   fi
 
   for attempt in $(seq 1 24); do
-    node_id="$(docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml "$garage_container" /garage node id 2>/dev/null | \
+    full_node_id="$(docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml "$garage_container" /garage node id 2>/dev/null | \
       awk '{print $NF}' | tr -d '\r')"
-    if [[ -n "$node_id" ]]; then
+    node_id="${full_node_id%@*}"
+    if [[ -n "$full_node_id" && -n "$node_id" ]]; then
       break
     fi
     sleep 2
   done
 
-  if [[ -z "$node_id" ]]; then
+  if [[ -z "$full_node_id" || -z "$node_id" ]]; then
     echo "Error: Unable to determine Garage node ID."
     docker logs "$garage_container" --tail 200 || true
     return 1
   fi
 
-  if ! docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout show 2>/dev/null | \
+  if ! docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout show 2>/dev/null | \
     grep -q "$node_id"; then
     echo "Initializing Garage layout for ${garage_container}..."
-    docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout assign -z "$zone" -c "$capacity" "$node_id"
-    docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout apply
+    docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout assign -z "$zone" -c "$capacity" "$node_id"
+    docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout apply
   fi
 }
 
