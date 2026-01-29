@@ -642,6 +642,52 @@ else
   docker compose up -d --remove-orphans
 fi
 
+init_garage_layout() {
+  local garage_container="lehrerlog-${ENV_NAME}-garage"
+  local status=""
+  local node_id=""
+  local zone="${GARAGE_ZONE:-local}"
+  local capacity="${GARAGE_CAPACITY:-10GB}"
+
+  if ! docker inspect "$garage_container" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  for attempt in $(seq 1 24); do
+    status="$(docker inspect --format '{{.State.Status}}' "$garage_container" 2>/dev/null || true)"
+    if [[ "$status" == "running" ]]; then
+      break
+    fi
+    sleep 2
+  done
+
+  if [[ "$status" != "running" ]]; then
+    echo "Error: ${garage_container} is not running (status: ${status})."
+    docker logs "$garage_container" --tail 200 || true
+    return 1
+  fi
+
+  node_id="$(docker exec -e GARAGE_RPC_HOST=127.0.0.1:3901 "$garage_container" /garage node id 2>/dev/null | \
+    sed -n 's/.*Node ID of this node: \\([0-9a-fA-F]*\\).*/\\1/p' | head -n1)"
+
+  if [[ -z "$node_id" ]]; then
+    echo "Error: Unable to determine Garage node ID."
+    docker logs "$garage_container" --tail 200 || true
+    return 1
+  fi
+
+  if ! docker exec -e GARAGE_RPC_HOST=127.0.0.1:3901 "$garage_container" /garage layout show 2>/dev/null | \
+    grep -q "$node_id"; then
+    echo "Initializing Garage layout for ${garage_container}..."
+    docker exec -e GARAGE_RPC_HOST=127.0.0.1:3901 "$garage_container" /garage layout assign -z "$zone" -c "$capacity" "$node_id"
+    docker exec -e GARAGE_RPC_HOST=127.0.0.1:3901 "$garage_container" /garage layout apply
+  fi
+}
+
+if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
+  init_garage_layout || exit 1
+fi
+
 # Clean up old Docker images to prevent disk bloat
 echo ""
 echo "Cleaning up old Docker images..."
