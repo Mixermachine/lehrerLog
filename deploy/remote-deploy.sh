@@ -415,24 +415,27 @@ if [[ -z "$GARAGE_RPC_SECRET" ]]; then
   set -o pipefail
 fi
 
-if [[ -f "$GARAGE_CONFIG_PATH" ]]; then
-  # Replace placeholders if still present
-  "$BIN_SED" -i "s|__GARAGE_ADMIN_TOKEN__|$GARAGE_ADMIN_TOKEN|g" "$GARAGE_CONFIG_PATH"
-  "$BIN_SED" -i "s|__GARAGE_METRICS_TOKEN__|$GARAGE_METRICS_TOKEN|g" "$GARAGE_CONFIG_PATH"
-  "$BIN_SED" -i "s|__GARAGE_RPC_SECRET__|$GARAGE_RPC_SECRET|g" "$GARAGE_CONFIG_PATH"
+cat > "$GARAGE_CONFIG_PATH" <<EOF
+metadata_dir = "/meta"
+data_dir = "/data"
+db_engine = "sqlite"
 
-  # Always enforce current values (in case the file already had old secrets)
-  "$BIN_SED" -i "s|^token = \\\".*\\\"|token = \\\"$GARAGE_ADMIN_TOKEN\\\"|" "$GARAGE_CONFIG_PATH"
-  "$BIN_SED" -i "s|^metrics_token = \\\".*\\\"|metrics_token = \\\"$GARAGE_METRICS_TOKEN\\\"|" "$GARAGE_CONFIG_PATH"
-  "$BIN_SED" -i "s|^rpc_secret = \\\".*\\\"|rpc_secret = \\\"$GARAGE_RPC_SECRET\\\"|" "$GARAGE_CONFIG_PATH"
+replication_factor = 1
 
-  if grep -q "__GARAGE_ADMIN_TOKEN__" "$GARAGE_CONFIG_PATH" || \
-     grep -q "__GARAGE_METRICS_TOKEN__" "$GARAGE_CONFIG_PATH" || \
-     grep -q "__GARAGE_RPC_SECRET__" "$GARAGE_CONFIG_PATH"; then
-    echo "Error: Garage token placeholders still present in $GARAGE_CONFIG_PATH."
-    exit 1
-  fi
-fi
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+rpc_secret = "$GARAGE_RPC_SECRET"
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+root_domain = "s3.local"
+
+[admin]
+api_bind_addr = "[::]:3903"
+admin_token = "$GARAGE_ADMIN_TOKEN"
+metrics_token = "$GARAGE_METRICS_TOKEN"
+EOF
 APP_ENV_FILE="$DEPLOY_DIR/app.env"
 if [[ -f "$APP_ENV_FILE" ]]; then
   if [[ -z "$SEED_TEST_USER_PASSWORD_B64" && -n "$SEED_TEST_USER_PASSWORD" ]]; then
