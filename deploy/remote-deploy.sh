@@ -686,11 +686,11 @@ init_garage_layout() {
     return 1
   fi
 
-  if ! docker exec -e GARAGE_RPC_HOST=127.0.0.1:3901 "$garage_container" /garage layout show 2>/dev/null | \
+  if ! docker exec -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout show 2>/dev/null | \
     grep -q "$node_id"; then
     echo "Initializing Garage layout for ${garage_container}..."
-    docker exec -e GARAGE_RPC_HOST=127.0.0.1:3901 "$garage_container" /garage layout assign -z "$zone" -c "$capacity" "$node_id"
-    docker exec -e GARAGE_RPC_HOST=127.0.0.1:3901 "$garage_container" /garage layout apply
+    docker exec -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout assign -z "$zone" -c "$capacity" "$node_id"
+    docker exec -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout apply
   fi
 }
 
