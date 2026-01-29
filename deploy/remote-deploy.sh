@@ -415,6 +415,12 @@ if [[ -z "$GARAGE_RPC_SECRET" ]]; then
   set -o pipefail
 fi
 
+GARAGE_RPC_SECRET="$(printf '%s' "$GARAGE_RPC_SECRET" | tr -dc 'a-fA-F0-9' | head -c 64)"
+if [[ ${#GARAGE_RPC_SECRET} -ne 64 ]]; then
+  echo "Error: GARAGE_RPC_SECRET must be 64 hex characters."
+  exit 1
+fi
+
 cat > "$GARAGE_CONFIG_PATH" <<EOF
 metadata_dir = "/meta"
 data_dir = "/data"
