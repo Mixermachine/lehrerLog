@@ -667,8 +667,18 @@ init_garage_layout() {
     return 1
   fi
 
-  node_id="$(docker exec -e GARAGE_RPC_HOST=127.0.0.1:3901 "$garage_container" /garage node id 2>/dev/null | \
-    sed -n 's/.*Node ID of this node: \\([0-9a-fA-F]*\\).*/\\1/p' | head -n1)"
+  for attempt in $(seq 1 24); do
+    node_id="$(docker exec -e GARAGE_RPC_HOST=127.0.0.1:3901 "$garage_container" /garage node id 2>/dev/null | \
+      sed -n 's/.*Node ID of this node: \\([0-9a-fA-F]*\\).*/\\1/p' | head -n1)"
+    if [[ -z "$node_id" ]]; then
+      node_id="$(docker logs "$garage_container" --tail 200 2>/dev/null | \
+        sed -n 's/.*Node ID of this node: \\([0-9a-fA-F]*\\).*/\\1/p' | tail -n1)"
+    fi
+    if [[ -n "$node_id" ]]; then
+      break
+    fi
+    sleep 2
+  done
 
   if [[ -z "$node_id" ]]; then
     echo "Error: Unable to determine Garage node ID."
