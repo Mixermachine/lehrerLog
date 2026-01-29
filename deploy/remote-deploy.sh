@@ -720,17 +720,17 @@ init_garage_layout() {
     return 1
   fi
 
-  if ! docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout show 2>/dev/null | \
-    grep -q "$node_id"; then
+  layout_output="$(docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout show 2>/dev/null || true)"
+  current_version="$(printf '%s\n' "$layout_output" | sed -n -E 's/.*Current cluster layout version: ([0-9]+).*/\\1/p' | head -n 1)"
+  if [[ -z "$current_version" ]]; then
+    current_version=0
+  fi
+  target_version=$((current_version + 1))
+
+  if ! printf '%s\n' "$layout_output" | grep -q "$node_id"; then
     echo "Initializing Garage layout for ${garage_container}..."
     docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout assign -z "$zone" -c "$capacity" "$node_id"
-    layout_output="$(docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout show 2>/dev/null || true)"
-    layout_version="$(printf '%s\n' "$layout_output" | sed -n -E 's/.*[Nn]ew layout version[^0-9]*([0-9]+).*/\\1/p' | head -n 1)"
-    if [[ -n "$layout_version" ]]; then
-      docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout apply "$layout_version"
-    else
-      docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout apply
-    fi
+    docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout apply --version "$target_version"
   fi
 }
 
