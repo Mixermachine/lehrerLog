@@ -675,6 +675,10 @@ else
   docker compose up -d --remove-orphans
 fi
 
+if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
+  docker compose up -d --force-recreate garage
+fi
+
 init_garage_layout() {
   local garage_container="lehrerlog-${ENV_NAME}-garage"
   local status=""
