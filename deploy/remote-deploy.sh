@@ -396,6 +396,13 @@ if [[ -z "$GARAGE_METRICS_TOKEN" ]]; then
   GARAGE_METRICS_TOKEN=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
   set -o pipefail
 fi
+if [[ -n "$GARAGE_RPC_SECRET" ]]; then
+  if [[ ! "$GARAGE_RPC_SECRET" =~ ^[0-9a-fA-F]{64}$ ]]; then
+    echo "Warning: GARAGE_RPC_SECRET is invalid. Regenerating."
+    GARAGE_RPC_SECRET=""
+  fi
+fi
+
 if [[ -z "$GARAGE_RPC_SECRET" ]]; then
   set +o pipefail
   if command -v openssl >/dev/null 2>&1; then
