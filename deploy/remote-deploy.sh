@@ -416,9 +416,16 @@ if [[ -z "$GARAGE_RPC_SECRET" ]]; then
 fi
 
 if [[ -f "$GARAGE_CONFIG_PATH" ]]; then
+  # Replace placeholders if still present
   "$BIN_SED" -i "s|__GARAGE_ADMIN_TOKEN__|$GARAGE_ADMIN_TOKEN|g" "$GARAGE_CONFIG_PATH"
   "$BIN_SED" -i "s|__GARAGE_METRICS_TOKEN__|$GARAGE_METRICS_TOKEN|g" "$GARAGE_CONFIG_PATH"
   "$BIN_SED" -i "s|__GARAGE_RPC_SECRET__|$GARAGE_RPC_SECRET|g" "$GARAGE_CONFIG_PATH"
+
+  # Always enforce current values (in case the file already had old secrets)
+  "$BIN_SED" -i "s|^token = \\\".*\\\"|token = \\\"$GARAGE_ADMIN_TOKEN\\\"|" "$GARAGE_CONFIG_PATH"
+  "$BIN_SED" -i "s|^metrics_token = \\\".*\\\"|metrics_token = \\\"$GARAGE_METRICS_TOKEN\\\"|" "$GARAGE_CONFIG_PATH"
+  "$BIN_SED" -i "s|^rpc_secret = \\\".*\\\"|rpc_secret = \\\"$GARAGE_RPC_SECRET\\\"|" "$GARAGE_CONFIG_PATH"
+
   if grep -q "__GARAGE_ADMIN_TOKEN__" "$GARAGE_CONFIG_PATH" || \
      grep -q "__GARAGE_METRICS_TOKEN__" "$GARAGE_CONFIG_PATH" || \
      grep -q "__GARAGE_RPC_SECRET__" "$GARAGE_CONFIG_PATH"; then
@@ -426,7 +433,6 @@ if [[ -f "$GARAGE_CONFIG_PATH" ]]; then
     exit 1
   fi
 fi
-
 APP_ENV_FILE="$DEPLOY_DIR/app.env"
 if [[ -f "$APP_ENV_FILE" ]]; then
   if [[ -z "$SEED_TEST_USER_PASSWORD_B64" && -n "$SEED_TEST_USER_PASSWORD" ]]; then
