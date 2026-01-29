@@ -66,14 +66,12 @@ services:
     container_name: lehrerlog-${ENV_NAME:-prod}-garage
     image: ${GARAGE_IMAGE:-dxflrs/garage:v2.2.0}
     restart: unless-stopped
-    entrypoint: ["/garage"]
-    command: ["server"]
     environment:
-      - GARAGE_CONFIG=/config/garage.toml
+      - GARAGE_CONFIG_FILE=/etc/garage.toml
     volumes:
       - ${GARAGE_DIR:-./garage}/data:/data
       - ${GARAGE_DIR:-./garage}/meta:/meta
-      - ${GARAGE_CONFIG_DIR:-./garage}:/config:ro
+      - ${GARAGE_CONFIG_PATH:-./garage.toml}:/etc/garage.toml:ro
     ports:
       - "127.0.0.1:${GARAGE_API_PORT:-3900}:3900"
       - "127.0.0.1:${GARAGE_ADMIN_PORT:-3903}:3903"

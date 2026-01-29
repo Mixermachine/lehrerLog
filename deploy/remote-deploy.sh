@@ -92,6 +92,8 @@ GARAGE_IMAGE="${GARAGE_IMAGE:-dxflrs/garage:v2.2.0}"
 GARAGE_API_PORT="${GARAGE_API_PORT:-}"
 GARAGE_ADMIN_PORT="${GARAGE_ADMIN_PORT:-}"
 GARAGE_ADMIN_TOKEN="${GARAGE_ADMIN_TOKEN:-}"
+GARAGE_METRICS_TOKEN="${GARAGE_METRICS_TOKEN:-}"
+GARAGE_RPC_SECRET="${GARAGE_RPC_SECRET:-}"
 
 # Lock file for preventing concurrent deployments
 LOCK_FILE="/tmp/lehrerlog-deploy-${ENV_NAME}.lock"
@@ -389,11 +391,31 @@ if [[ -z "$GARAGE_ADMIN_TOKEN" ]]; then
   GARAGE_ADMIN_TOKEN=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
   set -o pipefail
 fi
+if [[ -z "$GARAGE_METRICS_TOKEN" ]]; then
+  set +o pipefail
+  GARAGE_METRICS_TOKEN=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
+  set -o pipefail
+fi
+if [[ -z "$GARAGE_RPC_SECRET" ]]; then
+  set +o pipefail
+  if command -v openssl >/dev/null 2>&1; then
+    GARAGE_RPC_SECRET=$(openssl rand -hex 32)
+  elif command -v xxd >/dev/null 2>&1; then
+    GARAGE_RPC_SECRET=$(head -c 32 /dev/urandom | xxd -p -c 256)
+  else
+    GARAGE_RPC_SECRET=$(tr -dc 'a-f0-9' </dev/urandom | head -c 64)
+  fi
+  set -o pipefail
+fi
 
 if [[ -f "$GARAGE_CONFIG_PATH" ]]; then
   "$BIN_SED" -i "s|__GARAGE_ADMIN_TOKEN__|$GARAGE_ADMIN_TOKEN|g" "$GARAGE_CONFIG_PATH"
-  if grep -q "__GARAGE_ADMIN_TOKEN__" "$GARAGE_CONFIG_PATH"; then
-    echo "Error: Garage admin token placeholder still present in $GARAGE_CONFIG_PATH."
+  "$BIN_SED" -i "s|__GARAGE_METRICS_TOKEN__|$GARAGE_METRICS_TOKEN|g" "$GARAGE_CONFIG_PATH"
+  "$BIN_SED" -i "s|__GARAGE_RPC_SECRET__|$GARAGE_RPC_SECRET|g" "$GARAGE_CONFIG_PATH"
+  if grep -q "__GARAGE_ADMIN_TOKEN__" "$GARAGE_CONFIG_PATH" || \
+     grep -q "__GARAGE_METRICS_TOKEN__" "$GARAGE_CONFIG_PATH" || \
+     grep -q "__GARAGE_RPC_SECRET__" "$GARAGE_CONFIG_PATH"; then
+    echo "Error: Garage token placeholders still present in $GARAGE_CONFIG_PATH."
     exit 1
   fi
 fi
@@ -446,6 +468,8 @@ GARAGE_CONFIG_DIR=$GARAGE_CONFIG_DIR
 GARAGE_API_PORT=$GARAGE_API_PORT
 GARAGE_ADMIN_PORT=$GARAGE_ADMIN_PORT
 GARAGE_ADMIN_TOKEN=$GARAGE_ADMIN_TOKEN
+GARAGE_METRICS_TOKEN=$GARAGE_METRICS_TOKEN
+GARAGE_RPC_SECRET=$GARAGE_RPC_SECRET
 POSTGRES_DB=$POSTGRES_DB
 POSTGRES_USER=$POSTGRES_USER
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
