@@ -668,12 +668,8 @@ init_garage_layout() {
   fi
 
   for attempt in $(seq 1 24); do
-    node_id="$(docker exec -e GARAGE_RPC_HOST=127.0.0.1:3901 "$garage_container" /garage node id 2>/dev/null | \
-      sed -n 's/.*Node ID of this node: \\([0-9a-fA-F]*\\).*/\\1/p' | head -n1)"
-    if [[ -z "$node_id" ]]; then
-      node_id="$(docker logs "$garage_container" --tail 200 2>/dev/null | \
-        sed -n 's/.*Node ID of this node: \\([0-9a-fA-F]*\\).*/\\1/p' | tail -n1)"
-    fi
+    node_id="$(docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml "$garage_container" /garage node id 2>/dev/null | \
+      awk '{print $NF}' | tr -d '\r')"
     if [[ -n "$node_id" ]]; then
       break
     fi
@@ -686,11 +682,11 @@ init_garage_layout() {
     return 1
   fi
 
-  if ! docker exec -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout show 2>/dev/null | \
+  if ! docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout show 2>/dev/null | \
     grep -q "$node_id"; then
     echo "Initializing Garage layout for ${garage_container}..."
-    docker exec -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout assign -z "$zone" -c "$capacity" "$node_id"
-    docker exec -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout apply
+    docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout assign -z "$zone" -c "$capacity" "$node_id"
+    docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$node_id" "$garage_container" /garage layout apply
   fi
 }
 
