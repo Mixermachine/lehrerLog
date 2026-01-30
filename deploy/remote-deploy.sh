@@ -290,12 +290,12 @@ if [[ -z "$POSTGRES_PASSWORD" ]]; then
   else
     if [[ -d "$DB_DATA_DIR" ]]; then
       echo "Step: checking DB_DATA_DIR contents at $DB_DATA_DIR"
-      if sudo find "$DB_DATA_DIR" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
+      if find "$DB_DATA_DIR" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
         echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
         echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
         exit 1
       fi
-      if ! sudo find "$DB_DATA_DIR" -mindepth 1 -print -quit >/dev/null 2>&1; then
+      if ! find "$DB_DATA_DIR" -mindepth 1 -print -quit >/dev/null 2>&1; then
         echo "Warning: unable to read $DB_DATA_DIR to determine if it is empty. Proceeding with generated password."
       fi
     fi
