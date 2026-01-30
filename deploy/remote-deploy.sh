@@ -283,11 +283,13 @@ fi
 echo "Step: resolve POSTGRES_PASSWORD"
 if [[ -z "$POSTGRES_PASSWORD" ]]; then
   # No password provided - use existing or generate new
+  echo "Step: POSTGRES_PASSWORD empty; existing password length: ${#EXISTING_PASSWORD}"
   if [[ -n "$EXISTING_PASSWORD" ]]; then
     POSTGRES_PASSWORD="$EXISTING_PASSWORD"
     echo "Using existing POSTGRES_PASSWORD from $SERVER_ENV_FILE"
   else
     if [[ -d "$DB_DATA_DIR" ]]; then
+      echo "Step: checking DB_DATA_DIR contents at $DB_DATA_DIR"
       if sudo find "$DB_DATA_DIR" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
         echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
         echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
@@ -301,6 +303,7 @@ if [[ -z "$POSTGRES_PASSWORD" ]]; then
     set +o pipefail
     POSTGRES_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
     set -o pipefail
+    echo "Step: generated POSTGRES_PASSWORD"
     echo "Generated new POSTGRES_PASSWORD for ${ENV_NAME}"
   fi
 elif [[ -n "$EXISTING_PASSWORD" ]] && [[ "$POSTGRES_PASSWORD" != "$EXISTING_PASSWORD" ]]; then
