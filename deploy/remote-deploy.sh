@@ -252,10 +252,12 @@ fi
 # Handle POSTGRES_PASSWORD: reuse existing, use provided, or generate new
 SERVER_ENV_FILE="$DEPLOY_DIR/server.env"
 WEBAPP_ENV_FILE="$DEPLOY_DIR/webapp.env"
+echo "Step: check legacy env migration"
 if [[ ! -f "$SERVER_ENV_FILE" && -f "$DEPLOY_DIR/.env" ]]; then
   mv "$DEPLOY_DIR/.env" "$SERVER_ENV_FILE"
   echo "Migrated legacy .env to server.env"
 fi
+echo "Step: read existing env values"
 EXISTING_PASSWORD=""
 EXISTING_IMAGE_NAME=""
 EXISTING_IMAGE_TAG=""
@@ -278,6 +280,7 @@ elif [[ -f "$SERVER_ENV_FILE" ]]; then
   EXISTING_WEBAPP_HOST_PORT=$(grep -E '^WEBAPP_HOST_PORT=' "$SERVER_ENV_FILE" | head -1 | cut -d= -f2- || true)
 fi
 
+echo "Step: resolve POSTGRES_PASSWORD"
 if [[ -z "$POSTGRES_PASSWORD" ]]; then
   # No password provided - use existing or generate new
   if [[ -n "$EXISTING_PASSWORD" ]]; then
