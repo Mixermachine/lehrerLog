@@ -290,13 +290,14 @@ if [[ -z "$POSTGRES_PASSWORD" ]]; then
   else
     if [[ -d "$DB_DATA_DIR" ]]; then
       echo "Step: checking DB_DATA_DIR contents at $DB_DATA_DIR"
+      if [[ ! -r "$DB_DATA_DIR" ]]; then
+        echo "Info: adjusting ownership to inspect $DB_DATA_DIR"
+        sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$DB_DATA_DIR"
+      fi
       if find "$DB_DATA_DIR" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
         echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
         echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
         exit 1
-      fi
-      if ! find "$DB_DATA_DIR" -mindepth 1 -print -quit >/dev/null 2>&1; then
-        echo "Warning: unable to read $DB_DATA_DIR to determine if it is empty. Proceeding with generated password."
       fi
     fi
     # Avoid SIGPIPE causing exit under pipefail when head closes the pipe.
@@ -401,8 +402,8 @@ fi
 
 if [[ ! -d "$DB_DATA_DIR" ]]; then
   sudo "$BIN_MKDIR" -p "$DB_DATA_DIR"
-  sudo "$BIN_CHOWN" 999:999 "$DB_DATA_DIR"  # PostgreSQL container runs as uid 999
 fi
+sudo "$BIN_CHOWN" 999:999 "$DB_DATA_DIR"  # PostgreSQL container runs as uid 999
 
 # Copy deployment files if available
 if [[ -f "$DEPLOY_DIR/.deploy/docker-compose.yml" ]]; then
