@@ -33,6 +33,7 @@ BIN_CHMOD="$(command -v chmod || true)"
 BIN_CHOWN="$(command -v chown || true)"
 BIN_CP="$(command -v cp || true)"
 BIN_LN="$(command -v ln || true)"
+BIN_RM="$(command -v rm || true)"
 BIN_BASE64="$(command -v base64 || true)"
 BIN_LOGROTATE="$(command -v logrotate || true)"
 BIN_MKDIR="$(command -v mkdir || true)"
@@ -54,6 +55,7 @@ require_cmd "mkdir" "$BIN_MKDIR"
 require_cmd "chown" "$BIN_CHOWN"
 require_cmd "cp" "$BIN_CP"
 require_cmd "ln" "$BIN_LN"
+require_cmd "rm" "$BIN_RM"
 require_cmd "sed" "$BIN_SED"
 require_cmd "tee" "$BIN_TEE"
 require_cmd "chmod" "$BIN_CHMOD"
@@ -268,6 +270,19 @@ echo "Step: check legacy env migration"
 if [[ ! -f "$SERVER_ENV_FILE" && -f "$DEPLOY_DIR/.env" ]]; then
   mv "$DEPLOY_DIR/.env" "$SERVER_ENV_FILE"
   echo "Migrated legacy .env to server.env"
+fi
+
+if [[ "${RESET_DB_ON_START:-false}" == "true" ]]; then
+  if [[ "$ENV_NAME" == "prod" ]]; then
+    echo "ERROR: RESET_DB_ON_START is not allowed for prod."
+    exit 1
+  fi
+  if [[ -z "$DB_DATA_DIR" || "$DB_DATA_DIR" == "/" ]]; then
+    echo "ERROR: DB_DATA_DIR is not set safely; refusing to reset."
+    exit 1
+  fi
+  echo "WARNING: RESET_DB_ON_START=true; wiping DB_DATA_DIR at $DB_DATA_DIR"
+  sudo "$BIN_RM" -rf "$DB_DATA_DIR"
 fi
 echo "Step: read existing env values"
 EXISTING_PASSWORD=""

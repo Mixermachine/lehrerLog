@@ -102,6 +102,7 @@ jobs:
             POSTGRES_PASSWORD=${{ secrets.QA_DB_PASSWORD }} \
             DATA_DIR=/var/lib/lehrerlog/qa/data \
             DB_DATA_DIR=/var/lib/lehrerlog/qa/pgdata \
+            RESET_DB_ON_START=true \
             LETSENCRYPT_EMAIL=${{ secrets.LETSENCRYPT_EMAIL }} \
             SEED_TEST_USER_EMAIL=${{ secrets.QA_TEST_USER_EMAIL }} \
             SEED_TEST_USER_PASSWORD=${{ secrets.QA_TEST_USER_PASSWORD }} \
