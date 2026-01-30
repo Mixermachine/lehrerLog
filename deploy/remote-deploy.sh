@@ -416,6 +416,10 @@ if [[ ! -d "$DB_DATA_DIR" ]]; then
   sudo "$BIN_MKDIR" -p "$DB_DATA_DIR"
 fi
 sudo "$BIN_CHOWN" -R "${POSTGRES_UID}:${POSTGRES_GID}" "$DB_DATA_DIR"
+# Ensure ownership/permissions inside the mounted data dir (alpine postgres uses uid 70).
+echo "Step: normalize postgres data directory permissions"
+docker run --rm -v "$DB_DATA_DIR":/var/lib/postgresql/data busybox:1.36 sh -c \
+  "chown -R ${POSTGRES_UID}:${POSTGRES_GID} /var/lib/postgresql/data && chmod -R 700 /var/lib/postgresql/data" >/dev/null 2>&1 || true
 
 # Copy deployment files if available
 if [[ -f "$DEPLOY_DIR/.deploy/docker-compose.yml" ]]; then
