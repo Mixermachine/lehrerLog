@@ -747,9 +747,19 @@ echo "Starting services..."
 if [[ "$DEPLOY_WEBAPP_ONLY" == "true" ]]; then
   docker compose "${COMPOSE_ENV_FILES[@]}" up -d lehrerlog-webapp
 elif [[ "$DEPLOY_SERVER_ONLY" == "true" ]]; then
-  docker compose "${COMPOSE_ENV_FILES[@]}" up -d lehrerlog-server db garage
+  if ! docker compose "${COMPOSE_ENV_FILES[@]}" up -d lehrerlog-server db garage; then
+    echo "Error: docker compose failed to start server stack."
+    docker compose "${COMPOSE_ENV_FILES[@]}" ps || true
+    docker logs "lehrerlog-${ENV_NAME}-db" --tail 200 || true
+    exit 1
+  fi
 else
-  docker compose "${COMPOSE_ENV_FILES[@]}" up -d --remove-orphans
+  if ! docker compose "${COMPOSE_ENV_FILES[@]}" up -d --remove-orphans; then
+    echo "Error: docker compose failed to start services."
+    docker compose "${COMPOSE_ENV_FILES[@]}" ps || true
+    docker logs "lehrerlog-${ENV_NAME}-db" --tail 200 || true
+    exit 1
+  fi
 fi
 
 if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
