@@ -320,7 +320,7 @@ services:
     image: ${IMAGE_NAME}:${IMAGE_TAG}
     restart: unless-stopped
     env_file:
-      - ./app.env
+      - ./server.env
     environment:
       - SCHOOL_CATALOG_PATH=/app/data/schools.json
       - DB_MODE=postgres

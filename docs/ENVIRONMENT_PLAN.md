@@ -35,7 +35,7 @@ Goal: add DEV/LOCAL, QA, and PROD flavors for client + server. CI should build Q
 - Keep single server image, but run two compose stacks:
   - PROD: maps host port 18080, nginx `api.lehrerlog.de`
   - QA: maps host port 18081, nginx `api.qa.lehrerlog.de`
-- Ensure env files are distinct (`~/docker/lehrerlog/app.env`, `~/docker/lehrerlog-qa/app.env`).
+- Ensure env files are distinct (`~/docker/lehrerlog/server.env`, `~/docker/lehrerlog-qa/server.env`, `~/docker/lehrerlog/webapp.env`, `~/docker/lehrerlog-qa/webapp.env`).
 - Confirm healthcheck path `/health` in both.
 
 ## Phase 4 - CI artifacts and tagging
