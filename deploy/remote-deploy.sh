@@ -247,6 +247,10 @@ mkdir -p "$DEPLOY_DIR/.deploy"
 
 # Handle POSTGRES_PASSWORD: reuse existing, use provided, or generate new
 SERVER_ENV_FILE="$DEPLOY_DIR/server.env"
+if [[ ! -f "$SERVER_ENV_FILE" && -f "$DEPLOY_DIR/.env" ]]; then
+  mv "$DEPLOY_DIR/.env" "$SERVER_ENV_FILE"
+  echo "Migrated legacy .env to server.env"
+fi
 EXISTING_PASSWORD=""
 EXISTING_IMAGE_NAME=""
 EXISTING_IMAGE_TAG=""
@@ -270,6 +274,11 @@ if [[ -z "$POSTGRES_PASSWORD" ]]; then
     POSTGRES_PASSWORD="$EXISTING_PASSWORD"
     echo "Using existing POSTGRES_PASSWORD from $SERVER_ENV_FILE"
   else
+    if [[ -d "$DB_DATA_DIR" ]] && [[ -n "$(ls -A "$DB_DATA_DIR" 2>/dev/null)" ]]; then
+      echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
+      echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
+      exit 1
+    fi
     # Avoid SIGPIPE causing exit under pipefail when head closes the pipe.
     set +o pipefail
     POSTGRES_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
