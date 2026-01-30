@@ -793,28 +793,29 @@ fi
 
 if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
   echo "Waiting for Garage to respond on port ${GARAGE_ADMIN_PORT}..."
+  if [[ -z "$GARAGE_ADMIN_TOKEN" ]]; then
+    echo "Error: GARAGE_ADMIN_TOKEN is required to verify Garage health."
+    exit 1
+  fi
   GARAGE_READY=false
-  for attempt in $(seq 1 20); do
+  for attempt in $(seq 1 30); do
     status_code="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${GARAGE_ADMIN_PORT}/health" || true)"
-    if [[ "$status_code" =~ ^[0-9]+$ ]] && [[ "$status_code" -ge 200 ]] && [[ "$status_code" -lt 500 ]]; then
+    if [[ "$status_code" == "200" ]]; then
       GARAGE_READY=true
       break
     fi
+    echo "Garage /health returned ${status_code}; checking cluster health..."
+    cluster_body="$(curl -s -H "Authorization: Bearer $GARAGE_ADMIN_TOKEN" \
+      "http://127.0.0.1:${GARAGE_ADMIN_PORT}/v2/GetClusterHealth" || true)"
+    echo "$cluster_body"
     sleep 2
   done
   if [[ "$GARAGE_READY" != "true" ]]; then
-    echo "Warning: Garage health check did not respond on port ${GARAGE_ADMIN_PORT}."
-    if [[ -n "$GARAGE_ADMIN_TOKEN" ]]; then
-      echo "Garage cluster health:"
-      curl -fsS -H "Authorization: Bearer $GARAGE_ADMIN_TOKEN" \
-        "http://127.0.0.1:${GARAGE_ADMIN_PORT}/v2/GetClusterHealth" || true
-    else
-      echo "Garage admin token is missing; cannot query cluster health."
-    fi
-    docker logs "lehrerlog-${ENV_NAME}-garage" --tail 100 || true
-  else
-    echo "Garage is reachable on port ${GARAGE_ADMIN_PORT}."
+    echo "Error: Garage did not become healthy."
+    docker logs "lehrerlog-${ENV_NAME}-garage" --tail 200 || true
+    exit 1
   fi
+  echo "Garage is healthy on port ${GARAGE_ADMIN_PORT}."
 fi
 
 if [[ "$DEPLOY_SERVER_ONLY" != "true" ]]; then
