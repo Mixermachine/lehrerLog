@@ -243,8 +243,11 @@ echo "Port: $HOST_PORT"
 echo ""
 
 # Create directories (only if they don't exist)
-mkdir -p "$DEPLOY_DIR"
-mkdir -p "$DEPLOY_DIR/.deploy"
+echo "Step: ensure deploy directories exist"
+if ! mkdir -p "$DEPLOY_DIR" "$DEPLOY_DIR/.deploy"; then
+  echo "Error: unable to create deploy directories at $DEPLOY_DIR"
+  exit 1
+fi
 
 # Handle POSTGRES_PASSWORD: reuse existing, use provided, or generate new
 SERVER_ENV_FILE="$DEPLOY_DIR/server.env"
