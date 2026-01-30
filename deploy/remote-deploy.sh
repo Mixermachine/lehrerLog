@@ -281,17 +281,13 @@ if [[ -z "$POSTGRES_PASSWORD" ]]; then
     echo "Using existing POSTGRES_PASSWORD from $SERVER_ENV_FILE"
   else
     if [[ -d "$DB_DATA_DIR" ]]; then
-      if ! sudo find "$DB_DATA_DIR" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
-        : # empty or unreadable directories will be handled below
-      else
+      if sudo find "$DB_DATA_DIR" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
         echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
         echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
         exit 1
       fi
       if ! sudo find "$DB_DATA_DIR" -mindepth 1 -print -quit >/dev/null 2>&1; then
-        echo "Error: unable to read $DB_DATA_DIR to determine if it is empty."
-        echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
-        exit 1
+        echo "Warning: unable to read $DB_DATA_DIR to determine if it is empty. Proceeding with generated password."
       fi
     fi
     # Avoid SIGPIPE causing exit under pipefail when head closes the pipe.
