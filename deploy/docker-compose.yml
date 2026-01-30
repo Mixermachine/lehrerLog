@@ -3,10 +3,16 @@ services:
     container_name: lehrerlog-${ENV_NAME:-prod}-server
     image: ${IMAGE_NAME}:${IMAGE_TAG}
     restart: unless-stopped
-    env_file:
-      - ./app.env
     environment:
       - SCHOOL_CATALOG_PATH=/app/data/schools.json
+      - SCHOOL_CATALOG_ENDPOINT=${SCHOOL_CATALOG_ENDPOINT:-https://overpass-api.de/api/interpreter}
+      - OBJECT_STORAGE_HEALTH_URL=${OBJECT_STORAGE_HEALTH_URL:-}
+      - SEED_TEST_USER_EMAIL=${SEED_TEST_USER_EMAIL:-}
+      - SEED_TEST_USER_PASSWORD_B64=${SEED_TEST_USER_PASSWORD_B64:-}
+      - SEED_TEST_USER_FIRST_NAME=${SEED_TEST_USER_FIRST_NAME:-QA}
+      - SEED_TEST_USER_LAST_NAME=${SEED_TEST_USER_LAST_NAME:-Verifier}
+      - SEED_TEST_SCHOOL_CODE=${SEED_TEST_SCHOOL_CODE:-QA-TEST}
+      - SEED_TEST_SCHOOL_NAME=${SEED_TEST_SCHOOL_NAME:-QA Test School}
       - DB_MODE=postgres
       - DATABASE_URL=jdbc:postgresql://db:5432/${POSTGRES_DB:-lehrerlog}
       - DATABASE_USER=${POSTGRES_USER:-lehrerlog}

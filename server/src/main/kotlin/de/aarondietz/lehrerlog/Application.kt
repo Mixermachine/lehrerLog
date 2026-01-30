@@ -32,10 +32,17 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
 import java.util.Base64
 import java.util.*
 import java.nio.file.Path
@@ -134,6 +141,7 @@ fun Application.module() {
 
     routing {
         get("/health") {
+            val objectStorageUrl = System.getenv("OBJECT_STORAGE_HEALTH_URL")?.trim().orEmpty()
             val dbHealthy = try {
                 transaction {
                     exec("SELECT 1") { it.next() }
@@ -144,12 +152,21 @@ fun Application.module() {
                 false
             }
 
-            if (dbHealthy) {
-                call.respond(HealthResponse(status = "ok", database = "connected"))
+            val objectStorageStatus = if (objectStorageUrl.isBlank()) {
+                "unknown"
             } else {
+                val storageHealthy = checkObjectStorageHealth(environment, objectStorageUrl)
+                if (storageHealthy) "healthy" else "unhealthy"
+            }
+
+            val overallHealthy = dbHealthy && (objectStorageUrl.isBlank() || objectStorageStatus == "healthy")
+            if (overallHealthy) {
+                call.respond(HealthResponse(status = "ok", database = "connected", objectStorage = objectStorageStatus))
+            } else {
+                val dbStatus = if (dbHealthy) "connected" else "disconnected"
                 call.respond(
                     HttpStatusCode.ServiceUnavailable,
-                    HealthResponse(status = "unhealthy", database = "disconnected")
+                    HealthResponse(status = "unhealthy", database = dbStatus, objectStorage = objectStorageStatus)
                 )
             }
         }
@@ -170,8 +187,29 @@ fun Application.module() {
 @Serializable
 data class HealthResponse(
     val status: String,
-    val database: String
+    val database: String,
+    val objectStorage: String
 )
+
+private suspend fun checkObjectStorageHealth(environment: ApplicationEnvironment, url: String): Boolean {
+    val client = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(2))
+        .build()
+    val request = HttpRequest.newBuilder()
+        .uri(URI.create(url))
+        .timeout(Duration.ofSeconds(3))
+        .GET()
+        .build()
+    return try {
+        val response = withContext(Dispatchers.IO) {
+            client.send(request, HttpResponse.BodyHandlers.discarding())
+        }
+        response.statusCode() == 200
+    } catch (e: Exception) {
+        environment.log.error("Object storage health check failed", e)
+        false
+    }
+}
 
 private fun Application.seedTestUserIfConfigured(passwordService: PasswordService) {
     val email = System.getenv("SEED_TEST_USER_EMAIL")?.trim().orEmpty()

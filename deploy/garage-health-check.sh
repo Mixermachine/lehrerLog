@@ -25,7 +25,7 @@ else
   DEFAULT_ADMIN_PORT=3903
 fi
 
-ENV_FILE="${GARAGE_ENV_FILE:-$ENV_DIR/.env}"
+ENV_FILE="${GARAGE_ENV_FILE:-$ENV_DIR/server.env}"
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Missing env file: $ENV_FILE" >&2
   exit 1
@@ -54,4 +54,3 @@ echo "$cluster_body"
 if [[ "$status_code" != "200" ]]; then
   exit 1
 fi
-

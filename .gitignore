@@ -41,7 +41,8 @@ server/bin/
 
 # Deploy environment files (contain secrets)
 deploy/.env
+deploy/server.env
 deploy/app.env
-!deploy/.env.example
-!deploy/.env.*.example
+!deploy/server.env.example
+!deploy/server.env.*.example
 !deploy/app.env.example
