@@ -727,7 +727,15 @@ init_garage_layout() {
   fi
   target_version=$((current_version + 1))
 
-  if ! printf '%s\n' "$layout_output" | grep -q "$node_id"; then
+  current_layout="$(printf '%s\n' "$layout_output" | awk '/==== CURRENT CLUSTER LAYOUT ====/{flag=1} /==== STAGED ROLE CHANGES ====/{flag=0} flag')"
+  needs_apply=false
+  if [[ "$current_version" -eq 0 ]]; then
+    needs_apply=true
+  elif ! printf '%s\n' "$current_layout" | grep -q "$node_id"; then
+    needs_apply=true
+  fi
+
+  if [[ "$needs_apply" == "true" ]]; then
     echo "Initializing Garage layout for ${garage_container}..."
     docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout assign -z "$zone" -c "$capacity" "$node_id"
     docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "$garage_container" /garage layout apply --version "$target_version"
@@ -796,6 +804,13 @@ if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
   done
   if [[ "$GARAGE_READY" != "true" ]]; then
     echo "Warning: Garage health check did not respond on port ${GARAGE_ADMIN_PORT}."
+    if [[ -n "$GARAGE_ADMIN_TOKEN" ]]; then
+      echo "Garage cluster health:"
+      curl -fsS -H "Authorization: Bearer $GARAGE_ADMIN_TOKEN" \
+        "http://127.0.0.1:${GARAGE_ADMIN_PORT}/v2/GetClusterHealth" || true
+    else
+      echo "Garage admin token is missing; cannot query cluster health."
+    fi
     docker logs "lehrerlog-${ENV_NAME}-garage" --tail 100 || true
   else
     echo "Garage is reachable on port ${GARAGE_ADMIN_PORT}."
