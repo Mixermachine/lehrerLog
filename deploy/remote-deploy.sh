@@ -296,21 +296,29 @@ echo "Step: resolve POSTGRES_PASSWORD"
 if [[ -z "$POSTGRES_PASSWORD" ]]; then
   # No password provided - use existing or generate new
   echo "Step: POSTGRES_PASSWORD empty; existing password length: ${#EXISTING_PASSWORD}"
-  if [[ -n "$EXISTING_PASSWORD" ]]; then
+  DB_HAS_DATA=false
+  if [[ -d "$DB_DATA_DIR" ]]; then
+    echo "Step: checking DB_DATA_DIR contents at $DB_DATA_DIR"
+    if [[ ! -r "$DB_DATA_DIR" ]]; then
+      echo "Info: adjusting ownership to inspect $DB_DATA_DIR"
+      sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$DB_DATA_DIR"
+    fi
+    if find "$DB_DATA_DIR" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
+      DB_HAS_DATA=true
+    fi
+  fi
+
+  if [[ -n "$EXISTING_PASSWORD" && "$DB_HAS_DATA" == "true" ]]; then
     POSTGRES_PASSWORD="$EXISTING_PASSWORD"
     echo "Using existing POSTGRES_PASSWORD from $SERVER_ENV_FILE"
   else
-    if [[ -d "$DB_DATA_DIR" ]]; then
-      echo "Step: checking DB_DATA_DIR contents at $DB_DATA_DIR"
-      if [[ ! -r "$DB_DATA_DIR" ]]; then
-        echo "Info: adjusting ownership to inspect $DB_DATA_DIR"
-        sudo "$BIN_CHOWN" "$(id -u):$(id -g)" "$DB_DATA_DIR"
-      fi
-      if find "$DB_DATA_DIR" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
-        echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
-        echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
-        exit 1
-      fi
+    if [[ -n "$EXISTING_PASSWORD" && "$DB_HAS_DATA" != "true" ]]; then
+      echo "Info: existing server.env found but DB_DATA_DIR is empty; generating new password."
+    fi
+    if [[ "$DB_HAS_DATA" == "true" ]]; then
+      echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
+      echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
+      exit 1
     fi
     # Avoid SIGPIPE causing exit under pipefail when head closes the pipe.
     set +o pipefail
