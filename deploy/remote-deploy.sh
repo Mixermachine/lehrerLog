@@ -281,13 +281,15 @@ if [[ -z "$POSTGRES_PASSWORD" ]]; then
     echo "Using existing POSTGRES_PASSWORD from $SERVER_ENV_FILE"
   else
     if [[ -d "$DB_DATA_DIR" ]]; then
-      if ! ls -A "$DB_DATA_DIR" >/dev/null 2>&1; then
-        echo "Error: $DB_DATA_DIR is not readable; assuming it contains data."
+      if ! sudo find "$DB_DATA_DIR" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
+        : # empty or unreadable directories will be handled below
+      else
+        echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
         echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
         exit 1
       fi
-      if [[ -n "$(ls -A "$DB_DATA_DIR" 2>/dev/null)" ]]; then
-        echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
+      if ! sudo find "$DB_DATA_DIR" -mindepth 1 -print -quit >/dev/null 2>&1; then
+        echo "Error: unable to read $DB_DATA_DIR to determine if it is empty."
         echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
         exit 1
       fi
