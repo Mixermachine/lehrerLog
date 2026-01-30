@@ -280,10 +280,17 @@ if [[ -z "$POSTGRES_PASSWORD" ]]; then
     POSTGRES_PASSWORD="$EXISTING_PASSWORD"
     echo "Using existing POSTGRES_PASSWORD from $SERVER_ENV_FILE"
   else
-    if [[ -d "$DB_DATA_DIR" ]] && [[ -n "$(ls -A "$DB_DATA_DIR" 2>/dev/null)" ]]; then
-      echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
-      echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
-      exit 1
+    if [[ -d "$DB_DATA_DIR" ]]; then
+      if ! ls -A "$DB_DATA_DIR" >/dev/null 2>&1; then
+        echo "Error: $DB_DATA_DIR is not readable; assuming it contains data."
+        echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
+        exit 1
+      fi
+      if [[ -n "$(ls -A "$DB_DATA_DIR" 2>/dev/null)" ]]; then
+        echo "Error: $DB_DATA_DIR contains data but no POSTGRES_PASSWORD is set."
+        echo "Please set POSTGRES_PASSWORD (or restore server.env) before deploying."
+        exit 1
+      fi
     fi
     # Avoid SIGPIPE causing exit under pipefail when head closes the pipe.
     set +o pipefail
