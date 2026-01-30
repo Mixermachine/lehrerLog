@@ -808,6 +808,21 @@ if [[ "$DEPLOY_WEBAPP_ONLY" != "true" ]]; then
     cluster_body="$(curl -s -H "Authorization: Bearer $GARAGE_ADMIN_TOKEN" \
       "http://127.0.0.1:${GARAGE_ADMIN_PORT}/v2/GetClusterHealth" || true)"
     echo "$cluster_body"
+
+    if [[ "$status_code" == "503" ]]; then
+      layout_output="$(docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "lehrerlog-${ENV_NAME}-garage" /garage layout show 2>/dev/null || true)"
+      current_version="$(printf '%s\n' "$layout_output" | sed -n -E 's/.*Current cluster layout version: ([0-9]+).*/\\1/p' | head -n 1)"
+      if [[ -z "$current_version" ]]; then
+        current_version=0
+      fi
+      staged_section="$(printf '%s\n' "$layout_output" | awk '/==== STAGED ROLE CHANGES ====/{flag=1;next} /==== NEW CLUSTER LAYOUT/{flag=0} flag')"
+      staged_has_changes="$(printf '%s\n' "$staged_section" | grep -v '^[[:space:]]*$' || true)"
+      if [[ "$current_version" -eq 0 || -n "$staged_has_changes" ]]; then
+        next_version=$((current_version + 1))
+        echo "Re-applying Garage layout (version ${next_version})..."
+        docker exec -e GARAGE_CONFIG_FILE=/etc/garage.toml -e GARAGE_RPC_HOST="$full_node_id" "lehrerlog-${ENV_NAME}-garage" /garage layout apply --version "$next_version" || true
+      fi
+    fi
     sleep 2
   done
   if [[ "$GARAGE_READY" != "true" ]]; then
