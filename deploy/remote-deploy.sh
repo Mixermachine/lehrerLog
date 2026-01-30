@@ -281,8 +281,12 @@ if [[ "${RESET_DB_ON_START:-false}" == "true" ]]; then
     echo "ERROR: DB_DATA_DIR is not set safely; refusing to reset."
     exit 1
   fi
+  if [[ ! -d "$DB_DATA_DIR" ]]; then
+    sudo "$BIN_MKDIR" -p "$DB_DATA_DIR"
+  fi
   echo "WARNING: RESET_DB_ON_START=true; wiping DB_DATA_DIR at $DB_DATA_DIR"
-  sudo "$BIN_RM" -rf "$DB_DATA_DIR"
+  docker run --rm -v "$DB_DATA_DIR":/var/lib/postgresql/data busybox:1.36 sh -c \
+    "rm -rf /var/lib/postgresql/data/* /var/lib/postgresql/data/.[!.]* /var/lib/postgresql/data/..?*"
 fi
 echo "Step: read existing env values"
 EXISTING_PASSWORD=""
