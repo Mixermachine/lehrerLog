@@ -403,7 +403,7 @@ fi
 if [[ ! -d "$DB_DATA_DIR" ]]; then
   sudo "$BIN_MKDIR" -p "$DB_DATA_DIR"
 fi
-sudo "$BIN_CHOWN" 999:999 "$DB_DATA_DIR"  # PostgreSQL container runs as uid 999
+sudo "$BIN_CHOWN" -R 999:999 "$DB_DATA_DIR"  # PostgreSQL container runs as uid 999
 
 # Copy deployment files if available
 if [[ -f "$DEPLOY_DIR/.deploy/docker-compose.yml" ]]; then
