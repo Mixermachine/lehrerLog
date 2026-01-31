@@ -286,7 +286,12 @@ if [[ "${RESET_DB_ON_START:-false}" == "true" ]]; then
   fi
   echo "WARNING: RESET_DB_ON_START=true; wiping DB_DATA_DIR at $DB_DATA_DIR"
   docker run --rm -v "$DB_DATA_DIR":/var/lib/postgresql/data busybox:1.36 sh -c \
-    "rm -rf /var/lib/postgresql/data/* /var/lib/postgresql/data/.[!.]* /var/lib/postgresql/data/..?*"
+    "rm -rf /var/lib/postgresql/data/* /var/lib/postgresql/data/.[!.]* /var/lib/postgresql/data/..?*; find /var/lib/postgresql/data -mindepth 1 -delete"
+  if find "$DB_DATA_DIR" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
+    echo "ERROR: DB_DATA_DIR still contains files after reset."
+    ls -la "$DB_DATA_DIR" || true
+    exit 1
+  fi
 fi
 echo "Step: read existing env values"
 EXISTING_PASSWORD=""
