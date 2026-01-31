@@ -142,6 +142,7 @@ fun Application.module() {
     routing {
         get("/health") {
             val objectStorageUrl = System.getenv("OBJECT_STORAGE_HEALTH_URL")?.trim().orEmpty()
+            val objectStorageToken = System.getenv("OBJECT_STORAGE_HEALTH_TOKEN")?.trim().orEmpty()
             val dbHealthy = try {
                 transaction {
                     exec("SELECT 1") { it.next() }
@@ -155,7 +156,7 @@ fun Application.module() {
             val objectStorageStatus = if (objectStorageUrl.isBlank()) {
                 "unknown"
             } else {
-                val storageHealthy = checkObjectStorageHealth(environment, objectStorageUrl)
+                val storageHealthy = checkObjectStorageHealth(environment, objectStorageUrl, objectStorageToken)
                 if (storageHealthy) "healthy" else "unhealthy"
             }
 
@@ -191,20 +192,39 @@ data class HealthResponse(
     val objectStorage: String
 )
 
-private suspend fun checkObjectStorageHealth(environment: ApplicationEnvironment, url: String): Boolean {
+private suspend fun checkObjectStorageHealth(
+    environment: ApplicationEnvironment,
+    url: String,
+    token: String
+): Boolean {
     val client = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(2))
         .build()
-    val request = HttpRequest.newBuilder()
+    val requestBuilder = HttpRequest.newBuilder()
         .uri(URI.create(url))
         .timeout(Duration.ofSeconds(3))
         .GET()
-        .build()
+    if (token.isNotBlank()) {
+        requestBuilder.header(HttpHeaders.Authorization, "Bearer $token")
+    } else {
+        environment.log.warn("Object storage health token is not set; request may be rejected.")
+    }
+    val request = requestBuilder.build()
     return try {
         val response = withContext(Dispatchers.IO) {
-            client.send(request, HttpResponse.BodyHandlers.discarding())
+            client.send(request, HttpResponse.BodyHandlers.ofString())
         }
-        response.statusCode() == 200
+        val statusCode = response.statusCode()
+        val body = response.body()?.trim().orEmpty()
+        if (body.isNotBlank()) {
+            val preview = if (body.length > 2000) body.take(2000) + "..." else body
+            if (statusCode == 200) {
+                environment.log.info("Object storage health details: $preview")
+            } else {
+                environment.log.warn("Object storage health details (status=$statusCode): $preview")
+            }
+        }
+        statusCode == 200
     } catch (e: Exception) {
         environment.log.error("Object storage health check failed", e)
         false
