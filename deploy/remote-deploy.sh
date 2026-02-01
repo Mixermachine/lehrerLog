@@ -567,7 +567,9 @@ read_env_value() {
   if [[ ! -f "$env_file" ]]; then
     return 0
   fi
-  grep -E "^${key}=" "$env_file" | tail -n 1 | cut -d= -f2- | tr -d '\r'
+  local value
+  value="$(grep -E "^${key}=" "$env_file" | tail -n 1 | cut -d= -f2- | tr -d '\r' || true)"
+  printf '%s' "$value"
 }
 
 if [[ -z "${OBJECT_STORAGE_ACCESS_KEY:-}" ]]; then
