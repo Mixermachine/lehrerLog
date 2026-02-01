@@ -57,6 +57,8 @@ class FileRouteEndToEndTest {
     private var userId: UUID? = null
     private var classId: UUID? = null
     private var studentId: UUID? = null
+    private var classIdTwo: UUID? = null
+    private var studentIdTwo: UUID? = null
     private var parentId: UUID? = null
     private var isInitialized = false
 
@@ -138,6 +140,12 @@ class FileRouteEndToEndTest {
                 StudentClasses.deleteWhere { StudentClasses.studentId eq id }
                 Students.deleteWhere { Students.id eq id }
             }
+            studentIdTwo?.let { id ->
+                ParentStudentLinks.deleteWhere { ParentStudentLinks.studentId eq id }
+                StudentClasses.deleteWhere { StudentClasses.studentId eq id }
+                Students.deleteWhere { Students.id eq id }
+            }
+            classIdTwo?.let { id -> SchoolClasses.deleteWhere { SchoolClasses.id eq id } }
             classId?.let { id -> SchoolClasses.deleteWhere { SchoolClasses.id eq id } }
             userId?.let { id -> Users.deleteWhere { Users.id eq id } }
             schoolId?.let { id ->
@@ -336,5 +344,194 @@ class FileRouteEndToEndTest {
             header("Authorization", "Bearer $parentToken")
         }
         assertEquals(HttpStatusCode.OK, parentSubmissionDownload.status)
+    }
+
+    @Test
+    fun `parent cannot download files for unlinked student`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) {
+                json()
+            }
+        }
+
+        val teacherToken = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "teacher@example.com",
+            role = UserRole.TEACHER,
+            schoolId = schoolId
+        )
+
+        val schoolIdValue = schoolId!!
+        val userIdValue = userId!!
+        val classIdValue = classId!!
+        val studentIdValue = studentId!!
+
+        transaction {
+            classIdTwo = SchoolClasses.insertAndGetId {
+                it[SchoolClasses.schoolId] = schoolIdValue
+                it[name] = "2b"
+                it[alternativeName] = null
+                it[createdBy] = userIdValue
+            }.value
+
+            studentIdTwo = Students.insertAndGetId {
+                it[Students.schoolId] = schoolIdValue
+                it[firstName] = "Student"
+                it[lastName] = "Two"
+                it[createdBy] = userIdValue
+            }.value
+
+            StudentClasses.insert {
+                it[StudentClasses.studentId] = studentIdTwo!!
+                it[StudentClasses.schoolClassId] = classIdTwo!!
+                it[validFrom] = OffsetDateTime.now(ZoneOffset.UTC)
+                it[validTill] = null
+            }
+        }
+
+        val linkedTaskResponse = client.post("/api/tasks") {
+            header("Authorization", "Bearer $teacherToken")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = classIdValue.toString(),
+                    title = "Linked Homework",
+                    description = "Page 5",
+                    dueAt = "2026-02-05"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, linkedTaskResponse.status)
+        val linkedTask = linkedTaskResponse.body<TaskDto>()
+
+        val unlinkedTaskResponse = client.post("/api/tasks") {
+            header("Authorization", "Bearer $teacherToken")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = classIdTwo!!.toString(),
+                    title = "Unlinked Homework",
+                    description = "Page 6",
+                    dueAt = "2026-02-06"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, unlinkedTaskResponse.status)
+        val unlinkedTask = unlinkedTaskResponse.body<TaskDto>()
+
+        val submissionResponse = client.post("/api/tasks/${unlinkedTask.id}/submissions") {
+            header("Authorization", "Bearer $teacherToken")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskSubmissionRequest(
+                    studentId = studentIdTwo!!.toString(),
+                    submissionType = TaskSubmissionType.FILE,
+                    grade = null,
+                    note = null
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, submissionResponse.status)
+        val submission = submissionResponse.body<TaskSubmissionDto>()
+
+        val fileBytes = "pdf-content".encodeToByteArray()
+        val linkedAssignmentUpload = client.post("/api/tasks/${linkedTask.id}/files") {
+            header("Authorization", "Bearer $teacherToken")
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "file",
+                            fileBytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "application/pdf")
+                                append(HttpHeaders.ContentDisposition, "filename=\"linked.pdf\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, linkedAssignmentUpload.status)
+        linkedAssignmentUpload.body<FileMetadataDto>()
+
+        val unlinkedAssignmentUpload = client.post("/api/tasks/${unlinkedTask.id}/files") {
+            header("Authorization", "Bearer $teacherToken")
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "file",
+                            fileBytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "application/pdf")
+                                append(HttpHeaders.ContentDisposition, "filename=\"unlinked.pdf\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, unlinkedAssignmentUpload.status)
+        val unlinkedAssignmentFile = unlinkedAssignmentUpload.body<FileMetadataDto>()
+
+        val unlinkedSubmissionUpload = client.post("/api/tasks/${unlinkedTask.id}/submissions/${submission.id}/files") {
+            header("Authorization", "Bearer $teacherToken")
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "file",
+                            fileBytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "application/pdf")
+                                append(HttpHeaders.ContentDisposition, "filename=\"unlinked-submission.pdf\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, unlinkedSubmissionUpload.status)
+        val unlinkedSubmissionFile = unlinkedSubmissionUpload.body<FileMetadataDto>()
+
+        val parentEmail = "parent.${(10000..99999).random()}@example.com"
+        transaction {
+            parentId = Users.insertAndGetId {
+                it[email] = parentEmail
+                it[passwordHash] = "test"
+                it[firstName] = "Parent"
+                it[lastName] = "User"
+                it[role] = UserRole.PARENT
+                it[Users.schoolId] = null
+                it[isActive] = true
+            }.value
+
+            ParentStudentLinks.insert {
+                it[ParentStudentLinks.parentUserId] = parentId!!
+                it[ParentStudentLinks.studentId] = studentIdValue
+                it[ParentStudentLinks.status] = "ACTIVE"
+                it[ParentStudentLinks.createdBy] = userId!!
+            }
+        }
+
+        val parentToken = tokenService.generateAccessToken(
+            userId = parentId!!,
+            email = parentEmail,
+            role = UserRole.PARENT,
+            schoolId = null
+        )
+
+        val deniedAssignmentDownload = client.get("/api/files/${unlinkedAssignmentFile.id}") {
+            header("Authorization", "Bearer $parentToken")
+        }
+        assertEquals(HttpStatusCode.NotFound, deniedAssignmentDownload.status)
+
+        val deniedSubmissionDownload = client.get("/api/files/${unlinkedSubmissionFile.id}") {
+            header("Authorization", "Bearer $parentToken")
+        }
+        assertEquals(HttpStatusCode.NotFound, deniedSubmissionDownload.status)
     }
 }

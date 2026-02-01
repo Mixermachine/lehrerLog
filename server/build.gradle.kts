@@ -69,6 +69,10 @@ dependencies {
     // Database drivers
     implementation(libs.postgres)
     implementation(libs.h2)
+
+    // Object storage (Garage/S3)
+    implementation(libs.aws.sdk.s3)
+    implementation(libs.aws.sdk.auth)
 }
 repositories {
     mavenCentral()

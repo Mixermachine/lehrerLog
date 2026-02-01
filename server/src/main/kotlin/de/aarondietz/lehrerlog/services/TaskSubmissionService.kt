@@ -4,10 +4,13 @@ import de.aarondietz.lehrerlog.data.LateStatus
 import de.aarondietz.lehrerlog.data.TaskSubmissionDto
 import de.aarondietz.lehrerlog.data.TaskSubmissionSummaryDto
 import de.aarondietz.lehrerlog.data.TaskSubmissionType
+import de.aarondietz.lehrerlog.db.tables.LatePeriods
 import de.aarondietz.lehrerlog.db.tables.Students
 import de.aarondietz.lehrerlog.db.tables.TaskSubmissions
 import de.aarondietz.lehrerlog.db.tables.TaskTargets
 import de.aarondietz.lehrerlog.db.tables.Tasks
+import de.aarondietz.lehrerlog.db.tables.Users
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
@@ -130,8 +133,8 @@ class TaskSubmissionService {
                     lateStatus = lateStatus
                 )
                 updates += TaskSubmissions.lateStatus to lateStatus.name
-                updates += TaskSubmissions.latePeriodId to periodId
-                updates += TaskSubmissions.decidedBy to teacherId
+                updates += TaskSubmissions.latePeriodId to EntityID(periodId, LatePeriods)
+                updates += TaskSubmissions.decidedBy to EntityID(teacherId, Users)
                 updates += TaskSubmissions.decidedAt to OffsetDateTime.now(ZoneOffset.UTC)
             } else {
                 updates += TaskSubmissions.lateStatus to lateStatus.name

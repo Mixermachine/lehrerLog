@@ -7,7 +7,7 @@ This document translates planing_draft.md into a structured technical plan. It i
 - Targets: Android, iOS, Desktop (JVM), Web (Wasm), Server (Ktor).
 - Data layer: PostgreSQL (ACID) with Flyway migrations.
 - Auth: JWT + refresh tokens; role-based access control.
-- Files: S3-compatible object storage (MinIO) hosted alongside server.
+- Files: S3-compatible object storage (Garage) hosted alongside server.
 - PDF viewing: use system viewer on mobile/desktop; browser native PDF display on Web.
 
 Deliverables
@@ -432,5 +432,41 @@ Account
 
 This plan will be refined as requirements harden and schemas are agreed.
 
+## TODOs (Implementation Audit - 2026-02-01)
 
+Phase 0
+- DONE (verified): Tech decisions documented in this plan.
+- DONE (verified): README key features updated.
 
+Phase 1
+- DONE (re-verified): Flyway migrations V10–V14 cover tasks/targets, files, quota, late policy, parent invites/links.
+- DONE (re-verified): Seed storage_plans defaults in V11.
+- DONE (re-verified): Endpoints present for tasks/submissions/files/storage/quota/late/parent (routes: TaskRoute, FileRoute, StorageRoute, LatePolicyRoute, ParentRoute).
+- DONE (re-verified): Proxy upload/download + access checks + download audit logging in FileRoute/FileStorageService.
+- DONE (re-verified): S3/Garage object storage backend (ObjectStorageClient + env wiring).
+- DONE (re-verified): Quota enforcement with row-locking + error payloads (StorageService/TaskSubmissionService).
+- DONE (re-verified): Class/student CRUD + move APIs; soft-delete for students/classes (deleted_at/archived_at).
+- DONE (re-verified): Route-level tests for files/class/student/quota; task/submission flows (TaskRouteEndToEndTest, FileRouteEndToEndTest, ClassStudentRouteEndToEndTest, StorageRouteEndToEndTest).
+- DONE (present in code; not manual UX verified): Task detail UI for per-student submissions + grade/note edits.
+- DONE (present in code; not manual UX verified): Client file upload UX + quota error UX (assignment/submission upload + picker hooks).
+
+Phase 2
+- DONE (re-verified): Late status transitions + period activation/recalc endpoints (LatePolicyRoute/LatePolicyService).
+- DONE (re-verified): Punishment counters + records + resolve endpoints.
+- DONE (re-verified): Late stats endpoints + reporting UI entrypoints (HomeLateStatsContent present).
+- DONE (re-verified): Tests for late logic + reporting APIs (LatePolicyRouteEndToEndTest, LatePolicyServiceTest).
+
+Phase 3
+- DONE (re-verified): Flyway migration for parent_invites + parent_student_links (V14).
+- DONE (re-verified): Parent invite/redeem/link endpoints + authz guards (ParentRoute + ParentService).
+- DONE (present in code; not manual UX verified): Parent UI flows + teacher/admin invite UI.
+- DONE (re-verified): Route-level E2E tests for parent routes + parent file access (ParentRouteEndToEndTest, FileRouteEndToEndTest).
+
+Phase 4
+- DONE (re-verified): Server E2E tests for storage/parent/assignment flows.
+- DONE (verified; not re-checked here): UI snapshots/tests for new screens in Phases 1–3 (Roborazzi tests + snapshots).
+- DONE (re-verified): SharedTestFixtures expanded for roles + storage/late fixtures.
+
+Phase 5
+- DONE (verified; not re-checked here): CI gating for release tagging (preflight: server tests + composeApp tests + Roborazzi verification).
+- DONE (verified; not re-checked here): Prod deploy workflows gated by preflight for server and webapp (server-deploy.yml, webapp-build-deploy.yml).

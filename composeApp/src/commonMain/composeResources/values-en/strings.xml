@@ -4,6 +4,9 @@
     <string name="nav_home">Home</string>
     <string name="nav_tasks">Tasks</string>
     <string name="nav_students">Students</string>
+    <string name="nav_parent_students">Children</string>
+    <string name="nav_parent_assignments">Assignments</string>
+    <string name="nav_parent_submissions">Submissions</string>
     <string name="nav_settings">Settings</string>
 
     <!-- Common actions -->
@@ -22,8 +25,11 @@
     <string name="first_name">First name</string>
     <string name="last_name">Last name</string>
     <string name="delete_student">Delete student</string>
+    <string name="delete_student_confirm">Delete "%1$s"?</string>
     <string name="no_students_in_class">No students in this class</string>
     <string name="students_count">%1$d students</string>
+    <string name="parent_no_students">No linked students</string>
+    <string name="parent_select_student">Select a child</string>
 
     <!-- Tasks -->
     <string name="add_task">Add task</string>
@@ -35,6 +41,10 @@
     <string name="select_class">Select class</string>
     <string name="submissions_status">%1$d of %2$d submitted</string>
     <string name="due_label">Due: %1$s</string>
+    <string name="parent_no_assignments">No assignments available</string>
+    <string name="parent_no_submissions">No submissions available</string>
+    <string name="parent_submission_grade">Grade: %1$s</string>
+    <string name="parent_submission_note">Note: %1$s</string>
 
     <!-- Accessibility -->
     <string name="expand">Expand</string>
@@ -59,4 +69,47 @@
     <string name="create_account">Create account</string>
     <string name="login_subtitle">Sign in to continue</string>
     <string name="register_subtitle">Create a new account</string>
+    <string name="parent_invite_title">Activate parent access</string>
+    <string name="parent_invite_subtitle">Enter the invite code and your details</string>
+    <string name="parent_invite_code">Invite code</string>
+    <string name="parent_invite_redeem">Redeem invite</string>
+    <string name="parent_invite_to_login">Back to login</string>
+
+    <!-- Parent invites (teacher) -->
+    <string name="invite_parent">Invite parent</string>
+    <string name="invite_parent_title">Parent invite</string>
+    <string name="invite_parent_message">Share this code with the parent</string>
+    <string name="parent_links_title">Parent links</string>
+    <string name="parent_links_empty">No parents linked</string>
+    <string name="parent_link_revoke">Remove</string>
+
+    <!-- Late stats -->
+    <string name="late_overview_title">Late overview</string>
+    <string name="late_overview_empty">No late periods yet</string>
+    <string name="late_overview_active_period">Active period</string>
+    <string name="late_overview_missed">Missed: %1$d</string>
+    <string name="late_overview_punishments">Punishments: %1$d</string>
+    <string name="late_overview_since">Since punishment: %1$d</string>
+    <string name="late_overview_punishment_required">Punishment required</string>
+    <string name="late_overview_missing_school">Missing school context</string>
+    <string name="punishment_resolve">Mark resolved</string>
+    <string name="task_details">Task details</string>
+    <string name="task_loading">Loading details</string>
+    <string name="task_refresh">Refresh</string>
+    <string name="task_students_empty">No students for this task</string>
+    <string name="task_upload_assignment">Assignment file</string>
+    <string name="submission_status_missing">Missing</string>
+    <string name="submission_status_submitted">Submitted</string>
+    <string name="submission_mark_in_person">Mark in-person</string>
+    <string name="submission_upload_file">Upload file</string>
+    <string name="submission_edit">Edit</string>
+    <string name="submission_grade">Grade</string>
+    <string name="submission_note">Note</string>
+    <string name="submission_save">Save</string>
+    <string name="submission_type_file">File</string>
+    <string name="submission_type_in_person">In-person</string>
+    <string name="late_status_on_time">On time</string>
+    <string name="late_status_undecided">Late (undecided)</string>
+    <string name="late_status_forgiven">Late (forgiven)</string>
+    <string name="late_status_punish">Late (punish)</string>
 </resources>

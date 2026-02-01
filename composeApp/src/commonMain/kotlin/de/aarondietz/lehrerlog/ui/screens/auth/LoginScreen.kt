@@ -21,20 +21,25 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import de.aarondietz.lehrerlog.SharedTestFixtures
+import de.aarondietz.lehrerlog.ui.theme.spacing
+import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
+    onNavigateToParentInvite: () -> Unit,
     viewModel: AuthViewModel = koinViewModel()
 ) {
     val loginState by viewModel.loginState.collectAsState()
     LoginScreenContent(
         loginState = loginState,
         onNavigateToRegister = onNavigateToRegister,
+        onNavigateToParentInvite = onNavigateToParentInvite,
         onEmailChange = viewModel::updateLoginEmail,
         onPasswordChange = viewModel::updateLoginPassword,
         onLoginClick = viewModel::login
@@ -45,6 +50,7 @@ fun LoginScreen(
 private fun LoginScreenContent(
     loginState: LoginUiState,
     onNavigateToRegister: () -> Unit,
+    onNavigateToParentInvite: () -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onLoginClick: () -> Unit
@@ -158,19 +164,26 @@ private fun LoginScreenContent(
                 color = MaterialTheme.colorScheme.primary
             )
         }
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+        TextButton(onClick = onNavigateToParentInvite) {
+            Text(stringResource(Res.string.parent_invite_redeem))
+        }
     }
 }
 
 @Preview
 @Composable
 private fun LoginScreenPreview() {
-    MaterialTheme {
+    LehrerLogTheme {
         LoginScreenContent(
             loginState = LoginUiState(
-                email = "user@example.com",
-                password = "password123"
+                email = SharedTestFixtures.testLoginEmail,
+                password = SharedTestFixtures.testLoginPassword
             ),
             onNavigateToRegister = {},
+            onNavigateToParentInvite = {},
             onEmailChange = {},
             onPasswordChange = {},
             onLoginClick = {}
@@ -181,14 +194,15 @@ private fun LoginScreenPreview() {
 @Preview
 @Composable
 private fun LoginScreenLoadingPreview() {
-    MaterialTheme {
+    LehrerLogTheme {
         LoginScreenContent(
             loginState = LoginUiState(
-                email = "user@example.com",
-                password = "password123",
+                email = SharedTestFixtures.testLoginEmail,
+                password = SharedTestFixtures.testLoginPassword,
                 isLoading = true
             ),
             onNavigateToRegister = {},
+            onNavigateToParentInvite = {},
             onEmailChange = {},
             onPasswordChange = {},
             onLoginClick = {}
@@ -199,17 +213,29 @@ private fun LoginScreenLoadingPreview() {
 @Preview
 @Composable
 private fun LoginScreenErrorPreview() {
-    MaterialTheme {
+    LehrerLogTheme {
         LoginScreenContent(
             loginState = LoginUiState(
-                email = "user@example.com",
-                password = "wrong",
-                error = "Invalid credentials. Please try again."
+                email = SharedTestFixtures.testLoginEmail,
+                password = SharedTestFixtures.testLoginPassword,
+                error = SharedTestFixtures.testLoginError
             ),
             onNavigateToRegister = {},
+            onNavigateToParentInvite = {},
             onEmailChange = {},
             onPasswordChange = {},
             onLoginClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun LoginScreenWrapperPreview() {
+    LehrerLogTheme {
+        LoginScreen(
+            onNavigateToRegister = {},
+            onNavigateToParentInvite = {}
         )
     }
 }

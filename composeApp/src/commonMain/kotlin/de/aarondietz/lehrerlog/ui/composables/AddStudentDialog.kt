@@ -9,8 +9,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.data.Student
+import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun AddStudentDialog(
@@ -58,4 +60,12 @@ fun AddStudentDialog(
             }
         }
     )
+}
+
+@Preview
+@Composable
+private fun AddStudentDialogPreview() {
+    LehrerLogTheme {
+        AddStudentDialog(onDismiss = {}, onConfirm = {})
+    }
 }

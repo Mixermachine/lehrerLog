@@ -1,6 +1,7 @@
 package de.aarondietz.lehrerlog.auth
 
 import de.aarondietz.lehrerlog.ServerConfig
+import de.aarondietz.lehrerlog.data.ParentInviteRedeemRequest
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -69,6 +70,47 @@ class AuthRepository(
                         response.body<ErrorResponse>()
                     } catch (e: Exception) {
                         ErrorResponse("Login failed")
+                    }
+                    AuthResult.Error(error.error, response.status.value)
+                }
+            }
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "Network error")
+        }
+    }
+
+    suspend fun redeemParentInvite(
+        code: String,
+        email: String,
+        password: String,
+        firstName: String,
+        lastName: String
+    ): AuthResult<AuthResponse> {
+        return try {
+            val response: HttpResponse = httpClient.post("$baseUrl/api/parent-invites/redeem") {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    ParentInviteRedeemRequest(
+                        code = code,
+                        email = email,
+                        password = password,
+                        firstName = firstName,
+                        lastName = lastName
+                    )
+                )
+            }
+
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    val authResponse = response.body<AuthResponse>()
+                    saveTokens(authResponse.accessToken, authResponse.refreshToken)
+                    AuthResult.Success(authResponse)
+                }
+                else -> {
+                    val error = try {
+                        response.body<ErrorResponse>()
+                    } catch (e: Exception) {
+                        ErrorResponse("Invite redemption failed")
                     }
                     AuthResult.Error(error.error, response.status.value)
                 }

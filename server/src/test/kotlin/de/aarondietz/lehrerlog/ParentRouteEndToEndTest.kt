@@ -7,6 +7,8 @@ import de.aarondietz.lehrerlog.data.CreateTaskSubmissionRequest
 import de.aarondietz.lehrerlog.data.ParentInviteCreateRequest
 import de.aarondietz.lehrerlog.data.ParentInviteCreateResponse
 import de.aarondietz.lehrerlog.data.ParentInviteRedeemRequest
+import de.aarondietz.lehrerlog.data.ParentLinkDto
+import de.aarondietz.lehrerlog.data.ParentLinkStatus
 import de.aarondietz.lehrerlog.data.TaskDto
 import de.aarondietz.lehrerlog.data.TaskSubmissionDto
 import de.aarondietz.lehrerlog.data.TaskSubmissionType
@@ -206,5 +208,64 @@ class ParentRouteEndToEndTest {
             url { parameters.append("studentId", studentId!!.toString()) }
         }
         assertEquals(HttpStatusCode.OK, submissionsResponse.status)
+    }
+
+    @Test
+    fun `teacher can list and revoke parent links`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) {
+                json()
+            }
+        }
+
+        val teacherToken = tokenService.generateAccessToken(
+            userId = teacherId!!,
+            email = "teacher@example.com",
+            role = UserRole.TEACHER,
+            schoolId = schoolId
+        )
+
+        val inviteResponse = client.post("/api/parent-invites") {
+            header("Authorization", "Bearer $teacherToken")
+            contentType(ContentType.Application.Json)
+            setBody(ParentInviteCreateRequest(studentId = studentId!!.toString()))
+        }
+        assertEquals(HttpStatusCode.Created, inviteResponse.status)
+        val invite = inviteResponse.body<ParentInviteCreateResponse>()
+
+        val redeemResponse = client.post("/api/parent-invites/redeem") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                ParentInviteRedeemRequest(
+                    code = invite.code,
+                    email = "parent.links@example.com",
+                    password = "ParentPassword1!",
+                    firstName = "Parent",
+                    lastName = "Links"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.OK, redeemResponse.status)
+
+        val linksResponse = client.get("/api/parent-links") {
+            header("Authorization", "Bearer $teacherToken")
+            url { parameters.append("studentId", studentId!!.toString()) }
+        }
+        assertEquals(HttpStatusCode.OK, linksResponse.status)
+        val links = linksResponse.body<List<ParentLinkDto>>()
+        assertEquals(ParentLinkStatus.ACTIVE, links.first().status)
+
+        val revokeResponse = client.post("/api/parent-links/${links.first().id}/revoke") {
+            header("Authorization", "Bearer $teacherToken")
+        }
+        assertEquals(HttpStatusCode.NoContent, revokeResponse.status)
+
+        val linksAfter = client.get("/api/parent-links") {
+            header("Authorization", "Bearer $teacherToken")
+            url { parameters.append("studentId", studentId!!.toString()) }
+        }.body<List<ParentLinkDto>>()
+        assertEquals(ParentLinkStatus.REVOKED, linksAfter.first().status)
     }
 }

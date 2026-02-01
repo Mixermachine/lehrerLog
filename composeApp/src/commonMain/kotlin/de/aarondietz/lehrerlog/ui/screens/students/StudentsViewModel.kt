@@ -7,6 +7,10 @@ import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.AuthResult
 import de.aarondietz.lehrerlog.data.SchoolClassDto
 import de.aarondietz.lehrerlog.data.StudentDto
+import de.aarondietz.lehrerlog.data.ParentInviteCreateResponse
+import de.aarondietz.lehrerlog.data.ParentLinkDto
+import de.aarondietz.lehrerlog.data.repository.ParentInviteRepository
+import de.aarondietz.lehrerlog.data.repository.ParentLinksRepository
 import de.aarondietz.lehrerlog.data.repository.SchoolClassRepository
 import de.aarondietz.lehrerlog.data.repository.StudentRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,6 +24,8 @@ import kotlinx.coroutines.launch
 class StudentsViewModel(
     private val studentRepository: StudentRepository,
     private val schoolClassRepository: SchoolClassRepository,
+    private val parentInviteRepository: ParentInviteRepository,
+    private val parentLinksRepository: ParentLinksRepository,
     private val authRepository: AuthRepository,
     private val logger: Logger
 ) : ViewModel() {
@@ -29,6 +35,12 @@ class StudentsViewModel(
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    private val _parentInvite = MutableStateFlow<ParentInviteUiState>(ParentInviteUiState())
+    val parentInvite: StateFlow<ParentInviteUiState> = _parentInvite.asStateFlow()
+
+    private val _parentLinks = MutableStateFlow<ParentLinksUiState>(ParentLinksUiState())
+    val parentLinks: StateFlow<ParentLinksUiState> = _parentLinks.asStateFlow()
 
     private val _schoolId = MutableStateFlow<String?>(null)
     private val schoolId: StateFlow<String?> = _schoolId.asStateFlow()
@@ -157,7 +169,74 @@ class StudentsViewModel(
         }
     }
 
+    fun createParentInvite(studentId: String) {
+        viewModelScope.launch {
+            _parentInvite.value = ParentInviteUiState(isLoading = true)
+            parentInviteRepository.createInvite(studentId)
+                .onSuccess { response ->
+                    _parentInvite.value = ParentInviteUiState(invite = response)
+                }
+                .onFailure { e ->
+                    _parentInvite.value = ParentInviteUiState(error = "Failed to create invite: ${e.message}")
+                }
+        }
+    }
+
+    fun clearParentInvite() {
+        _parentInvite.value = ParentInviteUiState()
+    }
+
+    fun loadParentLinks(studentId: String) {
+        viewModelScope.launch {
+            _parentLinks.value = ParentLinksUiState(isLoading = true, studentId = studentId)
+            parentLinksRepository.listLinks(studentId)
+                .onSuccess { links ->
+                    _parentLinks.value = ParentLinksUiState(links = links, studentId = studentId)
+                }
+                .onFailure { e ->
+                    _parentLinks.value = ParentLinksUiState(
+                        error = "Failed to load links: ${e.message}",
+                        studentId = studentId
+                    )
+                }
+        }
+    }
+
+    fun revokeParentLink(linkId: String) {
+        val studentId = _parentLinks.value.studentId ?: return
+        viewModelScope.launch {
+            _parentLinks.value = _parentLinks.value.copy(isLoading = true)
+            parentLinksRepository.revokeLink(linkId)
+                .onSuccess {
+                    loadParentLinks(studentId)
+                }
+                .onFailure { e ->
+                    _parentLinks.value = _parentLinks.value.copy(
+                        isLoading = false,
+                        error = "Failed to revoke link: ${e.message}"
+                    )
+                }
+        }
+    }
+
+    fun clearParentLinks() {
+        _parentLinks.value = ParentLinksUiState()
+    }
+
     fun clearError() {
         _error.value = null
     }
 }
+
+data class ParentInviteUiState(
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val invite: ParentInviteCreateResponse? = null
+)
+
+data class ParentLinksUiState(
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val links: List<ParentLinkDto> = emptyList(),
+    val studentId: String? = null
+)

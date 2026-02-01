@@ -52,7 +52,16 @@ class StorageService {
 
     fun reserveBytes(userId: UUID, schoolId: UUID, sizeBytes: Long): StorageQuotaDto = transaction {
         val resolved = resolveOwner(userId, schoolId)
-        val usage = ensureUsageRow(resolved.ownerType, resolved.ownerId)
+        ensureUsageRow(resolved.ownerType, resolved.ownerId)
+        val usageRow = StorageUsage
+            .selectAll()
+            .where { (StorageUsage.ownerType eq resolved.ownerType.name) and (StorageUsage.ownerId eq resolved.ownerId) }
+            .forUpdate()
+            .first()
+        val usage = UsageState(
+            usedTotalBytes = usageRow[StorageUsage.usedTotalBytes],
+            updatedAt = usageRow[StorageUsage.updatedAt]
+        )
         val remaining = resolved.planMaxTotalBytes - usage.usedTotalBytes
         if (sizeBytes > resolved.planMaxFileBytes) {
             throw IllegalArgumentException("FILE_TOO_LARGE")
@@ -82,7 +91,16 @@ class StorageService {
 
     fun releaseBytes(userId: UUID, schoolId: UUID, sizeBytes: Long) = transaction {
         val resolved = resolveOwner(userId, schoolId)
-        val usage = ensureUsageRow(resolved.ownerType, resolved.ownerId)
+        ensureUsageRow(resolved.ownerType, resolved.ownerId)
+        val usageRow = StorageUsage
+            .selectAll()
+            .where { (StorageUsage.ownerType eq resolved.ownerType.name) and (StorageUsage.ownerId eq resolved.ownerId) }
+            .forUpdate()
+            .first()
+        val usage = UsageState(
+            usedTotalBytes = usageRow[StorageUsage.usedTotalBytes],
+            updatedAt = usageRow[StorageUsage.updatedAt]
+        )
         val newUsed = (usage.usedTotalBytes - sizeBytes).coerceAtLeast(0)
         StorageUsage.update({ (StorageUsage.ownerType eq resolved.ownerType.name) and (StorageUsage.ownerId eq resolved.ownerId) }) {
             it[usedTotalBytes] = newUsed

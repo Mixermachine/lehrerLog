@@ -10,11 +10,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.data.TaskDto
 import de.aarondietz.lehrerlog.ui.composables.AddTaskDialog
+import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
+import de.aarondietz.lehrerlog.ui.theme.spacing
 import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -29,6 +32,7 @@ fun TasksScreen(
     val tasks by viewModel.tasks.collectAsState()
     val summaries by viewModel.summaries.collectAsState()
     val selectedClassId by viewModel.selectedClassId.collectAsState()
+    val detailState by viewModel.detailState.collectAsState()
     val error by viewModel.error.collectAsState()
 
     LaunchedEffect(classes) {
@@ -70,7 +74,7 @@ fun TasksScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Box(modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.md)) {
                 OutlinedTextField(
                     value = classes.firstOrNull { it.id == selectedClassId }?.name ?: "",
                     onValueChange = { },
@@ -115,11 +119,15 @@ fun TasksScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    contentPadding = PaddingValues(MaterialTheme.spacing.md),
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
                 ) {
                     items(tasks, key = { it.id }) { task ->
-                        TaskCard(task = task, summary = summaries[task.id])
+                        TaskCard(
+                            task = task,
+                            summary = summaries[task.id],
+                            onClick = { viewModel.openTask(task) }
+                        )
                     }
                 }
             }
@@ -140,16 +148,36 @@ fun TasksScreen(
             showAddTaskDialog = false
         }
     }
+
+    detailState.task?.let { task ->
+        TaskDetailDialog(
+            state = detailState,
+            onDismiss = { viewModel.closeTask() },
+            onRefresh = { viewModel.refreshTaskDetails() },
+            onMarkInPerson = { studentId -> viewModel.markInPersonSubmission(task.id, studentId) },
+            onUpdateSubmission = { submissionId, grade, note ->
+                viewModel.updateSubmission(submissionId, grade, note)
+            },
+            onUploadAssignmentFile = { file -> viewModel.uploadAssignmentFile(task.id, file) },
+            onUploadSubmissionFile = { studentId, submissionId, file ->
+                viewModel.uploadSubmissionFile(task.id, studentId, submissionId, file)
+            }
+        )
+    }
 }
 
 @Composable
 private fun TaskCard(
     task: TaskDto,
-    summary: de.aarondietz.lehrerlog.data.TaskSubmissionSummaryDto?
+    summary: de.aarondietz.lehrerlog.data.TaskSubmissionSummaryDto?,
+    onClick: () -> Unit
 ) {
     val dueDate = task.dueAt.substringBefore("T")
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick
+    ) {
+        Column(modifier = Modifier.padding(MaterialTheme.spacing.md)) {
             Text(text = task.title, style = MaterialTheme.typography.titleMedium)
             task.description?.let {
                 Text(
@@ -174,5 +202,25 @@ private fun TaskCard(
                 )
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun TasksScreenPreview() {
+    LehrerLogTheme {
+        TasksScreen()
+    }
+}
+
+@Preview
+@Composable
+private fun TaskCardPreview() {
+    LehrerLogTheme {
+        TaskCard(
+            task = SharedTestFixtures.testTaskDto(SharedTestFixtures.testClassId),
+            summary = null,
+            onClick = {}
+        )
     }
 }

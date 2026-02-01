@@ -14,7 +14,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  preflight:
+    uses: ./.github/workflows/ci-preflight.yml
+    with:
+      runComposeApp: false
+      runServer: true
+
   build-and-deploy:
+    needs: preflight
     runs-on: ubuntu-latest
     env:
       DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
@@ -22,6 +29,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v3.5.0
+
+      - name: Run server tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :server:test
 
       - name: Normalize GHCR owner
         run: echo "GHCR_OWNER_LOWER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"

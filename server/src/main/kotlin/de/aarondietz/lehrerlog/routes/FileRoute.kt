@@ -16,6 +16,7 @@ import io.ktor.http.content.forEachPart
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondFile
+import io.ktor.server.response.respondOutputStream
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -160,8 +161,21 @@ fun Route.fileRoute(
                     return@get
                 }
 
+                call.application.environment.log.info(
+                    "file_download userId=${principal.id} role=${principal.role} fileId=$fileId source=${resolved.source} sizeBytes=${resolved.sizeBytes}"
+                )
                 call.response.headers.append(HttpHeaders.ContentType, resolved.mimeType)
-                call.respondFile(resolved.path.toFile())
+                call.response.headers.append(HttpHeaders.ContentLength, resolved.sizeBytes.toString())
+                when (val location = resolved.location) {
+                    is FileStorageService.FileLocation.Local -> call.respondFile(location.path.toFile())
+                    is FileStorageService.FileLocation.ObjectStorage -> {
+                        call.respondOutputStream {
+                            fileStorageService.openStream(resolved).use { input ->
+                                input.copyTo(this)
+                            }
+                        }
+                    }
+                }
             }
         }
     }

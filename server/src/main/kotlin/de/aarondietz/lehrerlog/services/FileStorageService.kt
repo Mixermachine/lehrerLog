@@ -24,7 +24,8 @@ import java.util.UUID
 
 class FileStorageService(
     private val storageService: StorageService = StorageService(),
-    private val basePath: Path = defaultBasePath()
+    private val basePath: Path = defaultBasePath(),
+    private val objectStorageClient: ObjectStorageClient? = ObjectStorageClient.fromEnv()
 ) {
 
     fun storeTaskFile(taskId: UUID, schoolId: UUID, userId: UUID, fileName: String, contentType: String, sizeBytes: Long, input: java.io.InputStream): FileMetadataDto {
@@ -33,11 +34,14 @@ class FileStorageService(
         val quota = storageService.reserveBytes(userId, schoolId, sizeBytes)
         val fileId = UUID.randomUUID()
         val objectKey = "tasks/$taskId/$fileId"
-        val targetPath = basePath.resolve(objectKey)
-
         return try {
-            Files.createDirectories(targetPath.parent)
-            Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING)
+            if (objectStorageClient != null) {
+                objectStorageClient.putObject(objectKey, contentType, sizeBytes, input)
+            } else {
+                val targetPath = basePath.resolve(objectKey)
+                Files.createDirectories(targetPath.parent)
+                Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING)
+            }
 
             transaction {
                 TaskFiles.insert {
@@ -58,7 +62,10 @@ class FileStorageService(
             )
         } catch (e: Exception) {
             storageService.releaseBytes(userId, schoolId, sizeBytes)
-            Files.deleteIfExists(targetPath)
+            if (objectStorageClient == null) {
+                val targetPath = basePath.resolve(objectKey)
+                Files.deleteIfExists(targetPath)
+            }
             throw e
         }
     }
@@ -69,11 +76,14 @@ class FileStorageService(
         storageService.reserveBytes(userId, schoolId, sizeBytes)
         val fileId = UUID.randomUUID()
         val objectKey = "submissions/$submissionId/$fileId"
-        val targetPath = basePath.resolve(objectKey)
-
         return try {
-            Files.createDirectories(targetPath.parent)
-            Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING)
+            if (objectStorageClient != null) {
+                objectStorageClient.putObject(objectKey, contentType, sizeBytes, input)
+            } else {
+                val targetPath = basePath.resolve(objectKey)
+                Files.createDirectories(targetPath.parent)
+                Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING)
+            }
 
             transaction {
                 SubmissionFiles.insert {
@@ -94,7 +104,10 @@ class FileStorageService(
             )
         } catch (e: Exception) {
             storageService.releaseBytes(userId, schoolId, sizeBytes)
-            Files.deleteIfExists(targetPath)
+            if (objectStorageClient == null) {
+                val targetPath = basePath.resolve(objectKey)
+                Files.deleteIfExists(targetPath)
+            }
             throw e
         }
     }
@@ -114,7 +127,12 @@ class FileStorageService(
                 if (taskSchoolId != schoolId) {
                     return@let null
                 }
-                ResolvedFile(basePath.resolve(row[TaskFiles.objectKey]), row[TaskFiles.mimeType], row[TaskFiles.sizeBytes])
+                ResolvedFile(
+                    location = resolveLocation(row[TaskFiles.objectKey]),
+                    mimeType = row[TaskFiles.mimeType],
+                    sizeBytes = row[TaskFiles.sizeBytes],
+                    source = FileSource.TASK
+                )
             }
 
         if (taskFile != null) {
@@ -140,7 +158,12 @@ class FileStorageService(
                 if (taskSchoolId != schoolId) {
                     return@let null
                 }
-                ResolvedFile(basePath.resolve(row[SubmissionFiles.objectKey]), row[SubmissionFiles.mimeType], row[SubmissionFiles.sizeBytes])
+                ResolvedFile(
+                    location = resolveLocation(row[SubmissionFiles.objectKey]),
+                    mimeType = row[SubmissionFiles.mimeType],
+                    sizeBytes = row[SubmissionFiles.sizeBytes],
+                    source = FileSource.SUBMISSION
+                )
             }
 
         submissionFile
@@ -169,7 +192,12 @@ class FileStorageService(
                 if (!hasAccess) {
                     return@let null
                 }
-                ResolvedFile(basePath.resolve(row[TaskFiles.objectKey]), row[TaskFiles.mimeType], row[TaskFiles.sizeBytes])
+                ResolvedFile(
+                    location = resolveLocation(row[TaskFiles.objectKey]),
+                    mimeType = row[TaskFiles.mimeType],
+                    sizeBytes = row[TaskFiles.sizeBytes],
+                    source = FileSource.TASK
+                )
             }
 
         if (taskFile != null) {
@@ -197,7 +225,12 @@ class FileStorageService(
                 if (!hasAccess) {
                     return@let null
                 }
-                ResolvedFile(basePath.resolve(row[SubmissionFiles.objectKey]), row[SubmissionFiles.mimeType], row[SubmissionFiles.sizeBytes])
+                ResolvedFile(
+                    location = resolveLocation(row[SubmissionFiles.objectKey]),
+                    mimeType = row[SubmissionFiles.mimeType],
+                    sizeBytes = row[SubmissionFiles.sizeBytes],
+                    source = FileSource.SUBMISSION
+                )
             }
 
         submissionFile
@@ -229,12 +262,41 @@ class FileStorageService(
         }
     }
 
+    enum class FileSource {
+        TASK,
+        SUBMISSION
+    }
+
+    sealed class FileLocation {
+        data class Local(val path: Path) : FileLocation()
+        data class ObjectStorage(val objectKey: String) : FileLocation()
+    }
+
     data class ResolvedFile(
-        val path: Path,
+        val location: FileLocation,
         val mimeType: String,
-        val sizeBytes: Long
+        val sizeBytes: Long,
+        val source: FileSource
     )
 
+    fun openStream(resolvedFile: ResolvedFile): java.io.InputStream {
+        return when (val location = resolvedFile.location) {
+            is FileLocation.Local -> Files.newInputStream(location.path)
+            is FileLocation.ObjectStorage -> {
+                val client = objectStorageClient
+                    ?: throw IllegalStateException("Object storage is not configured.")
+                client.openObjectStream(location.objectKey)
+            }
+        }
+    }
+
+    private fun resolveLocation(objectKey: String): FileLocation {
+        return if (objectStorageClient != null) {
+            FileLocation.ObjectStorage(objectKey)
+        } else {
+            FileLocation.Local(basePath.resolve(objectKey))
+        }
+    }
 }
 
 private fun defaultBasePath(): Path {

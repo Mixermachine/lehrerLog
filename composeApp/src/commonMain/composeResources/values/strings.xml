@@ -4,6 +4,9 @@
     <string name="nav_home">Home</string>
     <string name="nav_tasks">Aufgaben</string>
     <string name="nav_students">Schüler</string>
+    <string name="nav_parent_students">Kinder</string>
+    <string name="nav_parent_assignments">Aufgaben</string>
+    <string name="nav_parent_submissions">Abgaben</string>
     <string name="nav_settings">Einstellungen</string>
 
     <!-- Common actions -->
@@ -22,8 +25,11 @@
     <string name="first_name">Vorname</string>
     <string name="last_name">Nachname</string>
     <string name="delete_student">Schüler löschen</string>
+    <string name="delete_student_confirm">Schüler "%1$s" löschen?</string>
     <string name="no_students_in_class">Keine Schüler in dieser Klasse</string>
     <string name="students_count">%1$d Schüler</string>
+    <string name="parent_no_students">Keine verkn?pften Sch?ler</string>
+    <string name="parent_select_student">Bitte ein Kind ausw?hlen</string>
 
     <!-- Tasks -->
     <string name="add_task">Aufgabe hinzufügen</string>
@@ -35,6 +41,10 @@
     <string name="select_class">Klasse auswählen</string>
     <string name="submissions_status">%1$d von %2$d abgegeben</string>
     <string name="due_label">Abgabe: %1$s</string>
+    <string name="parent_no_assignments">Keine Aufgaben vorhanden</string>
+    <string name="parent_no_submissions">Keine Abgaben vorhanden</string>
+    <string name="parent_submission_grade">Note: %1$s</string>
+    <string name="parent_submission_note">Bemerkung: %1$s</string>
 
     <!-- Accessibility -->
     <string name="expand">Ausklappen</string>
@@ -59,4 +69,47 @@
     <string name="create_account">Konto erstellen</string>
     <string name="login_subtitle">Melden Sie sich an, um fortzufahren</string>
     <string name="register_subtitle">Erstellen Sie ein neues Konto</string>
+    <string name="parent_invite_title">Elternzugang aktivieren</string>
+    <string name="parent_invite_subtitle">Geben Sie den Einladungscode und Ihre Daten ein</string>
+    <string name="parent_invite_code">Einladungscode</string>
+    <string name="parent_invite_redeem">Einladung einlösen</string>
+    <string name="parent_invite_to_login">Zurück zur Anmeldung</string>
+
+    <!-- Parent invites (teacher) -->
+    <string name="invite_parent">Eltern einladen</string>
+    <string name="invite_parent_title">Elterneinladung</string>
+    <string name="invite_parent_message">Teilen Sie diesen Code mit den Eltern</string>
+    <string name="parent_links_title">Elternverknuepfungen</string>
+    <string name="parent_links_empty">Keine Eltern verknüpft</string>
+    <string name="parent_link_revoke">Entfernen</string>
+
+    <!-- Late stats -->
+    <string name="late_overview_title">Verspaetungen</string>
+    <string name="late_overview_empty">Keine Zeitraeume vorhanden</string>
+    <string name="late_overview_active_period">Aktueller Zeitraum</string>
+    <string name="late_overview_missed">Verspaetet: %1$d</string>
+    <string name="late_overview_punishments">Strafen: %1$d</string>
+    <string name="late_overview_since">Seit Strafe: %1$d</string>
+    <string name="late_overview_punishment_required">Strafe erforderlich</string>
+    <string name="late_overview_missing_school">Fehlender Schulkontext</string>
+    <string name="punishment_resolve">Strafe erledigt</string>
+    <string name="task_details">Aufgabendetails</string>
+    <string name="task_loading">Laedt Details</string>
+    <string name="task_refresh">Aktualisieren</string>
+    <string name="task_students_empty">Keine Schueler fuer diese Aufgabe</string>
+    <string name="task_upload_assignment">Aufgaben-Datei</string>
+    <string name="submission_status_missing">Nicht abgegeben</string>
+    <string name="submission_status_submitted">Abgegeben</string>
+    <string name="submission_mark_in_person">Persoenlich markieren</string>
+    <string name="submission_upload_file">Datei hochladen</string>
+    <string name="submission_edit">Bearbeiten</string>
+    <string name="submission_grade">Note</string>
+    <string name="submission_note">Bemerkung</string>
+    <string name="submission_save">Speichern</string>
+    <string name="submission_type_file">Datei</string>
+    <string name="submission_type_in_person">Persoenlich</string>
+    <string name="late_status_on_time">Puenktlich</string>
+    <string name="late_status_undecided">Spaet (offen)</string>
+    <string name="late_status_forgiven">Spaet (vergeben)</string>
+    <string name="late_status_punish">Spaet (Strafe)</string>
 </resources>

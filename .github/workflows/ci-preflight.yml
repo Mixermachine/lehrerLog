@@ -1,0 +1,71 @@
+name: CI Preflight
+
+on:
+  workflow_call:
+    inputs:
+      runComposeApp:
+        description: "Run composeApp tests + Roborazzi verification"
+        type: boolean
+        default: true
+      runServer:
+        description: "Run server tests"
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      runComposeApp:
+        description: "Run composeApp tests + Roborazzi verification"
+        type: boolean
+        default: true
+      runServer:
+        description: "Run server tests"
+        type: boolean
+        default: true
+
+jobs:
+  server-tests:
+    if: inputs.runServer == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v3.5.0
+
+      - name: Run server tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :server:test
+
+  composeapp-tests:
+    if: inputs.runComposeApp == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Node
+        uses: actions/setup-node@v6.2.0
+        with:
+          node-version: "18"
+
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v3.5.0
+
+      - name: Run composeApp tests + verify snapshots
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug

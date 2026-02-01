@@ -9,9 +9,16 @@ import de.aarondietz.lehrerlog.data.TaskSubmissionSummaryDto
 import de.aarondietz.lehrerlog.data.TaskTargetsRequest
 import de.aarondietz.lehrerlog.data.UpdateTaskRequest
 import de.aarondietz.lehrerlog.data.UpdateTaskSubmissionRequest
+import de.aarondietz.lehrerlog.data.FileMetadataDto
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 
 class TaskRepository(
     private val httpClient: HttpClient,
@@ -145,4 +152,67 @@ class TaskRepository(
             Result.failure(e)
         }
     }
+
+    suspend fun getSubmissions(taskId: String): Result<List<TaskSubmissionDto>> {
+        return try {
+            val submissions = httpClient.get("$baseUrl/api/tasks/$taskId/submissions") {
+                tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
+            }.body<List<TaskSubmissionDto>>()
+            Result.success(submissions)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun uploadTaskFile(taskId: String, file: UploadFilePayload): FileUploadResult {
+        return uploadFile("$baseUrl/api/tasks/$taskId/files", file)
+    }
+
+    suspend fun uploadSubmissionFile(taskId: String, submissionId: String, file: UploadFilePayload): FileUploadResult {
+        return uploadFile("$baseUrl/api/tasks/$taskId/submissions/$submissionId/files", file)
+    }
+
+    private suspend fun uploadFile(url: String, file: UploadFilePayload): FileUploadResult {
+        return try {
+            val response = httpClient.post(url) {
+                tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append(
+                                "file",
+                                file.bytes,
+                                Headers.build {
+                                    append(HttpHeaders.ContentType, file.contentType)
+                                    append(HttpHeaders.ContentDisposition, "filename=\"${file.fileName}\"")
+                                }
+                            )
+                        }
+                    )
+                )
+            }.body<FileMetadataDto>()
+            FileUploadResult.Success(response)
+        } catch (e: ClientRequestException) {
+            when (e.response.status) {
+                HttpStatusCode.PayloadTooLarge -> FileUploadResult.FileTooLarge
+                HttpStatusCode.Conflict -> FileUploadResult.QuotaExceeded
+                else -> FileUploadResult.Error("Upload failed: ${e.response.status}")
+            }
+        } catch (e: Exception) {
+            FileUploadResult.Error("Upload failed: ${e.message}")
+        }
+    }
+}
+
+data class UploadFilePayload(
+    val fileName: String,
+    val bytes: ByteArray,
+    val contentType: String
+)
+
+sealed class FileUploadResult {
+    data class Success(val metadata: FileMetadataDto) : FileUploadResult()
+    data class Error(val message: String) : FileUploadResult()
+    object QuotaExceeded : FileUploadResult()
+    object FileTooLarge : FileUploadResult()
 }

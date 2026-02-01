@@ -207,6 +207,119 @@ class StudentService {
         }
     }
 
+    fun addStudentToClass(
+        studentId: UUID,
+        classId: UUID,
+        schoolId: UUID,
+        userId: UUID
+    ): StudentDto? = transaction {
+        val studentRow = Students.selectAll()
+            .where {
+                (Students.id eq studentId) and
+                    (Students.schoolId eq schoolId) and
+                    Students.deletedAt.isNull()
+            }
+            .firstOrNull() ?: return@transaction null
+
+        val classExists = SchoolClasses.selectAll()
+            .where {
+                (SchoolClasses.id eq classId) and
+                    (SchoolClasses.schoolId eq schoolId) and
+                    SchoolClasses.archivedAt.isNull()
+            }
+            .any()
+        if (!classExists) {
+            return@transaction null
+        }
+
+        val alreadyAssigned = StudentClasses.selectAll()
+            .where {
+                (StudentClasses.studentId eq studentId) and
+                    (StudentClasses.schoolClassId eq classId) and
+                    StudentClasses.validTill.isNull()
+            }
+            .any()
+
+        if (!alreadyAssigned) {
+            val now = OffsetDateTime.now(ZoneOffset.UTC)
+            StudentClasses.insert {
+                it[StudentClasses.studentId] = studentId
+                it[StudentClasses.schoolClassId] = classId
+                it[StudentClasses.validFrom] = now
+                it[StudentClasses.validTill] = null
+            }
+
+            Students.update({ Students.id eq studentId }) {
+                it[Students.version] = studentRow[Students.version] + 1
+                it[Students.updatedAt] = now
+            }
+
+            SyncLog.insert {
+                it[SyncLog.schoolId] = schoolId
+                it[SyncLog.entityType] = EntityType.STUDENT.name
+                it[SyncLog.entityId] = studentId
+                it[SyncLog.operation] = SyncOperation.UPDATE
+                it[SyncLog.userId] = userId
+            }
+        }
+
+        getStudent(studentId, schoolId)
+    }
+
+    fun removeStudentFromClass(
+        studentId: UUID,
+        classId: UUID,
+        schoolId: UUID,
+        userId: UUID
+    ): StudentDto? = transaction {
+        val studentRow = Students.selectAll()
+            .where {
+                (Students.id eq studentId) and
+                    (Students.schoolId eq schoolId) and
+                    Students.deletedAt.isNull()
+            }
+            .firstOrNull() ?: return@transaction null
+
+        val classExists = SchoolClasses.selectAll()
+            .where {
+                (SchoolClasses.id eq classId) and
+                    (SchoolClasses.schoolId eq schoolId) and
+                    SchoolClasses.archivedAt.isNull()
+            }
+            .any()
+        if (!classExists) {
+            return@transaction null
+        }
+
+        val now = OffsetDateTime.now(ZoneOffset.UTC)
+        val updated = StudentClasses.update({
+            (StudentClasses.studentId eq studentId) and
+                (StudentClasses.schoolClassId eq classId) and
+                StudentClasses.validTill.isNull()
+        }) {
+            it[StudentClasses.validTill] = now
+        }
+
+        if (updated == 0) {
+            return@transaction null
+        }
+
+        Students.update({ Students.id eq studentId }) {
+            it[Students.version] = studentRow[Students.version] + 1
+            it[Students.updatedAt] = now
+        }
+
+        SyncLog.insert {
+            it[SyncLog.schoolId] = schoolId
+            it[SyncLog.entityType] = EntityType.STUDENT.name
+            it[SyncLog.entityId] = studentId
+            it[SyncLog.operation] = SyncOperation.UPDATE
+            it[SyncLog.userId] = userId
+        }
+
+        getStudent(studentId, schoolId)
+    }
+
     private fun ResultRow.toStudentDto(classIds: List<String>) = StudentDto(
         id = this[Students.id].value.toString(),
         schoolId = this[Students.schoolId].value.toString(),

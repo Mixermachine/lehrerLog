@@ -16,12 +16,14 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.update
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
 class StorageQuotaServiceTest {
@@ -105,5 +107,39 @@ class StorageQuotaServiceTest {
         assertEquals(5L * 1024L * 1024L, quota.maxFileBytes)
         assertEquals(1024L, quota.usedTotalBytes)
         assertEquals(quota.maxTotalBytes - quota.usedTotalBytes, quota.remainingBytes)
+    }
+
+    @Test
+    fun `reserveBytes increments usage`() {
+        val quota = storageService.reserveBytes(userId!!, schoolId!!, 2048L)
+        assertEquals(1024L + 2048L, quota.usedTotalBytes)
+
+        val updated = storageService.getQuota(userId!!, schoolId!!)
+        assertEquals(1024L + 2048L, updated.usedTotalBytes)
+    }
+
+    @Test
+    fun `reserveBytes rejects oversized file`() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            storageService.reserveBytes(userId!!, schoolId!!, 5L * 1024L * 1024L + 1L)
+        }
+        assertEquals("FILE_TOO_LARGE", exception.message)
+    }
+
+    @Test
+    fun `reserveBytes rejects when quota exceeded`() {
+        transaction {
+            StorageUsage.update({
+                (StorageUsage.ownerType eq StorageOwnerType.SCHOOL.name) and
+                    (StorageUsage.ownerId eq schoolId!!)
+            }) {
+                it[StorageUsage.usedTotalBytes] = 100L * 1024L * 1024L - 512L
+            }
+        }
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            storageService.reserveBytes(userId!!, schoolId!!, 1024L)
+        }
+        assertEquals("QUOTA_EXCEEDED", exception.message)
     }
 }

@@ -9,8 +9,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun AddTaskDialog(
@@ -62,4 +64,12 @@ fun AddTaskDialog(
             }
         }
     )
+}
+
+@Preview
+@Composable
+private fun AddTaskDialogPreview() {
+    LehrerLogTheme {
+        AddTaskDialog(onDismiss = {}, onConfirm = { _, _, _ -> })
+    }
 }

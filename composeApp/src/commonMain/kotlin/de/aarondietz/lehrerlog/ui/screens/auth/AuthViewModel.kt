@@ -43,6 +43,16 @@ data class RegisterUiState(
     val error: String? = null
 )
 
+data class ParentInviteUiState(
+    val code: String = "",
+    val email: String = "",
+    val password: String = "",
+    val firstName: String = "",
+    val lastName: String = "",
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
 class AuthViewModel(
     private val authRepository: AuthRepository,
     private val schoolRepository: SchoolRepository
@@ -56,6 +66,9 @@ class AuthViewModel(
 
     private val _registerState = MutableStateFlow(RegisterUiState())
     val registerState: StateFlow<RegisterUiState> = _registerState.asStateFlow()
+
+    private val _parentInviteState = MutableStateFlow(ParentInviteUiState())
+    val parentInviteState: StateFlow<ParentInviteUiState> = _parentInviteState.asStateFlow()
     private var schoolSearchJob: Job? = null
 
     init {
@@ -213,7 +226,7 @@ class AuthViewModel(
 
         viewModelScope.launch {
             _registerState.value = _registerState.value.copy(isLoading = true, error = null)
-            val schoolCode = state.selectedSchool?.code
+            val schoolCode = state.selectedSchool.code
 
             when (val result = authRepository.register(
                 email = state.email,
@@ -250,6 +263,61 @@ class AuthViewModel(
 
     fun clearRegisterError() {
         _registerState.value = _registerState.value.copy(error = null)
+    }
+
+    fun updateParentInviteCode(code: String) {
+        _parentInviteState.value = _parentInviteState.value.copy(code = code, error = null)
+    }
+
+    fun updateParentInviteEmail(email: String) {
+        _parentInviteState.value = _parentInviteState.value.copy(email = email, error = null)
+    }
+
+    fun updateParentInvitePassword(password: String) {
+        _parentInviteState.value = _parentInviteState.value.copy(password = password, error = null)
+    }
+
+    fun updateParentInviteFirstName(firstName: String) {
+        _parentInviteState.value = _parentInviteState.value.copy(firstName = firstName, error = null)
+    }
+
+    fun updateParentInviteLastName(lastName: String) {
+        _parentInviteState.value = _parentInviteState.value.copy(lastName = lastName, error = null)
+    }
+
+    fun redeemParentInvite() {
+        val state = _parentInviteState.value
+        if (state.code.isBlank()) {
+            _parentInviteState.value = state.copy(error = "Invite code is required")
+            return
+        }
+        if (state.email.isBlank() || state.password.isBlank() || state.firstName.isBlank() || state.lastName.isBlank()) {
+            _parentInviteState.value = state.copy(error = "All fields are required")
+            return
+        }
+
+        viewModelScope.launch {
+            _parentInviteState.value = state.copy(isLoading = true, error = null)
+            when (val result = authRepository.redeemParentInvite(
+                code = state.code,
+                email = state.email,
+                password = state.password,
+                firstName = state.firstName,
+                lastName = state.lastName
+            )) {
+                is AuthResult.Success -> {
+                    _parentInviteState.value = ParentInviteUiState()
+                    _authState.value = AuthState.Authenticated(result.data.user)
+                }
+                is AuthResult.Error -> {
+                    _parentInviteState.value = state.copy(isLoading = false, error = result.message)
+                }
+            }
+        }
+    }
+
+    fun clearParentInviteError() {
+        _parentInviteState.value = _parentInviteState.value.copy(error = null)
     }
 
     private fun schoolDisplayName(school: SchoolSearchResultDto): String {

@@ -59,6 +59,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3.5.0
 
+      - name: Run unit tests + verify snapshots (qa)
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug
+
       - name: Reset Kotlin/JS toolchain cache (qa)
         run: |
           rm -rf ~/.gradle/yarn ~/.gradle/nodejs ~/.gradle/kotlin-js-store
@@ -141,6 +146,11 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3.5.0
+
+      - name: Run unit tests + verify snapshots (prod)
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug
 
       - name: Reset Kotlin/JS toolchain cache (prod)
         run: |

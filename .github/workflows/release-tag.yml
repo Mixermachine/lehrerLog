@@ -17,7 +17,14 @@ permissions:
   contents: write
 
 jobs:
+  preflight:
+    uses: ./.github/workflows/ci-preflight.yml
+    with:
+      runComposeApp: true
+      runServer: true
+
   create-tag:
+    needs: preflight
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

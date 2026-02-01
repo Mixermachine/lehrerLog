@@ -8,12 +8,21 @@ import de.aarondietz.lehrerlog.data.repository.SchoolClassRepository
 import de.aarondietz.lehrerlog.data.repository.SchoolRepository
 import de.aarondietz.lehrerlog.data.repository.StudentRepository
 import de.aarondietz.lehrerlog.data.repository.TaskRepository
+import de.aarondietz.lehrerlog.data.repository.ParentRepository
+import de.aarondietz.lehrerlog.data.repository.ParentSelectionRepository
+import de.aarondietz.lehrerlog.data.repository.ParentInviteRepository
+import de.aarondietz.lehrerlog.data.repository.ParentLinksRepository
+import de.aarondietz.lehrerlog.data.repository.LateStatsRepository
+import de.aarondietz.lehrerlog.data.repository.PunishmentRepository
 import de.aarondietz.lehrerlog.network.createHttpClient
 import de.aarondietz.lehrerlog.ui.screens.auth.AuthViewModel
 import de.aarondietz.lehrerlog.ui.screens.home.HomeViewModel
 import de.aarondietz.lehrerlog.ui.screens.settings.SettingsViewModel
 import de.aarondietz.lehrerlog.ui.screens.students.StudentsViewModel
 import de.aarondietz.lehrerlog.ui.screens.tasks.TasksViewModel
+import de.aarondietz.lehrerlog.ui.screens.parent.ParentStudentsViewModel
+import de.aarondietz.lehrerlog.ui.screens.parent.ParentAssignmentsViewModel
+import de.aarondietz.lehrerlog.ui.screens.parent.ParentSubmissionsViewModel
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
@@ -34,12 +43,21 @@ val commonModule = module {
     single { SchoolClassRepository(get(), get(), ServerConfig.SERVER_URL, get()) }
     single { SchoolRepository(get(), ServerConfig.SERVER_URL) }
     single { TaskRepository(get(), get(), ServerConfig.SERVER_URL) }
+    single { ParentRepository(get(), get(), ServerConfig.SERVER_URL) }
+    single { ParentInviteRepository(get(), get(), ServerConfig.SERVER_URL) }
+    single { ParentLinksRepository(get(), get(), ServerConfig.SERVER_URL) }
+    single { ParentSelectionRepository() }
+    single { LateStatsRepository(get(), get(), ServerConfig.SERVER_URL) }
+    single { PunishmentRepository(get(), get(), ServerConfig.SERVER_URL) }
 
     viewModel { AuthViewModel(get(), get()) }
-    viewModelOf(::HomeViewModel)
+    viewModel { HomeViewModel(get(), get(), get()) }
     viewModelOf(::SettingsViewModel)
-    viewModel { StudentsViewModel(get(), get(), get(), get()) }
-    viewModel { TasksViewModel(get(), get(), get(), get()) }
+    viewModel { StudentsViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { TasksViewModel(get(), get(), get(), get(), get()) }
+    viewModel { ParentStudentsViewModel(get(), get()) }
+    viewModel { ParentAssignmentsViewModel(get(), get()) }
+    viewModel { ParentSubmissionsViewModel(get(), get()) }
 }
 
 // For platform-specific dependencies

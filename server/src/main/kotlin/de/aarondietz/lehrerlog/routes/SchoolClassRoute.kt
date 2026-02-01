@@ -6,6 +6,7 @@ import de.aarondietz.lehrerlog.data.CreateSchoolClassRequest
 import de.aarondietz.lehrerlog.data.UpdateSchoolClassRequest
 import de.aarondietz.lehrerlog.services.ClassUpdateResult
 import de.aarondietz.lehrerlog.services.SchoolClassService
+import de.aarondietz.lehrerlog.services.StudentService
 import io.ktor.http.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
@@ -13,7 +14,10 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.util.*
 
-fun Route.schoolClassRoute(schoolClassService: SchoolClassService = SchoolClassService()) {
+fun Route.schoolClassRoute(
+    schoolClassService: SchoolClassService = SchoolClassService(),
+    studentService: StudentService = StudentService()
+) {
     authenticate("jwt") {
         route("/api/classes") {
 
@@ -145,6 +149,68 @@ fun Route.schoolClassRoute(schoolClassService: SchoolClassService = SchoolClassS
                     call.respond(HttpStatusCode.NoContent)
                 } else {
                     call.respond(HttpStatusCode.NotFound, ErrorResponse("Class not found"))
+                }
+            }
+
+            post("/{id}/students/{studentId}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val schoolId = principal.schoolId
+
+                if (schoolId == null) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
+                    return@post
+                }
+
+                val classId = call.parameters["id"]?.let {
+                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                } ?: run {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid class ID"))
+                    return@post
+                }
+
+                val studentId = call.parameters["studentId"]?.let {
+                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                } ?: run {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid student ID"))
+                    return@post
+                }
+
+                val student = studentService.addStudentToClass(studentId, classId, schoolId, principal.id)
+                if (student == null) {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("Student or class not found"))
+                } else {
+                    call.respond(student)
+                }
+            }
+
+            delete("/{id}/students/{studentId}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val schoolId = principal.schoolId
+
+                if (schoolId == null) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
+                    return@delete
+                }
+
+                val classId = call.parameters["id"]?.let {
+                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                } ?: run {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid class ID"))
+                    return@delete
+                }
+
+                val studentId = call.parameters["studentId"]?.let {
+                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                } ?: run {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid student ID"))
+                    return@delete
+                }
+
+                val student = studentService.removeStudentFromClass(studentId, classId, schoolId, principal.id)
+                if (student == null) {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("Student or class not found"))
+                } else {
+                    call.respond(student)
                 }
             }
         }

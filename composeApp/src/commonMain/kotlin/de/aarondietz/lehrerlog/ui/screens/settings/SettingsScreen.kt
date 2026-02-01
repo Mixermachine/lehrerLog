@@ -8,10 +8,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import lehrerlog.composeapp.generated.resources.Res
 import lehrerlog.composeapp.generated.resources.logout
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -61,7 +62,7 @@ fun SettingsScreen(
 @Preview
 @Composable
 private fun SettingsScreenPreview() {
-    MaterialTheme {
+    LehrerLogTheme {
         SettingsScreen(onLogout = {})
     }
 }

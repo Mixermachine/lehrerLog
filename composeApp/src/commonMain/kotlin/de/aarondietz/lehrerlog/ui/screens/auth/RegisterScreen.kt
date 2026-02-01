@@ -20,9 +20,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import de.aarondietz.lehrerlog.SharedTestFixtures
+import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -379,15 +381,15 @@ private fun RegisterScreenContent(
 @Preview
 @Composable
 private fun RegisterScreenPreview() {
-    MaterialTheme {
+    LehrerLogTheme {
         RegisterScreenContent(
             registerState = RegisterUiState(
-                firstName = "John",
-                lastName = "Doe",
-                email = "john.doe@example.com",
-                password = "password123",
-                confirmPassword = "password123",
-                schoolQuery = "Gymnasium Musterstadt"
+                firstName = SharedTestFixtures.testParentInviteFirstName,
+                lastName = SharedTestFixtures.testParentInviteLastName,
+                email = SharedTestFixtures.testLoginEmail,
+                password = SharedTestFixtures.testLoginPassword,
+                confirmPassword = SharedTestFixtures.testLoginPassword,
+                schoolQuery = SharedTestFixtures.testSchoolQuery
             ),
             onNavigateToLogin = {},
             onFirstNameChange = {},
@@ -405,14 +407,14 @@ private fun RegisterScreenPreview() {
 @Preview
 @Composable
 private fun RegisterScreenLoadingPreview() {
-    MaterialTheme {
+    LehrerLogTheme {
         RegisterScreenContent(
             registerState = RegisterUiState(
-                firstName = "John",
-                lastName = "Doe",
-                email = "john.doe@example.com",
-                password = "password123",
-                confirmPassword = "password123",
+                firstName = SharedTestFixtures.testParentInviteFirstName,
+                lastName = SharedTestFixtures.testParentInviteLastName,
+                email = SharedTestFixtures.testLoginEmail,
+                password = SharedTestFixtures.testLoginPassword,
+                confirmPassword = SharedTestFixtures.testLoginPassword,
                 isLoading = true
             ),
             onNavigateToLogin = {},
@@ -431,15 +433,15 @@ private fun RegisterScreenLoadingPreview() {
 @Preview
 @Composable
 private fun RegisterScreenErrorPreview() {
-    MaterialTheme {
+    LehrerLogTheme {
         RegisterScreenContent(
             registerState = RegisterUiState(
-                firstName = "John",
-                lastName = "Doe",
-                email = "john.doe@example.com",
-                password = "pass",
-                confirmPassword = "different",
-                error = "Passwords do not match"
+                firstName = SharedTestFixtures.testParentInviteFirstName,
+                lastName = SharedTestFixtures.testParentInviteLastName,
+                email = SharedTestFixtures.testLoginEmail,
+                password = SharedTestFixtures.testLoginPassword,
+                confirmPassword = SharedTestFixtures.testLoginPassword,
+                error = SharedTestFixtures.testRegisterError
             ),
             onNavigateToLogin = {},
             onFirstNameChange = {},
@@ -451,5 +453,13 @@ private fun RegisterScreenErrorPreview() {
             onSchoolSelected = {},
             onRegisterClick = {}
         )
+    }
+}
+
+@Preview
+@Composable
+private fun RegisterScreenWrapperPreview() {
+    LehrerLogTheme {
+        RegisterScreen(onNavigateToLogin = {})
     }
 }

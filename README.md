@@ -1,5 +1,12 @@
 This is a Kotlin Multiplatform project targeting Android, iOS, Web, Desktop (JVM), Server.
 
+## Key Features (Current)
+- Task creation and submissions (including in-person).
+- Late policy tracking + punishment resolution.
+- Parent invites and read-only parent views.
+- Storage quota enforcement + file download audit logging.
+
+
 * [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
   It contains several subfolders:
     - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.

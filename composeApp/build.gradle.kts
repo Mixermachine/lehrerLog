@@ -359,6 +359,18 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
+// Roborazzi configuration for snapshot testing
+// Note: Most Roborazzi configuration is done via test annotations or programmatically.
+// The plugin automatically handles snapshot recording and verification via Gradle tasks:
+// - recordRoborazzi{Variant} to update baseline snapshots
+// - verifyRoborazzi{Variant} to compare against baselines (used in CI)
+// - compareRoborazzi{Variant} to generate diff images
+//
+// Default comparison uses pixel-perfect matching. To allow tolerance:
+// - Set @RoborazziOptions annotation on tests, or
+// - Use captureRoboImage(file, roborazziOptions = RoborazziOptions(...))
+// For threshold configuration, see: https://github.com/takahirom/roborazzi#configuration
+
 tasks.withType<Test>().configureEach {
     dependsOn(prepareRobolectricAndroidAll)
     if (name.contains("Release", ignoreCase = true)) {

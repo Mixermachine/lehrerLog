@@ -1,17 +1,17 @@
 package de.aarondietz.lehrerlog.ui.composables
 
-import android.provider.Settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
-import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
+import de.aarondietz.lehrerlog.RoborazziTestActivity
+import de.aarondietz.lehrerlog.RoborazziTestUtils
 import de.aarondietz.lehrerlog.SharedTestFixtures
+import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import java.io.File
 import org.junit.Rule
 import org.junit.Test
@@ -26,14 +26,14 @@ import org.robolectric.annotation.GraphicsMode
 class RoborazziSmokeTest {
 
     @get:Rule
-    val composeTestRule = createComposeRule()
+    val composeTestRule = createAndroidComposeRule<RoborazziTestActivity>()
 
     @Test
     fun captureEmptyDialog() {
-        prepareAnimationsOff()
+        RoborazziTestUtils.prepareAnimationsOff(composeTestRule)
 
         composeTestRule.setContent {
-            MaterialTheme {
+            LehrerLogTheme {
                 Column {
                     Text(SharedTestFixtures.roborazziTitle)
                     OutlinedTextField(
@@ -57,12 +57,12 @@ class RoborazziSmokeTest {
 
     @Test
     fun captureClassCardExpanded() {
-        prepareAnimationsOff()
+        RoborazziTestUtils.prepareAnimationsOff(composeTestRule)
         val schoolClass = SharedTestFixtures.testSchoolClassDto()
         val students = listOf(SharedTestFixtures.testStudentDto(schoolClass.id))
 
         composeTestRule.setContent {
-            MaterialTheme {
+            LehrerLogTheme {
                 de.aarondietz.lehrerlog.ui.screens.students.ClassCard(
                     schoolClass = schoolClass,
                     students = students,
@@ -70,7 +70,9 @@ class RoborazziSmokeTest {
                     onExpandClick = {},
                     onAddStudent = {},
                     onDeleteClass = {},
-                    onDeleteStudent = {}
+                    onDeleteStudent = {},
+                    onInviteParent = {},
+                    onViewParentLinks = {}
                 )
             }
         }
@@ -82,14 +84,5 @@ class RoborazziSmokeTest {
         )
         File(snapshotPath).parentFile?.mkdirs()
         composeTestRule.onRoot().captureRoboImage(snapshotPath)
-    }
-
-    private fun prepareAnimationsOff() {
-        composeTestRule.mainClock.autoAdvance = false
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        val resolver = context.contentResolver
-        Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
-        Settings.Global.putFloat(resolver, Settings.Global.TRANSITION_ANIMATION_SCALE, 0f)
-        Settings.Global.putFloat(resolver, Settings.Global.WINDOW_ANIMATION_SCALE, 0f)
     }
 }
