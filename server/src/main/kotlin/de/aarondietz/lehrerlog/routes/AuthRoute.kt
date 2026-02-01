@@ -178,7 +178,7 @@ fun Route.authRoute(authService: AuthService) {
 
             post("/logout-all") {
                 try {
-                    val principal = call.principal<UserPrincipal>()!!
+                    val principal = call.getPrincipalOrRespond()
                     val count = authService.logoutAll(principal.id)
                     call.respond(SuccessResponse("Logged out from $count devices"))
                 } catch (e: Exception) {
@@ -194,7 +194,7 @@ fun Route.authRoute(authService: AuthService) {
                         return@post
                     }
 
-                    val principal = call.principal<UserPrincipal>()!!
+                    val principal = call.getPrincipalOrRespond()
                     val deviceInfo = call.request.header("User-Agent")
                     val (tokens, user) = authService.joinSchool(
                         userId = principal.id,
@@ -222,7 +222,7 @@ fun Route.authRoute(authService: AuthService) {
 
             get("/me") {
                 try {
-                    val principal = call.principal<UserPrincipal>()!!
+                    val principal = call.getPrincipalOrRespond()
                     val user = authService.getUserById(principal.id)
 
                     if (user != null) {

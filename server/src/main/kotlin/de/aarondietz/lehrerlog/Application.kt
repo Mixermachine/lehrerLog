@@ -6,6 +6,7 @@ import de.aarondietz.lehrerlog.db.tables.*
 import de.aarondietz.lehrerlog.db.tables.UserRole
 import de.aarondietz.lehrerlog.routes.*
 import de.aarondietz.lehrerlog.schools.SchoolCatalogService
+import de.aarondietz.lehrerlog.util.EnvironmentValidator
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -38,6 +39,9 @@ fun main() {
 }
 
 fun Application.module() {
+    // Validate required environment variables
+    EnvironmentValidator.validateRequiredEnvVars()
+
     // Initialize database
     DatabaseFactory.init()
 

@@ -1,7 +1,6 @@
 package de.aarondietz.lehrerlog.routes
 
 import de.aarondietz.lehrerlog.auth.ErrorResponse
-import de.aarondietz.lehrerlog.auth.UserPrincipal
 import de.aarondietz.lehrerlog.data.CreateLatePeriodRequest
 import de.aarondietz.lehrerlog.data.ResolvePunishmentRequest
 import de.aarondietz.lehrerlog.data.UpdateLatePeriodRequest
@@ -19,13 +18,13 @@ fun Route.latePolicyRoute(
     authenticate("jwt") {
         route("/api/late-periods") {
             get {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val periods = latePolicyService.listPeriods(principal.id)
                 call.respond(periods)
             }
 
             post {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val request = call.receive<CreateLatePeriodRequest>()
                 if (request.name.isBlank() || request.startsAt.isBlank()) {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Name and startsAt are required"))
@@ -36,7 +35,7 @@ fun Route.latePolicyRoute(
             }
 
             put("/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val periodId = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: run {
                         call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid period ID"))
@@ -52,7 +51,7 @@ fun Route.latePolicyRoute(
             }
 
             post("/{id}/activate") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val periodId = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: run {
                         call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid period ID"))
@@ -63,7 +62,7 @@ fun Route.latePolicyRoute(
             }
 
             post("/{id}/recalculate") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val periodId = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: run {
                         call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid period ID"))
@@ -76,13 +75,13 @@ fun Route.latePolicyRoute(
 
         route("/api/late-stats") {
             get("/periods") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val summaries = latePolicyService.getPeriodSummaries(principal.id)
                 call.respond(summaries)
             }
 
             get("/students") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val periodId =
                     call.request.queryParameters["periodId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                         ?: run {
@@ -95,7 +94,7 @@ fun Route.latePolicyRoute(
         }
 
         get("/api/students/{id}/late-stats") {
-            val principal = call.principal<UserPrincipal>()!!
+            val principal = call.getPrincipalOrRespond()
             val studentId = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                 ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid student ID"))
@@ -117,7 +116,7 @@ fun Route.latePolicyRoute(
 
         route("/api/punishments") {
             get {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val studentId =
                     call.request.queryParameters["studentId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                         ?: run {
@@ -135,7 +134,7 @@ fun Route.latePolicyRoute(
             }
 
             post("/resolve") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val request = call.receive<ResolvePunishmentRequest>()
                 val record = latePolicyService.resolvePunishment(principal.id, principal.id, request)
                 if (record == null) {

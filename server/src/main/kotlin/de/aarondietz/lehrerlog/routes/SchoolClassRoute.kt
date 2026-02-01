@@ -1,7 +1,6 @@
 package de.aarondietz.lehrerlog.routes
 
 import de.aarondietz.lehrerlog.auth.ErrorResponse
-import de.aarondietz.lehrerlog.auth.UserPrincipal
 import de.aarondietz.lehrerlog.data.CreateSchoolClassRequest
 import de.aarondietz.lehrerlog.data.UpdateSchoolClassRequest
 import de.aarondietz.lehrerlog.services.ClassUpdateResult
@@ -23,7 +22,7 @@ fun Route.schoolClassRoute(
 
             // List all classes for the user's school
             get {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {
@@ -37,7 +36,7 @@ fun Route.schoolClassRoute(
 
             // Get a specific class
             get("/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {
@@ -67,7 +66,7 @@ fun Route.schoolClassRoute(
 
             // Create a new class
             post {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {
@@ -94,7 +93,7 @@ fun Route.schoolClassRoute(
 
             // Update a class
             put("/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {
@@ -143,7 +142,7 @@ fun Route.schoolClassRoute(
 
             // Delete a class
             delete("/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {
@@ -172,7 +171,7 @@ fun Route.schoolClassRoute(
             }
 
             post("/{id}/students/{studentId}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {
@@ -211,7 +210,7 @@ fun Route.schoolClassRoute(
             }
 
             delete("/{id}/students/{studentId}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {

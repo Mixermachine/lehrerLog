@@ -2,8 +2,10 @@ package de.aarondietz.lehrerlog.db
 
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
+import org.slf4j.LoggerFactory
 
 object DatabaseFactory {
+    private val logger = LoggerFactory.getLogger(DatabaseFactory::class.java)
 
     fun init() {
         val dbMode = System.getenv("DB_MODE") ?: "h2" // "h2" for dev, "postgres" for prod
@@ -23,7 +25,7 @@ object DatabaseFactory {
             }
         }
 
-        println("Initializing database: $jdbcUrl")
+        logger.info("Initializing database connection")
 
         // Run Flyway migrations
         val flyway = Flyway.configure()

@@ -1,7 +1,21 @@
 package de.aarondietz.lehrerlog.auth
 
+import org.slf4j.LoggerFactory
+
 object JwtConfig {
-    val secret: String = System.getenv("JWT_SECRET") ?: "dev-secret-change-in-production"
+    private val logger = LoggerFactory.getLogger(JwtConfig::class.java)
+
+    private val environment = System.getenv("ENVIRONMENT")?.lowercase() ?: "dev"
+
+    val secret: String = System.getenv("JWT_SECRET") ?: run {
+        if (environment in listOf("qa", "prod", "production")) {
+            val error = "JWT_SECRET environment variable is required for $environment environment"
+            logger.error(error)
+            error(error)
+        }
+        logger.warn("⚠️  Using default JWT_SECRET - THIS IS NOT SAFE FOR PRODUCTION!")
+        "dev-secret-change-in-production"
+    }
     val issuer: String = System.getenv("JWT_ISSUER") ?: "lehrerlog"
     val audience: String = System.getenv("JWT_AUDIENCE") ?: "lehrerlog-users"
     const val REALM = "LehrerLog"

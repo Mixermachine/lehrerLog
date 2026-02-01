@@ -904,10 +904,14 @@ fun validateEnvironment() {
 
 ### Phase 1: Critical Security Fixes (Week 1)
 
-- [ ] Replace all `!!` operators with safe null handling
-- [ ] Make JWT_SECRET required (fail fast if missing)
-- [ ] Replace println with structured logging
-- [ ] Validate all required env vars on startup
+- [x] Replace all `!!` operators with safe null handling ✅ **COMPLETED** - Created `RouteExt.kt` helper, replaced 48
+  instances across 8 route files
+- [x] Make JWT_SECRET required (fail fast if missing) ✅ **COMPLETED** - Updated `JwtConfig.kt` to require JWT_SECRET in
+  QA/PROD environments, allow default with warning in DEV/TEST
+- [x] Replace println with structured logging ✅ **COMPLETED** - Replaced 3 println statements with SLF4J logger in
+  `DatabaseFactory.kt` and `FlywayRepair.kt`
+- [x] Validate all required env vars on startup ✅ **COMPLETED** - Created `EnvironmentValidator.kt`, validates DB
+  credentials in PostgreSQL mode; JWT_SECRET validated in `JwtConfig.kt` based on environment
 
 ### Phase 2: High Priority Fixes (Week 2)
 

@@ -1,7 +1,6 @@
 package de.aarondietz.lehrerlog.routes
 
 import de.aarondietz.lehrerlog.auth.ErrorResponse
-import de.aarondietz.lehrerlog.auth.UserPrincipal
 import de.aarondietz.lehrerlog.data.*
 import de.aarondietz.lehrerlog.services.TaskService
 import de.aarondietz.lehrerlog.services.TaskSubmissionService
@@ -19,7 +18,7 @@ fun Route.taskRoute(
     authenticate("jwt") {
         route("/api/tasks") {
             get {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
@@ -44,10 +43,15 @@ fun Route.taskRoute(
                     val tasks = taskService.getTasksByClass(schoolId, classId)
                     call.respond(tasks)
                 } else {
-                    val studentId = try {
-                        UUID.fromString(studentIdParam!!)
-                    } catch (e: Exception) {
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid studentId"))
+                    val studentId = studentIdParam?.let {
+                        try {
+                            UUID.fromString(it)
+                        } catch (e: Exception) {
+                            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid studentId"))
+                            return@get
+                        }
+                    } ?: run {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("Student ID is required"))
                         return@get
                     }
 
@@ -57,7 +61,7 @@ fun Route.taskRoute(
             }
 
             post {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
@@ -93,7 +97,7 @@ fun Route.taskRoute(
             }
 
             put("/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
@@ -132,7 +136,7 @@ fun Route.taskRoute(
             }
 
             delete("/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
@@ -159,7 +163,7 @@ fun Route.taskRoute(
             }
 
             post("/{id}/targets") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
@@ -198,7 +202,7 @@ fun Route.taskRoute(
             }
 
             get("/{id}/summary") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
@@ -225,7 +229,7 @@ fun Route.taskRoute(
             }
 
             get("/{id}/submissions") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
@@ -248,7 +252,7 @@ fun Route.taskRoute(
             }
 
             post("/{id}/submissions") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
@@ -292,7 +296,7 @@ fun Route.taskRoute(
             }
 
             post("/{id}/submissions/in-person") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
@@ -339,7 +343,7 @@ fun Route.taskRoute(
 
         route("/api/submissions") {
             patch("/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))

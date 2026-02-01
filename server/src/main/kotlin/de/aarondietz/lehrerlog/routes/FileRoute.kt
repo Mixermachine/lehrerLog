@@ -1,7 +1,6 @@
 package de.aarondietz.lehrerlog.routes
 
 import de.aarondietz.lehrerlog.auth.ErrorResponse
-import de.aarondietz.lehrerlog.auth.UserPrincipal
 import de.aarondietz.lehrerlog.db.tables.TaskSubmissions
 import de.aarondietz.lehrerlog.db.tables.UserRole
 import de.aarondietz.lehrerlog.services.FileStorageService
@@ -26,7 +25,7 @@ fun Route.fileRoute(
     authenticate("jwt") {
         route("/api") {
             post("/tasks/{id}/files") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 if (principal.role == UserRole.PARENT) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("Parents cannot upload files"))
                     return@post
@@ -78,7 +77,7 @@ fun Route.fileRoute(
             }
 
             post("/tasks/{id}/submissions/{submissionId}/files") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 if (principal.role == UserRole.PARENT) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("Parents cannot upload files"))
                     return@post
@@ -147,7 +146,7 @@ fun Route.fileRoute(
             }
 
             get("/files/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val fileId = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: run {
                         call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid file ID"))

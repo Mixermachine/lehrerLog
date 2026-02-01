@@ -1,7 +1,6 @@
 package de.aarondietz.lehrerlog.routes
 
 import de.aarondietz.lehrerlog.auth.ErrorResponse
-import de.aarondietz.lehrerlog.auth.UserPrincipal
 import de.aarondietz.lehrerlog.data.CreateStudentRequest
 import de.aarondietz.lehrerlog.data.UpdateStudentRequest
 import de.aarondietz.lehrerlog.services.StudentService
@@ -19,7 +18,7 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
 
             // List all students for the user's school
             get {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {
@@ -33,7 +32,7 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
 
             // Get a specific student
             get("/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {
@@ -63,7 +62,7 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
 
             // Create a new student
             post {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {
@@ -91,7 +90,7 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
 
             // Update a student
             put("/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {
@@ -141,7 +140,7 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
 
             // Delete a student
             delete("/{id}") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
 
                 if (schoolId == null) {

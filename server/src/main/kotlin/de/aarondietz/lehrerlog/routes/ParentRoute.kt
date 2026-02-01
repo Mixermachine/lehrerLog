@@ -3,7 +3,6 @@ package de.aarondietz.lehrerlog.routes
 import de.aarondietz.lehrerlog.auth.AuthException
 import de.aarondietz.lehrerlog.auth.ErrorResponse
 import de.aarondietz.lehrerlog.auth.UserInfo
-import de.aarondietz.lehrerlog.auth.UserPrincipal
 import de.aarondietz.lehrerlog.data.ParentInviteCreateRequest
 import de.aarondietz.lehrerlog.data.ParentInviteRedeemRequest
 import de.aarondietz.lehrerlog.db.tables.UserRole
@@ -44,7 +43,7 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
     authenticate("jwt") {
         route("/api/parent-invites") {
             post {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 if (!principal.role.isTeacherRole()) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("Only teachers can create invites"))
                     return@post
@@ -67,7 +66,7 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
 
         route("/api/parent-links") {
             get {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 if (!principal.role.isTeacherRole()) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("Only teachers can view links"))
                     return@get
@@ -98,7 +97,7 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
             }
 
             post("/{id}/revoke") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 if (!principal.role.isTeacherRole()) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("Only teachers can revoke links"))
                     return@post
@@ -131,7 +130,7 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
 
         route("/api/parent") {
             get("/students") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 if (principal.role != UserRole.PARENT) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("Only parents can access this endpoint"))
                     return@get
@@ -141,7 +140,7 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
             }
 
             get("/assignments") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 if (principal.role != UserRole.PARENT) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("Only parents can access this endpoint"))
                     return@get
@@ -167,7 +166,7 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
             }
 
             get("/submissions") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 if (principal.role != UserRole.PARENT) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("Only parents can access this endpoint"))
                     return@get

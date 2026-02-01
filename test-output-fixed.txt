@@ -1,0 +1,142 @@
+Reusing configuration cache.
+> Task :server:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :server:processTestResources NO-SOURCE
+> Task :shared:jvmProcessResources NO-SOURCE
+> Task :shared:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:processJvmMainResources SKIPPED
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :server:processResources UP-TO-DATE
+> Task :shared:compileKotlinJvm UP-TO-DATE
+> Task :shared:compileJvmMainJava NO-SOURCE
+> Task :shared:jvmMainClasses UP-TO-DATE
+> Task :shared:jvmJar UP-TO-DATE
+> Task :server:compileKotlin UP-TO-DATE
+> Task :server:compileJava NO-SOURCE
+> Task :server:classes UP-TO-DATE
+> Task :server:jar UP-TO-DATE
+> Task :server:compileTestKotlin
+> Task :server:compileTestJava NO-SOURCE
+> Task :server:testClasses UP-TO-DATE
+
+> Task :server:test
+
+AuthEndToEndTest > test login with empty credentials FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+AuthEndToEndTest > test complete registration and login flow FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+AuthEndToEndTest > test access token is valid JWT FAILED
+    java.lang.ExceptionInInitializerError at TokenService.kt:17
+        Caused by: java.lang.IllegalStateException at JwtConfig.kt:5
+
+AuthEndToEndTest > test login with wrong password FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+AuthEndToEndTest > test registration with invalid school code FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+AuthEndToEndTest > test registration with missing fields FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+AuthEndToEndTest > test registration without school code fails FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+AuthEndToEndTest > test successful registration with valid school code FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+AuthEndToEndTest > test registration with short password FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+AuthEndToEndTest > test registration with duplicate email FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+AuthEndToEndTest > test login with non-existent email FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+AuthEndToEndTest > test successful login FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+ClassStudentRouteEndToEndTest > add and remove student from class FAILED
+    java.lang.NoClassDefFoundError at ClassStudentRouteEndToEndTest.kt:22
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+FileRouteEndToEndTest > parent can download linked assignment and submission files FAILED
+    java.lang.NoClassDefFoundError at FileRouteEndToEndTest.kt:25
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+FileRouteEndToEndTest > parent cannot download files for unlinked student FAILED
+    java.lang.NoClassDefFoundError at FileRouteEndToEndTest.kt:25
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+FileRouteEndToEndTest > upload and download task file FAILED
+    java.lang.NoClassDefFoundError at FileRouteEndToEndTest.kt:25
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+HealthRouteTest > health endpoint returns db and object storage status FAILED
+    java.lang.IllegalStateException at EnvironmentValidator.kt:30
+        Caused by: java.lang.IllegalStateException at EnvironmentValidator.kt:30
+
+LatePolicyRouteEndToEndTest > late decision creates stats and punishment record FAILED
+    java.lang.NoClassDefFoundError at LatePolicyRouteEndToEndTest.kt:23
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+ParentRouteEndToEndTest > teacher can list and revoke parent links FAILED
+    java.lang.NoClassDefFoundError at ParentRouteEndToEndTest.kt:26
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+ParentRouteEndToEndTest > parent invite redeem and list assignments FAILED
+    java.lang.NoClassDefFoundError at ParentRouteEndToEndTest.kt:26
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+ParentServiceTest > create invite and redeem creates parent link FAILED
+    java.lang.NoClassDefFoundError at ParentServiceTest.kt:20
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+StorageRouteEndToEndTest > quota and usage endpoints return data FAILED
+    java.lang.NoClassDefFoundError at StorageRouteEndToEndTest.kt:27
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+TaskEndToEndTest > create task and record submission summary FAILED
+    java.lang.NoClassDefFoundError at TaskEndToEndTest.kt:24
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+TaskRouteEndToEndTest > update targets add and remove student FAILED
+    java.lang.NoClassDefFoundError at TaskRouteEndToEndTest.kt:25
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+TaskRouteEndToEndTest > update submission and delete task FAILED
+    java.lang.NoClassDefFoundError at TaskRouteEndToEndTest.kt:25
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+TaskRouteEndToEndTest > create task and list by class and student FAILED
+    java.lang.NoClassDefFoundError at TaskRouteEndToEndTest.kt:25
+        Caused by: java.lang.ExceptionInInitializerError at JwtConfig.kt:5
+
+67 tests completed, 26 failed
+
+> Task :server:test FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':server:test'.
+> There were failing tests. See the report at: file:///C:/git/lehrerlog-2026-02-01/server/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to get full insights.
+
+BUILD FAILED in 22s
+8 actionable tasks: 3 executed, 5 up-to-date
+Configuration cache entry reused.

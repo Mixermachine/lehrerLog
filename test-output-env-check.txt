@@ -1,0 +1,32 @@
+Reusing configuration cache.
+> Task :server:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :server:processTestResources NO-SOURCE
+> Task :shared:jvmProcessResources NO-SOURCE
+> Task :shared:processJvmMainResources SKIPPED
+> Task :shared:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :server:processResources
+> Task :shared:compileKotlinJvm
+> Task :shared:compileJvmMainJava NO-SOURCE
+> Task :shared:jvmMainClasses
+> Task :shared:jvmJar
+
+> Task :server:compileKotlin
+w: file:///C:/git/lehrerlog-2026-02-01/server/src/main/kotlin/de/aarondietz/lehrerlog/routes/FileRoute.kt:205:65 'fun Source.readBytes(): ByteArray' is deprecated. Use readByteArray instead.
+
+> Task :server:compileJava NO-SOURCE
+> Task :server:classes
+> Task :server:jar
+
+> Task :server:compileTestKotlin
+w: file:///C:/git/lehrerlog-2026-02-01/server/src/test/kotlin/de/aarondietz/lehrerlog/SchoolClassServiceEndToEndTest.kt:154:31 No cast needed.
+w: file:///C:/git/lehrerlog-2026-02-01/server/src/test/kotlin/de/aarondietz/lehrerlog/StudentServiceEndToEndTest.kt:157:31 No cast needed.
+
+> Task :server:compileTestJava NO-SOURCE
+> Task :server:testClasses UP-TO-DATE
+> Task :server:test
+> Task :server:jacocoTestReport
+
+BUILD SUCCESSFUL in 32s
+9 actionable tasks: 9 executed
+Configuration cache entry reused.

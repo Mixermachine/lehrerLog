@@ -1,7 +1,6 @@
 package de.aarondietz.lehrerlog.routes
 
 import de.aarondietz.lehrerlog.auth.ErrorResponse
-import de.aarondietz.lehrerlog.auth.UserPrincipal
 import de.aarondietz.lehrerlog.services.StorageService
 import io.ktor.http.*
 import io.ktor.server.auth.*
@@ -14,7 +13,7 @@ fun Route.storageRoute(
     authenticate("jwt") {
         route("/api/storage") {
             get("/quota") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
@@ -30,7 +29,7 @@ fun Route.storageRoute(
             }
 
             get("/usage") {
-                val principal = call.principal<UserPrincipal>()!!
+                val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
                 if (schoolId == null) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
