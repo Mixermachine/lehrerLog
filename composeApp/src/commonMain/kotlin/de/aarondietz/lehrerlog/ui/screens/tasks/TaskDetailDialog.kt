@@ -26,6 +26,7 @@ import de.aarondietz.lehrerlog.data.LateStatus
 import de.aarondietz.lehrerlog.data.StudentDto
 import de.aarondietz.lehrerlog.data.TaskSubmissionDto
 import de.aarondietz.lehrerlog.data.TaskSubmissionType
+import de.aarondietz.lehrerlog.ui.composables.EditTaskDialog
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import de.aarondietz.lehrerlog.ui.util.PickedFile
@@ -47,6 +48,10 @@ import lehrerlog.composeapp.generated.resources.task_loading
 import lehrerlog.composeapp.generated.resources.task_refresh
 import lehrerlog.composeapp.generated.resources.task_students_empty
 import lehrerlog.composeapp.generated.resources.task_upload_assignment
+import lehrerlog.composeapp.generated.resources.task_edit
+import lehrerlog.composeapp.generated.resources.task_delete
+import lehrerlog.composeapp.generated.resources.task_delete_confirm
+import lehrerlog.composeapp.generated.resources.action_delete
 import lehrerlog.composeapp.generated.resources.late_status_forgiven
 import lehrerlog.composeapp.generated.resources.late_status_on_time
 import lehrerlog.composeapp.generated.resources.late_status_punish
@@ -59,12 +64,16 @@ internal fun TaskDetailDialog(
     state: TaskDetailState,
     onDismiss: () -> Unit,
     onRefresh: () -> Unit,
+    onEditTask: (String, String, String?, String) -> Unit,
+    onDeleteTask: (String) -> Unit,
     onMarkInPerson: (String) -> Unit,
     onUpdateSubmission: (String, Double?, String?) -> Unit,
     onUploadAssignmentFile: (PickedFile) -> Unit,
     onUploadSubmissionFile: (String, String?, PickedFile) -> Unit
 ) {
     val task = state.task ?: return
+    var isEditingTask by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
     var editingSubmission by remember { mutableStateOf<TaskSubmissionDto?>(null) }
     var pendingSubmissionUpload by remember { mutableStateOf<SubmissionUploadTarget?>(null) }
 
@@ -90,15 +99,34 @@ internal fun TaskDetailDialog(
         title = { Text(stringResource(Res.string.task_details)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
-                Text(task.title, style = MaterialTheme.typography.titleMedium)
-                task.description?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(task.title, style = MaterialTheme.typography.titleMedium)
+                        task.description?.let {
+                            Text(it, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Text(
+                            text = task.dueAt.substringBefore("T"),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)) {
+                        TextButton(onClick = { isEditingTask = true }) {
+                            Text(stringResource(Res.string.task_edit))
+                        }
+                        TextButton(onClick = { showDeleteConfirmation = true }) {
+                            Text(
+                                text = stringResource(Res.string.task_delete),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 }
-                Text(
-                    text = task.dueAt.substringBefore("T"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
 
                 if (state.isLoading || state.isUploading) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -165,6 +193,43 @@ internal fun TaskDetailDialog(
             onSave = { grade, note ->
                 onUpdateSubmission(submission.id, grade, note)
                 editingSubmission = null
+            }
+        )
+    }
+
+    if (isEditingTask) {
+        EditTaskDialog(
+            task = task,
+            onDismiss = { isEditingTask = false },
+            onConfirm = { title, description, dueAt ->
+                onEditTask(task.id, title, description, dueAt)
+                isEditingTask = false
+            }
+        )
+    }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text(stringResource(Res.string.task_delete)) },
+            text = { Text(stringResource(Res.string.task_delete_confirm, task.title)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteTask(task.id)
+                        showDeleteConfirmation = false
+                    }
+                ) {
+                    Text(
+                        text = stringResource(Res.string.action_delete),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
             }
         )
     }
@@ -323,6 +388,8 @@ private fun TaskDetailDialogPreview() {
             ),
             onDismiss = {},
             onRefresh = {},
+            onEditTask = { _, _, _, _ -> },
+            onDeleteTask = {},
             onMarkInPerson = {},
             onUpdateSubmission = { _, _, _ -> },
             onUploadAssignmentFile = {},

@@ -138,6 +138,47 @@ class TasksViewModel(
         }
     }
 
+    fun updateTask(
+        taskId: String,
+        title: String,
+        description: String?,
+        dueAt: String
+    ) {
+        viewModelScope.launch {
+            _detailState.value = _detailState.value.copy(isLoading = true, error = null)
+            taskRepository.updateTask(taskId, title, description, dueAt)
+                .onSuccess { updatedTask ->
+                    _detailState.value = _detailState.value.copy(task = updatedTask, isLoading = false)
+                    loadTasks()
+                }
+                .onFailure { e ->
+                    logger.e(e) { "Failed to update task" }
+                    _detailState.value = _detailState.value.copy(
+                        isLoading = false,
+                        error = "Failed to update task: ${e.message}"
+                    )
+                }
+        }
+    }
+
+    fun deleteTask(taskId: String) {
+        viewModelScope.launch {
+            _detailState.value = _detailState.value.copy(isLoading = true, error = null)
+            taskRepository.deleteTask(taskId)
+                .onSuccess {
+                    closeTask()
+                    loadTasks()
+                }
+                .onFailure { e ->
+                    logger.e(e) { "Failed to delete task" }
+                    _detailState.value = _detailState.value.copy(
+                        isLoading = false,
+                        error = "Failed to delete task: ${e.message}"
+                    )
+                }
+        }
+    }
+
     private suspend fun loadSummaries(tasks: List<TaskDto>) {
         val summaries = mutableMapOf<String, TaskSubmissionSummaryDto>()
         tasks.forEach { task ->

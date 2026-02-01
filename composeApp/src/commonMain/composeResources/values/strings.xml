@@ -12,6 +12,10 @@
     <!-- Common actions -->
     <string name="action_add">Hinzufügen</string>
     <string name="action_cancel">Abbrechen</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_delete">Löschen</string>
+    <string name="action_create">Erstellen</string>
+    <string name="action_edit">Bearbeiten</string>
 
     <!-- Classes -->
     <string name="add_class">Klasse hinzufügen</string>
@@ -33,6 +37,10 @@
 
     <!-- Tasks -->
     <string name="add_task">Aufgabe hinzufügen</string>
+    <string name="edit_task">Aufgabe bearbeiten</string>
+    <string name="task_edit">Bearbeiten</string>
+    <string name="task_delete">Löschen</string>
+    <string name="task_delete_confirm">Aufgabe "%1$s" wirklich löschen?</string>
     <string name="task_title">Titel</string>
     <string name="task_description">Beschreibung (optional)</string>
     <string name="due_date">Abgabedatum</string>
@@ -49,6 +57,14 @@
     <!-- Accessibility -->
     <string name="expand">Ausklappen</string>
     <string name="collapse">Einklappen</string>
+
+    <!-- Storage -->
+    <string name="storage_quota_title">Speichernutzung</string>
+    <string name="storage_quota_used">%1$d MB von %2$d MB genutzt (%3$d%%)</string>
+    <string name="storage_quota_remaining">%1$d MB verfügbar</string>
+    <string name="storage_quota_warning">Speicherplatz fast aufgebraucht</string>
+    <string name="storage_quota_exceeded">Speicherplatz überschritten! Bitte Dateien löschen.</string>
+    <string name="storage_quota_refresh">Aktualisieren</string>
 
     <!-- Authentication -->
     <string name="login">Anmelden</string>
@@ -79,9 +95,21 @@
     <string name="invite_parent">Eltern einladen</string>
     <string name="invite_parent_title">Elterneinladung</string>
     <string name="invite_parent_message">Teilen Sie diesen Code mit den Eltern</string>
-    <string name="parent_links_title">Elternverknuepfungen</string>
+    <string name="parent_links_title">Elternverknüpfungen</string>
     <string name="parent_links_empty">Keine Eltern verknüpft</string>
     <string name="parent_link_revoke">Entfernen</string>
+    <string name="parent_invite_management_title">Elternzugang für %1$s</string>
+    <string name="parent_invite_generate">Einladungscode generieren</string>
+    <string name="parent_invite_code_title">Einladungscode</string>
+    <string name="parent_invite_copy">Code kopieren</string>
+    <string name="parent_invite_expires">Gültig bis: %1$s</string>
+    <string name="parent_link_id">Verknüpfung: %1$s</string>
+    <string name="parent_link_created">Erstellt: %1$s</string>
+    <string name="parent_link_status_active">Aktiv</string>
+    <string name="parent_link_status_revoked">Widerrufen</string>
+    <string name="parent_link_status_pending">Ausstehend</string>
+    <string name="action_back">Zurück</string>
+    <string name="action_dismiss">Schließen</string>
 
     <!-- Late stats -->
     <string name="late_overview_title">Verspaetungen</string>
@@ -93,6 +121,20 @@
     <string name="late_overview_punishment_required">Strafe erforderlich</string>
     <string name="late_overview_missing_school">Fehlender Schulkontext</string>
     <string name="punishment_resolve">Strafe erledigt</string>
+    <string name="late_periods_title">Verspätungszeiträume</string>
+    <string name="late_periods_empty">Keine Zeiträume vorhanden</string>
+    <string name="late_period_create">Zeitraum erstellen</string>
+    <string name="late_period_edit">Zeitraum bearbeiten</string>
+    <string name="late_period_name">Name</string>
+    <string name="late_period_starts">Startdatum</string>
+    <string name="late_period_ends">Enddatum (optional)</string>
+    <string name="late_period_ends_optional">Leer lassen für laufenden Zeitraum</string>
+    <string name="late_period_active">Aktiv</string>
+    <string name="late_period_activate">Aktivieren</string>
+    <string name="late_period_recalculate">Neu berechnen</string>
+    <string name="late_period_dates">%1$s bis %2$s</string>
+    <string name="late_period_ongoing">Laufend</string>
+    <string name="late_stats_chart_title">Verspätungsübersicht</string>
     <string name="task_details">Aufgabendetails</string>
     <string name="task_loading">Laedt Details</string>
     <string name="task_refresh">Aktualisieren</string>

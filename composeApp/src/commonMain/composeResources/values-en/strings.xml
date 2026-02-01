@@ -12,6 +12,10 @@
     <!-- Common actions -->
     <string name="action_add">Add</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_create">Create</string>
+    <string name="action_edit">Edit</string>
 
     <!-- Classes -->
     <string name="add_class">Add class</string>
@@ -33,6 +37,10 @@
 
     <!-- Tasks -->
     <string name="add_task">Add task</string>
+    <string name="edit_task">Edit task</string>
+    <string name="task_edit">Edit</string>
+    <string name="task_delete">Delete</string>
+    <string name="task_delete_confirm">Really delete task "%1$s"?</string>
     <string name="task_title">Title</string>
     <string name="task_description">Description (optional)</string>
     <string name="due_date">Due date</string>
@@ -49,6 +57,14 @@
     <!-- Accessibility -->
     <string name="expand">Expand</string>
     <string name="collapse">Collapse</string>
+
+    <!-- Storage -->
+    <string name="storage_quota_title">Storage Usage</string>
+    <string name="storage_quota_used">%1$d MB of %2$d MB used (%3$d%%)</string>
+    <string name="storage_quota_remaining">%1$d MB available</string>
+    <string name="storage_quota_warning">Storage almost full</string>
+    <string name="storage_quota_exceeded">Storage exceeded! Please delete files.</string>
+    <string name="storage_quota_refresh">Refresh</string>
 
     <!-- Authentication -->
     <string name="login">Log in</string>
@@ -82,6 +98,18 @@
     <string name="parent_links_title">Parent links</string>
     <string name="parent_links_empty">No parents linked</string>
     <string name="parent_link_revoke">Remove</string>
+    <string name="parent_invite_management_title">Parent Access for %1$s</string>
+    <string name="parent_invite_generate">Generate Invite Code</string>
+    <string name="parent_invite_code_title">Invite Code</string>
+    <string name="parent_invite_copy">Copy code</string>
+    <string name="parent_invite_expires">Valid until: %1$s</string>
+    <string name="parent_link_id">Link: %1$s</string>
+    <string name="parent_link_created">Created: %1$s</string>
+    <string name="parent_link_status_active">Active</string>
+    <string name="parent_link_status_revoked">Revoked</string>
+    <string name="parent_link_status_pending">Pending</string>
+    <string name="action_back">Back</string>
+    <string name="action_dismiss">Dismiss</string>
 
     <!-- Late stats -->
     <string name="late_overview_title">Late overview</string>
@@ -93,6 +121,20 @@
     <string name="late_overview_punishment_required">Punishment required</string>
     <string name="late_overview_missing_school">Missing school context</string>
     <string name="punishment_resolve">Mark resolved</string>
+    <string name="late_periods_title">Late Periods</string>
+    <string name="late_periods_empty">No periods created yet</string>
+    <string name="late_period_create">Create Period</string>
+    <string name="late_period_edit">Edit Period</string>
+    <string name="late_period_name">Name</string>
+    <string name="late_period_starts">Start Date</string>
+    <string name="late_period_ends">End Date (optional)</string>
+    <string name="late_period_ends_optional">Leave blank for ongoing period</string>
+    <string name="late_period_active">Active</string>
+    <string name="late_period_activate">Activate</string>
+    <string name="late_period_recalculate">Recalculate</string>
+    <string name="late_period_dates">%1$s to %2$s</string>
+    <string name="late_period_ongoing">Ongoing</string>
+    <string name="late_stats_chart_title">Late Stats Overview</string>
     <string name="task_details">Task details</string>
     <string name="task_loading">Loading details</string>
     <string name="task_refresh">Refresh</string>

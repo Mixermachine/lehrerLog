@@ -154,6 +154,10 @@ fun TasksScreen(
             state = detailState,
             onDismiss = { viewModel.closeTask() },
             onRefresh = { viewModel.refreshTaskDetails() },
+            onEditTask = { taskId, title, description, dueAt ->
+                viewModel.updateTask(taskId, title, description, dueAt)
+            },
+            onDeleteTask = { taskId -> viewModel.deleteTask(taskId) },
             onMarkInPerson = { studentId -> viewModel.markInPersonSubmission(task.id, studentId) },
             onUpdateSubmission = { submissionId, grade, note ->
                 viewModel.updateSubmission(submissionId, grade, note)

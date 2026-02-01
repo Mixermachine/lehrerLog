@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.data.StudentDto
+import de.aarondietz.lehrerlog.ui.components.StudentLateStatsChart
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import lehrerlog.composeapp.generated.resources.Res
@@ -33,6 +35,7 @@ import lehrerlog.composeapp.generated.resources.late_overview_punishment_require
 import lehrerlog.composeapp.generated.resources.late_overview_punishments
 import lehrerlog.composeapp.generated.resources.late_overview_since
 import lehrerlog.composeapp.generated.resources.late_overview_title
+import lehrerlog.composeapp.generated.resources.late_stats_chart_title
 import lehrerlog.composeapp.generated.resources.punishment_resolve
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -118,6 +121,30 @@ internal fun HomeLateStatsContent(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
+
+            // Chart visualization
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = MaterialTheme.spacing.sm)
+                ) {
+                    Column(modifier = Modifier.padding(MaterialTheme.spacing.md)) {
+                        Text(
+                            text = stringResource(Res.string.late_stats_chart_title),
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                        StudentLateStatsChart(
+                            studentNames = state.studentStats.mapNotNull { stats ->
+                                state.students.firstOrNull { it.id == stats.studentId }?.let {
+                                    "${it.firstName} ${it.lastName}"
+                                }
+                            },
+                            lateCounts = state.studentStats.map { it.totalMissed }
+                        )
+                    }
+                }
+            }
+
             items(state.studentStats) { stats ->
                 val student = state.students.firstOrNull { it.id == stats.studentId }
                 StudentLateStatsRow(

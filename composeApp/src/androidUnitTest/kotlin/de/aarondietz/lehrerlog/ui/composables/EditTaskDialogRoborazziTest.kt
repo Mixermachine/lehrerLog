@@ -1,4 +1,4 @@
-package de.aarondietz.lehrerlog.ui.screens.tasks
+package de.aarondietz.lehrerlog.ui.composables
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
@@ -16,35 +16,22 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [33])
-class TaskDetailRoborazziTest {
+class EditTaskDialogRoborazziTest {
 
     @get:Rule
     val composeTestRule = createAndroidComposeRule<RoborazziTestActivity>()
 
     @Test
-    fun captureTaskDetailDialog() {
+    fun captureEditTaskDialog() {
         RoborazziTestUtils.prepareAnimationsOff(composeTestRule)
-        val schoolClass = SharedTestFixtures.testSchoolClassDto()
-        val student = SharedTestFixtures.testStudentDto(schoolClass.id)
-        val task = SharedTestFixtures.testTaskDto(schoolClass.id)
-        val submission = SharedTestFixtures.testSubmissionDto(task.id, student.id)
+        val task = SharedTestFixtures.testTaskDto(SharedTestFixtures.testClassId)
 
         composeTestRule.setContent {
             LehrerLogTheme {
-                TaskDetailDialog(
-                    state = TaskDetailState(
-                        task = task,
-                        students = listOf(student),
-                        submissions = listOf(submission)
-                    ),
+                EditTaskDialog(
+                    task = task,
                     onDismiss = {},
-                    onRefresh = {},
-                    onEditTask = { _, _, _, _ -> },
-                    onDeleteTask = {},
-                    onMarkInPerson = {},
-                    onUpdateSubmission = { _, _, _ -> },
-                    onUploadAssignmentFile = {},
-                    onUploadSubmissionFile = { _, _, _ -> }
+                    onConfirm = { _, _, _ -> }
                 )
             }
         }
@@ -52,7 +39,7 @@ class TaskDetailRoborazziTest {
         composeTestRule.mainClock.advanceTimeBy(0)
         val snapshotPath = SharedTestFixtures.snapshotPath(
             SharedTestFixtures.roborazziSmokeTest,
-            SharedTestFixtures.scenarioTaskDetail
+            "EditTaskDialog"
         )
         RoborazziTestUtils.captureSnapshot(composeTestRule.onRoot(), snapshotPath)
     }
