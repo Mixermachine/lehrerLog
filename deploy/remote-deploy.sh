@@ -548,28 +548,18 @@ if [[ -z "$SEED_TEST_USER_PASSWORD_B64" && -n "$SEED_TEST_USER_PASSWORD" ]]; the
   SEED_TEST_USER_PASSWORD_B64="$(printf '%s' "$SEED_TEST_USER_PASSWORD" | "$BIN_BASE64" -w0)"
 fi
 
-if [[ -z "$OBJECT_STORAGE_HEALTH_URL" && -n "$GARAGE_ADMIN_TOKEN" ]]; then
+if [[ -z "${OBJECT_STORAGE_HEALTH_URL:-}" && -n "$GARAGE_ADMIN_TOKEN" ]]; then
   OBJECT_STORAGE_HEALTH_URL="http://garage:3903/v2/GetClusterHealth"
 fi
-if [[ -z "$OBJECT_STORAGE_HEALTH_TOKEN" && -n "$GARAGE_ADMIN_TOKEN" ]]; then
+if [[ -z "${OBJECT_STORAGE_HEALTH_TOKEN:-}" && -n "$GARAGE_ADMIN_TOKEN" ]]; then
   OBJECT_STORAGE_HEALTH_TOKEN="$GARAGE_ADMIN_TOKEN"
 fi
 
-if [[ -z "$OBJECT_STORAGE_ENDPOINT" ]]; then
-  OBJECT_STORAGE_ENDPOINT="http://garage:3900"
-fi
-if [[ -z "$OBJECT_STORAGE_REGION" ]]; then
-  OBJECT_STORAGE_REGION="garage"
-fi
-if [[ -z "$OBJECT_STORAGE_BUCKET" ]]; then
-  OBJECT_STORAGE_BUCKET="lehrerlog-${ENV_NAME}"
-fi
-if [[ -z "$OBJECT_STORAGE_PATH_STYLE" ]]; then
-  OBJECT_STORAGE_PATH_STYLE="true"
-fi
-if [[ -z "$OBJECT_STORAGE_KEY_NAME" ]]; then
-  OBJECT_STORAGE_KEY_NAME="lehrerlog-${ENV_NAME}-server"
-fi
+: "${OBJECT_STORAGE_ENDPOINT:=http://garage:3900}"
+: "${OBJECT_STORAGE_REGION:=garage}"
+: "${OBJECT_STORAGE_BUCKET:=lehrerlog-${ENV_NAME}}"
+: "${OBJECT_STORAGE_PATH_STYLE:=true}"
+: "${OBJECT_STORAGE_KEY_NAME:=lehrerlog-${ENV_NAME}-server}"
 
 read_env_value() {
   local env_file="$1"
@@ -577,13 +567,15 @@ read_env_value() {
   if [[ ! -f "$env_file" ]]; then
     return 0
   fi
-  grep -E "^${key}=" "$env_file" | tail -n 1 | cut -d= -f2- | tr -d '\r'
+  local value
+  value="$(grep -E "^${key}=" "$env_file" | tail -n 1 | cut -d= -f2- | tr -d '\r' || true)"
+  printf '%s' "$value"
 }
 
-if [[ -z "$OBJECT_STORAGE_ACCESS_KEY" ]]; then
+if [[ -z "${OBJECT_STORAGE_ACCESS_KEY:-}" ]]; then
   OBJECT_STORAGE_ACCESS_KEY="$(read_env_value "$SERVER_ENV_FILE" "OBJECT_STORAGE_ACCESS_KEY")"
 fi
-if [[ -z "$OBJECT_STORAGE_SECRET_KEY" ]]; then
+if [[ -z "${OBJECT_STORAGE_SECRET_KEY:-}" ]]; then
   OBJECT_STORAGE_SECRET_KEY="$(read_env_value "$SERVER_ENV_FILE" "OBJECT_STORAGE_SECRET_KEY")"
 fi
 
