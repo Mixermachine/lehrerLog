@@ -1,4 +1,4 @@
-FROM gradle:8.14-jdk21 AS build
+FROM gradle:8.14.4-jdk21 AS build
 
 WORKDIR /workspace
 
@@ -28,7 +28,7 @@ ARG SERVER_URL=https://api.lehrerlog.de
 # Build the wasmJS distribution.
 RUN ./gradlew :composeApp:wasmJsBrowserDistribution -PserverUrl=${SERVER_URL} --no-daemon
 
-FROM nginx:alpine
+FROM nginx:1.27.2-alpine
 
 COPY --from=build /workspace/composeApp/build/dist/wasmJs/productionExecutable/ /usr/share/nginx/html/
 COPY composeApp/nginx.conf /etc/nginx/conf.d/default.conf

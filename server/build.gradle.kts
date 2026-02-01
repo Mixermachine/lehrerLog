@@ -48,6 +48,7 @@ dependencies {
     implementation(libs.ktor.server.swagger)
     implementation(libs.ktor.server.websockets)
     implementation(libs.ktor.server.rate.limit)
+    implementation(libs.ktor.server.status.pages)
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.ktor.client.content.negotiation)
@@ -63,6 +64,7 @@ dependencies {
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.dao)
     implementation(libs.exposed.java.time)
+    implementation(libs.hikari)
 
     // Flyway migrations
     implementation(libs.flyway.core)

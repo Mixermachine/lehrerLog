@@ -1,9 +1,9 @@
-FROM gradle:8.7-jdk21 AS build
+FROM gradle:8.14.4-jdk21 AS build
 WORKDIR /workspace
 COPY . .
 RUN chmod +x ./gradlew && ./gradlew :server:installDist --no-daemon
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21.0.9_9-jre
 RUN apt-get update \
     && apt-get install -y curl \
     && rm -rf /var/lib/apt/lists/*

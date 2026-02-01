@@ -1,11 +1,14 @@
 package de.aarondietz.lehrerlog.db
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
 import org.slf4j.LoggerFactory
 
 object DatabaseFactory {
     private val logger = LoggerFactory.getLogger(DatabaseFactory::class.java)
+    private var dataSource: HikariDataSource? = null
 
     fun init() {
         val dbMode = System.getenv("DB_MODE") ?: "h2" // "h2" for dev, "postgres" for prod
@@ -25,23 +28,34 @@ object DatabaseFactory {
             }
         }
 
-        logger.info("Initializing database connection")
+        val config = HikariConfig().apply {
+            this.jdbcUrl = jdbcUrl
+            driverClassName = driver
+            username = dbUser
+            password = dbPassword
+            maximumPoolSize = envInt("DB_POOL_SIZE", 10)
+            minimumIdle = envInt("DB_POOL_MIN_IDLE", 2)
+            idleTimeout = envLong("DB_POOL_IDLE_TIMEOUT_MS", 600_000L)
+            maxLifetime = envLong("DB_POOL_MAX_LIFETIME_MS", 1_800_000L)
+            connectionTimeout = envLong("DB_POOL_CONN_TIMEOUT_MS", 10_000L)
+            poolName = "lehrerlog-pool"
+        }
+
+        dataSource?.close()
+        dataSource = HikariDataSource(config)
+
+        logger.info("Initializing database connection pool")
 
         // Run Flyway migrations
         val flyway = Flyway.configure()
-            .dataSource(jdbcUrl, dbUser, dbPassword)
+            .dataSource(dataSource)
             .locations("classpath:db/migration")
             .load()
 
         flyway.migrate()
 
         // Connect Exposed
-        Database.connect(
-            url = jdbcUrl,
-            driver = driver,
-            user = dbUser,
-            password = dbPassword
-        )
+        Database.connect(dataSource!!)
     }
 
     private data class DatabaseConfig(
@@ -50,4 +64,16 @@ object DatabaseFactory {
         val user: String,
         val password: String
     )
+
+    private fun envInt(name: String, default: Int): Int {
+        return System.getenv(name)?.toIntOrNull()
+            ?: System.getProperty(name)?.toIntOrNull()
+            ?: default
+    }
+
+    private fun envLong(name: String, default: Long): Long {
+        return System.getenv(name)?.toLongOrNull()
+            ?: System.getProperty(name)?.toLongOrNull()
+            ?: default
+    }
 }

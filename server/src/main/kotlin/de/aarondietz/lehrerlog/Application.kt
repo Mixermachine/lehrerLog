@@ -14,9 +14,11 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.ratelimit.*
+import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
@@ -92,6 +94,7 @@ fun Application.module() {
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.Accept)
+        allowHeader("X-Request-Id")
 
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
@@ -101,6 +104,22 @@ fun Application.module() {
         allowMethod(HttpMethod.Options)
 
         maxAgeInSeconds = 3600
+    }
+
+    val appEnvironment = environment
+
+    install(StatusPages) {
+        exception<BadRequestException> { call, cause ->
+            appEnvironment.log.warn("Bad request", cause)
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse(cause.message ?: "Bad request"))
+        }
+        exception<Throwable> { call, cause ->
+            appEnvironment.log.error("Unhandled exception", cause)
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Internal server error"))
+        }
+        status(HttpStatusCode.NotFound) { call, _ ->
+            call.respond(HttpStatusCode.NotFound, ErrorResponse("Not found"))
+        }
     }
 
     val authRateLimit = (System.getenv("AUTH_RATE_LIMIT") ?: System.getProperty("AUTH_RATE_LIMIT"))
@@ -139,7 +158,7 @@ fun Application.module() {
                 }
             }
             challenge { _, _ ->
-                call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Token is invalid or expired"))
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Token is invalid or expired"))
             }
         }
     }
@@ -185,18 +204,28 @@ fun Application.module() {
                 )
             }
         }
-        authRoute(authService)
-        schoolClassRoute()
-        schoolRoute(schoolCatalogService)
-        studentRoute()
-        taskRoute()
-        fileRoute()
-        storageRoute()
-        latePolicyRoute()
-        parentRoute()
-        syncRoute()
-        userRoute()
+        registerApiRoutes(authService, schoolCatalogService)
+        route("/api/v1") {
+            registerApiRoutes(authService, schoolCatalogService)
+        }
     }
+}
+
+private fun Route.registerApiRoutes(
+    authService: AuthService,
+    schoolCatalogService: SchoolCatalogService
+) {
+    authRoute(authService)
+    schoolClassRoute()
+    schoolRoute(schoolCatalogService)
+    studentRoute()
+    taskRoute()
+    fileRoute()
+    storageRoute()
+    latePolicyRoute()
+    parentRoute()
+    syncRoute()
+    userRoute()
 }
 
 @Serializable

@@ -928,13 +928,15 @@ fun validateEnvironment() {
 
 ### Phase 3: Medium Priority Improvements (Week 3)
 
-- [ ] Configure database connection pooling
-- [ ] Add global exception handler middleware
-- [ ] Refine CORS configuration
-- [ ] Add proper error logging throughout
-- [ ] Pin Docker base image versions
-- [ ] Implement consistent error response format
-- [ ] Add API versioning (/api/v1)
+- [x] Configure database connection pooling ✅ **COMPLETED** - Added HikariCP with configurable pool settings
+- [x] Add global exception handler middleware ✅ **COMPLETED** - Installed Ktor StatusPages with standard error responses
+- [x] Refine CORS configuration ✅ **COMPLETED** - Added `X-Request-Id` header to allow list
+- [x] Add proper error logging throughout ✅ **COMPLETED** - Centralized logging for bad requests and unhandled exceptions
+- [x] Pin Docker base image versions ✅ **COMPLETED** - Pinned Gradle/Temurin/nginx base images
+- [x] Implement consistent error response format ✅ **COMPLETED** - StatusPages enforces `ErrorResponse` for errors
+- [x] Add API versioning (/api/v1) ✅ **COMPLETED** - Added `/api/v1` route group (root paths retained)
+
+**Verification:** `:server:test` passed on 2026-02-01 (JDK 21).
 
 ### Phase 4: Low Priority Polish (Week 4)
 
