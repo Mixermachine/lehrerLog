@@ -68,7 +68,10 @@ class SchoolClassService {
                 it[SyncLog.userId] = userId
             }
 
-            getClass(classId, schoolId)!!
+            SchoolClasses.selectAll()
+                .where { SchoolClasses.id eq classId }
+                .first()
+                .toSchoolClassDto()
         }
     }
 

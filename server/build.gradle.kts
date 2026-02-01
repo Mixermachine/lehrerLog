@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.ktor.server.compression)
     implementation(libs.ktor.server.swagger)
     implementation(libs.ktor.server.websockets)
+    implementation(libs.ktor.server.rate.limit)
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.ktor.client.content.negotiation)

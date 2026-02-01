@@ -913,13 +913,18 @@ fun validateEnvironment() {
 - [x] Validate all required env vars on startup ✅ **COMPLETED** - Created `EnvironmentValidator.kt`, validates DB
   credentials in PostgreSQL mode; JWT_SECRET validated in `JwtConfig.kt` based on environment
 
+**Verification:** `:server:test` passed on 2026-02-01 (JDK 21).
+
 ### Phase 2: High Priority Fixes (Week 2)
 
-- [ ] Standardize JVM target to 21 across all modules
-- [ ] Implement password complexity requirements
-- [ ] Add rate limiting to auth endpoints
-- [ ] Fix resource leaks (HttpClient, database connections)
-- [ ] Update Android minSdk to 26+
+- [x] Standardize JVM target to 21 across all modules ✅ **COMPLETED** - Updated composeApp/shared Android targets and
+  compileOptions to Java 21
+- [x] Implement password complexity requirements ✅ **COMPLETED** - Added `PasswordPolicy` (min 12 + upper/lower/digit/special)
+- [x] Add rate limiting to auth endpoints ✅ **COMPLETED** - Ktor `RateLimit` plugin on `/auth` (configurable via env/system properties)
+- [x] Fix resource leaks (HttpClient, database connections) ✅ **COMPLETED** - Reuse shared HttpClient for object storage health checks
+- [x] Update Android minSdk to 26+ ✅ **COMPLETED** - Version catalog updated to 26
+
+**Verification:** `:server:test` passed on 2026-02-01 (JDK 21).
 
 ### Phase 3: Medium Priority Improvements (Week 3)
 

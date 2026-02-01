@@ -16,6 +16,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.ratelimit.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,7 @@ import java.net.http.HttpResponse
 import java.nio.file.Path
 import java.time.Duration
 import java.util.*
+import kotlin.time.Duration.Companion.seconds
 
 fun main() {
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
@@ -101,6 +103,20 @@ fun Application.module() {
         maxAgeInSeconds = 3600
     }
 
+    val authRateLimit = (System.getenv("AUTH_RATE_LIMIT") ?: System.getProperty("AUTH_RATE_LIMIT"))
+        ?.toIntOrNull()
+        ?: 5
+    val authRateLimitRefillSeconds =
+        (System.getenv("AUTH_RATE_LIMIT_REFILL_SECONDS") ?: System.getProperty("AUTH_RATE_LIMIT_REFILL_SECONDS"))
+            ?.toLongOrNull()
+            ?: 60L
+
+    install(RateLimit) {
+        register(RateLimitName("auth")) {
+            rateLimiter(limit = authRateLimit, refillPeriod = authRateLimitRefillSeconds.seconds)
+        }
+    }
+
     install(Authentication) {
         jwt("jwt") {
             realm = JwtConfig.REALM
@@ -128,6 +144,10 @@ fun Application.module() {
         }
     }
 
+    val healthHttpClient = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(2))
+        .build()
+
     routing {
         get("/health") {
             val objectStorageUrl = System.getenv("OBJECT_STORAGE_HEALTH_URL")?.trim().orEmpty()
@@ -145,7 +165,12 @@ fun Application.module() {
             val objectStorageStatus = if (objectStorageUrl.isBlank()) {
                 "unknown"
             } else {
-                val storageHealthy = checkObjectStorageHealth(environment, objectStorageUrl, objectStorageToken)
+                val storageHealthy = checkObjectStorageHealth(
+                    environment,
+                    healthHttpClient,
+                    objectStorageUrl,
+                    objectStorageToken
+                )
                 if (storageHealthy) "healthy" else "unhealthy"
             }
 
@@ -183,12 +208,10 @@ data class HealthResponse(
 
 private suspend fun checkObjectStorageHealth(
     environment: ApplicationEnvironment,
+    httpClient: HttpClient,
     url: String,
     token: String
 ): Boolean {
-    val client = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(2))
-        .build()
     val requestBuilder = HttpRequest.newBuilder()
         .uri(URI.create(url))
         .timeout(Duration.ofSeconds(3))
@@ -201,7 +224,7 @@ private suspend fun checkObjectStorageHealth(
     val request = requestBuilder.build()
     return try {
         val response = withContext(Dispatchers.IO) {
-            client.send(request, HttpResponse.BodyHandlers.ofString())
+            httpClient.send(request, HttpResponse.BodyHandlers.ofString())
         }
         val statusCode = response.statusCode()
         val body = response.body()?.trim().orEmpty()

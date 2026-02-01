@@ -78,7 +78,10 @@ class StudentService {
 
             assignStudentClasses(studentId, schoolId, classIds)
 
-            getStudent(studentId, schoolId)!!
+            Students.selectAll()
+                .where { Students.id eq studentId }
+                .first()
+                .toStudentDto(loadClassIdsByStudent(schoolId, listOf(studentId))[studentId].orEmpty())
         }
     }
 

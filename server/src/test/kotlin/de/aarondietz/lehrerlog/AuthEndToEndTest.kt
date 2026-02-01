@@ -85,6 +85,8 @@ class AuthEndToEndTest {
         val json = Json { prettyPrint = true }
         Files.writeString(catalogPath!!, json.encodeToString(listOf(catalogEntry)))
         System.setProperty("SCHOOL_CATALOG_PATH", catalogPath!!.toString())
+        System.setProperty("AUTH_RATE_LIMIT", "1000")
+        System.setProperty("AUTH_RATE_LIMIT_REFILL_SECONDS", "60")
     }
 
     @AfterTest
@@ -92,6 +94,8 @@ class AuthEndToEndTest {
         // Clean up after each test for good hygiene
         cleanupTestData()
         System.clearProperty("SCHOOL_CATALOG_PATH")
+        System.clearProperty("AUTH_RATE_LIMIT")
+        System.clearProperty("AUTH_RATE_LIMIT_REFILL_SECONDS")
         catalogPath?.let { Files.deleteIfExists(it) }
     }
 
@@ -156,6 +160,14 @@ class AuthEndToEndTest {
         return "${TEST_PREFIX_UPPER}_SCHOOL"
     }
 
+    private fun validPassword(): String {
+        return "SecurePass123!"
+    }
+
+    private fun wrongPassword(): String {
+        return "WrongPass123!"
+    }
+
     @Test
     fun `test registration without school code fails`() = testApplication {
         application { module() }
@@ -173,7 +185,7 @@ class AuthEndToEndTest {
             setBody(
                 RegisterRequestDto(
                     email = email,
-                    password = "SecurePassword123",
+                    password = validPassword(),
                     firstName = "John",
                     lastName = "Doe",
                     schoolCode = null
@@ -184,6 +196,36 @@ class AuthEndToEndTest {
         assertEquals(HttpStatusCode.BadRequest, response.status)
         val errorResponse = response.body<ErrorResponse>()
         assertTrue(errorResponse.error.contains("School code is required"))
+    }
+
+    @Test
+    fun `test registration with weak password fails`() = testApplication {
+        application { module() }
+
+        val testClient = createClient {
+            install(ContentNegotiation) {
+                json()
+            }
+        }
+
+        val email = uniqueTestEmail("weak.password")
+
+        val response = testClient.post("/auth/register") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                RegisterRequestDto(
+                    email = email,
+                    password = "weakpass",
+                    firstName = "Weak",
+                    lastName = "Password",
+                    schoolCode = testSchoolCode()
+                )
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        val errorResponse = response.body<ErrorResponse>()
+        assertTrue(errorResponse.error.contains("Password must be at least 12 characters"))
     }
 
     @Test
@@ -203,7 +245,7 @@ class AuthEndToEndTest {
             setBody(
                 RegisterRequestDto(
                     email = email,
-                    password = "SecurePassword456",
+                    password = validPassword(),
                     firstName = "Jane",
                     lastName = "Smith",
                     schoolCode = testSchoolCode()
@@ -235,7 +277,7 @@ class AuthEndToEndTest {
             setBody(
                 RegisterRequestDto(
                     email = email,
-                    password = "SecurePassword789",
+                    password = validPassword(),
                     firstName = "Test",
                     lastName = "User",
                     schoolCode = "INVALID_CODE"
@@ -247,6 +289,39 @@ class AuthEndToEndTest {
 
         val errorResponse = response.body<ErrorResponse>()
         assertTrue(errorResponse.error.contains("Invalid school code"))
+    }
+
+    @Test
+    fun `test auth rate limit triggers after repeated login attempts`() = testApplication {
+        System.setProperty("AUTH_RATE_LIMIT", "5")
+        System.setProperty("AUTH_RATE_LIMIT_REFILL_SECONDS", "60")
+        application { module() }
+
+        val testClient = createClient {
+            install(ContentNegotiation) {
+                json()
+            }
+        }
+
+        val request = LoginRequestDto(
+            email = "rate.limit@example.com",
+            password = validPassword()
+        )
+
+        repeat(5) {
+            val response = testClient.post("/auth/login") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            assertNotEquals(HttpStatusCode.TooManyRequests, response.status)
+        }
+
+        val limitedResponse = testClient.post("/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+
+        assertEquals(HttpStatusCode.TooManyRequests, limitedResponse.status)
     }
 
     @Test
@@ -263,7 +338,7 @@ class AuthEndToEndTest {
 
         val registerRequest = RegisterRequestDto(
             email = email,
-            password = "SecurePassword",
+            password = validPassword(),
             firstName = "Duplicate",
             lastName = "User",
             schoolCode = testSchoolCode()
@@ -304,7 +379,7 @@ class AuthEndToEndTest {
             setBody(
                 RegisterRequestDto(
                     email = email,
-                    password = "short",  // Less than 8 characters
+                    password = "short",  // Less than 12 characters
                     firstName = "Short",
                     lastName = "Password",
                     schoolCode = testSchoolCode()
@@ -315,7 +390,7 @@ class AuthEndToEndTest {
         assertEquals(HttpStatusCode.BadRequest, response.status)
 
         val errorResponse = response.body<ErrorResponse>()
-        assertTrue(errorResponse.error.contains("Password must be at least 8 characters"))
+        assertTrue(errorResponse.error.contains("Password must be at least 12 characters"))
     }
 
     @Test
@@ -333,7 +408,7 @@ class AuthEndToEndTest {
             setBody(
                 RegisterRequestDto(
                     email = "",
-                    password = "SecurePassword",
+                    password = validPassword(),
                     firstName = "",
                     lastName = "User",
                     schoolCode = testSchoolCode()
@@ -362,7 +437,7 @@ class AuthEndToEndTest {
             setBody(
                 RegisterRequestDto(
                     email = email,
-                    password = "LoginPassword123",
+                    password = validPassword(),
                     firstName = "Login",
                     lastName = "Test",
                     schoolCode = testSchoolCode()
@@ -376,7 +451,7 @@ class AuthEndToEndTest {
             setBody(
                 LoginRequestDto(
                     email = email,
-                    password = "LoginPassword123"
+                    password = validPassword()
                 )
             )
         }
@@ -409,7 +484,7 @@ class AuthEndToEndTest {
             setBody(
                 RegisterRequestDto(
                     email = email,
-                    password = "CorrectPassword123",
+                    password = validPassword(),
                     firstName = "Wrong",
                     lastName = "Password",
                     schoolCode = testSchoolCode()
@@ -423,7 +498,7 @@ class AuthEndToEndTest {
             setBody(
                 LoginRequestDto(
                     email = email,
-                    password = "WrongPassword456"
+                    password = wrongPassword()
                 )
             )
         }
@@ -451,7 +526,7 @@ class AuthEndToEndTest {
             setBody(
                 LoginRequestDto(
                     email = email,
-                    password = "SomePassword123"
+                    password = validPassword()
                 )
             )
         }
@@ -509,7 +584,7 @@ class AuthEndToEndTest {
             setBody(
                 RegisterRequestDto(
                     email = email,
-                    password = "JwtPassword123",
+                    password = validPassword(),
                     firstName = "JWT",
                     lastName = "Test",
                     schoolCode = testSchoolCode()
@@ -545,7 +620,7 @@ class AuthEndToEndTest {
             setBody(
                 RegisterRequestDto(
                     email = email,
-                    password = "CompleteFlow123",
+                    password = validPassword(),
                     firstName = "Complete",
                     lastName = "Flow",
                     schoolCode = testSchoolCode()
@@ -564,7 +639,7 @@ class AuthEndToEndTest {
             setBody(
                 LoginRequestDto(
                     email = email,
-                    password = "CompleteFlow123"
+                    password = validPassword()
                 )
             )
         }

@@ -3,6 +3,7 @@ package de.aarondietz.lehrerlog.routes
 import de.aarondietz.lehrerlog.auth.*
 import io.ktor.http.*
 import io.ktor.server.auth.*
+import io.ktor.server.plugins.ratelimit.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -59,82 +60,88 @@ data class UserDto(
 fun Route.authRoute(authService: AuthService) {
     route("/auth") {
         // Public endpoints
-        post("/register") {
-            try {
-                val request = call.receive<RegisterRequestDto>()
+        rateLimit(RateLimitName("auth")) {
+            post("/register") {
+                try {
+                    val request = call.receive<RegisterRequestDto>()
 
-                // Validate input
-                if (request.email.isBlank() || request.password.isBlank()) {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Email and password are required"))
-                    return@post
-                }
-                if (request.password.length < 8) {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Password must be at least 8 characters"))
-                    return@post
-                }
-                if (request.firstName.isBlank() || request.lastName.isBlank()) {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("First name and last name are required"))
-                    return@post
-                }
-                if (request.schoolCode.isNullOrBlank()) {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("School code is required"))
-                    return@post
-                }
+                    // Validate input
+                    if (request.email.isBlank() || request.password.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("Email and password are required"))
+                        return@post
+                    }
+                    val passwordValidation = PasswordPolicy.validate(request.password)
+                    if (!passwordValidation.valid) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponse(passwordValidation.message ?: "Password does not meet requirements")
+                        )
+                        return@post
+                    }
+                    if (request.firstName.isBlank() || request.lastName.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("First name and last name are required"))
+                        return@post
+                    }
+                    if (request.schoolCode.isNullOrBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("School code is required"))
+                        return@post
+                    }
 
-                val deviceInfo = call.request.header("User-Agent")
-                val (tokens, user) = authService.register(
-                    RegisterRequest(
-                        email = request.email,
-                        password = request.password,
-                        firstName = request.firstName,
-                        lastName = request.lastName,
-                        schoolCode = request.schoolCode
-                    ),
-                    deviceInfo
-                )
-
-                call.respond(
-                    HttpStatusCode.Created, AuthResponseDto(
-                        accessToken = tokens.accessToken,
-                        refreshToken = tokens.refreshToken,
-                        expiresIn = tokens.expiresIn,
-                        user = user.toDto()
+                    val deviceInfo = call.request.header("User-Agent")
+                    val (tokens, user) = authService.register(
+                        RegisterRequest(
+                            email = request.email,
+                            password = request.password,
+                            firstName = request.firstName,
+                            lastName = request.lastName,
+                            schoolCode = request.schoolCode
+                        ),
+                        deviceInfo
                     )
-                )
-            } catch (e: AuthException) {
-                call.respond(HttpStatusCode.Conflict, ErrorResponse(e.message ?: "Registration failed"))
-            } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Registration failed: ${e.message}"))
+
+                    call.respond(
+                        HttpStatusCode.Created, AuthResponseDto(
+                            accessToken = tokens.accessToken,
+                            refreshToken = tokens.refreshToken,
+                            expiresIn = tokens.expiresIn,
+                            user = user.toDto()
+                        )
+                    )
+                } catch (e: AuthException) {
+                    call.respond(HttpStatusCode.Conflict, ErrorResponse(e.message ?: "Registration failed"))
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Registration failed: ${e.message}"))
+                }
             }
-        }
 
-        post("/login") {
-            try {
-                val request = call.receive<LoginRequestDto>()
+            post("/login") {
+                try {
+                    val request = call.receive<LoginRequestDto>()
 
-                if (request.email.isBlank() || request.password.isBlank()) {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Email and password are required"))
-                    return@post
-                }
+                    if (request.email.isBlank() || request.password.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("Email and password are required"))
+                        return@post
+                    }
 
-                val deviceInfo = call.request.header("User-Agent")
-                val (tokens, user) = authService.login(
-                    LoginRequest(request.email, request.password),
-                    deviceInfo
-                )
-
-                call.respond(
-                    AuthResponseDto(
-                        accessToken = tokens.accessToken,
-                        refreshToken = tokens.refreshToken,
-                        expiresIn = tokens.expiresIn,
-                        user = user.toDto()
+                    val deviceInfo = call.request.header("User-Agent")
+                    val (tokens, user) = authService.login(
+                        LoginRequest(request.email, request.password),
+                        deviceInfo
                     )
-                )
-            } catch (e: AuthException) {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse(e.message ?: "Invalid credentials"))
-            } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Login failed: ${e.message}"))
+
+                    call.respond(
+                        AuthResponseDto(
+                            accessToken = tokens.accessToken,
+                            refreshToken = tokens.refreshToken,
+                            expiresIn = tokens.expiresIn,
+                            user = user.toDto()
+                        )
+                    )
+                } catch (e: AuthException) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse(e.message ?: "Invalid credentials"))
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Login failed: ${e.message}"))
+                }
             }
         }
 
