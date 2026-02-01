@@ -2,14 +2,12 @@ package de.aarondietz.lehrerlog.ui.screens.parent
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
-import com.github.takahirom.roborazzi.captureRoboImage
 import de.aarondietz.lehrerlog.RoborazziTestActivity
 import de.aarondietz.lehrerlog.RoborazziTestUtils
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.ui.screens.students.ParentLinksDialog
 import de.aarondietz.lehrerlog.ui.screens.students.ParentLinksUiState
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
-import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,8 +49,7 @@ class ParentScreensRoborazziTest {
             SharedTestFixtures.roborazziSmokeTest,
             SharedTestFixtures.scenarioParentStudents
         )
-        File(snapshotPath).parentFile?.mkdirs()
-        composeTestRule.onRoot().captureRoboImage(snapshotPath)
+        RoborazziTestUtils.captureSnapshot(composeTestRule.onRoot(), snapshotPath)
     }
 
     @Test
@@ -79,8 +76,7 @@ class ParentScreensRoborazziTest {
             SharedTestFixtures.roborazziSmokeTest,
             SharedTestFixtures.scenarioParentAssignments
         )
-        File(snapshotPath).parentFile?.mkdirs()
-        composeTestRule.onRoot().captureRoboImage(snapshotPath)
+        RoborazziTestUtils.captureSnapshot(composeTestRule.onRoot(), snapshotPath)
     }
 
     @Test
@@ -110,8 +106,7 @@ class ParentScreensRoborazziTest {
             SharedTestFixtures.roborazziSmokeTest,
             SharedTestFixtures.scenarioParentSubmissions
         )
-        File(snapshotPath).parentFile?.mkdirs()
-        composeTestRule.onRoot().captureRoboImage(snapshotPath)
+        RoborazziTestUtils.captureSnapshot(composeTestRule.onRoot(), snapshotPath)
     }
 
     @Test
@@ -140,7 +135,6 @@ class ParentScreensRoborazziTest {
             SharedTestFixtures.roborazziSmokeTest,
             SharedTestFixtures.scenarioParentLinks
         )
-        File(snapshotPath).parentFile?.mkdirs()
-        composeTestRule.onRoot().captureRoboImage(snapshotPath)
+        RoborazziTestUtils.captureSnapshot(composeTestRule.onRoot(), snapshotPath)
     }
 }

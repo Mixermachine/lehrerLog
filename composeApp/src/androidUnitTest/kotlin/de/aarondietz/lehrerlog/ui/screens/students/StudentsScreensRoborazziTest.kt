@@ -2,12 +2,10 @@ package de.aarondietz.lehrerlog.ui.screens.students
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
-import com.github.takahirom.roborazzi.captureRoboImage
 import de.aarondietz.lehrerlog.RoborazziTestActivity
 import de.aarondietz.lehrerlog.RoborazziTestUtils
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
-import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,7 +42,6 @@ class StudentsScreensRoborazziTest {
             SharedTestFixtures.roborazziSmokeTest,
             SharedTestFixtures.scenarioParentInviteDialog
         )
-        File(snapshotPath).parentFile?.mkdirs()
-        composeTestRule.onRoot().captureRoboImage(snapshotPath)
+        RoborazziTestUtils.captureSnapshot(composeTestRule.onRoot(), snapshotPath)
     }
 }
