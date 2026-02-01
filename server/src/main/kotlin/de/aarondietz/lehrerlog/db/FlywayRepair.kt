@@ -14,6 +14,7 @@ object FlywayRepair {
                 val password = System.getenv("DATABASE_PASSWORD") ?: "postgres"
                 Triple(url, user, password)
             }
+
             else -> {
                 val url = System.getenv("DATABASE_URL")
                     ?: "jdbc:h2:./build/lehrerlog;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH"

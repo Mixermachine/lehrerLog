@@ -1,24 +1,17 @@
 package de.aarondietz.lehrerlog.services
 
-import de.aarondietz.lehrerlog.data.StorageOwnerType as ApiStorageOwnerType
 import de.aarondietz.lehrerlog.data.StorageQuotaDto
 import de.aarondietz.lehrerlog.data.StorageUsageDto
 import de.aarondietz.lehrerlog.db.tables.StorageOwnerType
 import de.aarondietz.lehrerlog.db.tables.StoragePlans
 import de.aarondietz.lehrerlog.db.tables.StorageSubscriptions
 import de.aarondietz.lehrerlog.db.tables.StorageUsage
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.insertIgnore
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.or
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
+import de.aarondietz.lehrerlog.data.StorageOwnerType as ApiStorageOwnerType
 
 class StorageService {
 
@@ -114,9 +107,9 @@ class StorageService {
         val teacherSubscription = StorageSubscriptions.selectAll()
             .where {
                 (StorageSubscriptions.ownerType eq StorageOwnerType.TEACHER.name) and
-                    (StorageSubscriptions.ownerId eq userId) and
-                    (StorageSubscriptions.active eq true) and
-                    (StorageSubscriptions.endsAt.isNull() or (StorageSubscriptions.endsAt greater now))
+                        (StorageSubscriptions.ownerId eq userId) and
+                        (StorageSubscriptions.active eq true) and
+                        (StorageSubscriptions.endsAt.isNull() or (StorageSubscriptions.endsAt greater now))
             }
             .orderBy(StorageSubscriptions.startsAt, SortOrder.DESC)
             .firstOrNull()
@@ -124,13 +117,13 @@ class StorageService {
         val subscriptionRow = teacherSubscription ?: StorageSubscriptions.selectAll()
             .where {
                 (StorageSubscriptions.ownerType eq StorageOwnerType.SCHOOL.name) and
-                    (StorageSubscriptions.ownerId eq schoolId) and
-                    (StorageSubscriptions.active eq true) and
-                    (StorageSubscriptions.endsAt.isNull() or (StorageSubscriptions.endsAt greater now))
+                        (StorageSubscriptions.ownerId eq schoolId) and
+                        (StorageSubscriptions.active eq true) and
+                        (StorageSubscriptions.endsAt.isNull() or (StorageSubscriptions.endsAt greater now))
             }
             .orderBy(StorageSubscriptions.startsAt, SortOrder.DESC)
             .firstOrNull()
-            ?: throw IllegalStateException("No active storage subscription found")
+        ?: throw IllegalStateException("No active storage subscription found")
 
         val ownerType = StorageOwnerType.valueOf(subscriptionRow[StorageSubscriptions.ownerType])
         val planId = subscriptionRow[StorageSubscriptions.planId]

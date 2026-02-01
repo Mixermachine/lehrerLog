@@ -100,6 +100,7 @@ class AuthRepositoryTest {
                         headers = headersOf(HttpHeaders.ContentType, "application/json")
                     )
                 }
+
                 else -> error("Unexpected request: ${request.url.encodedPath}")
             }
         }
@@ -135,6 +136,7 @@ class AuthRepositoryTest {
                         headers = headersOf(HttpHeaders.ContentType, "application/json")
                     )
                 }
+
                 else -> error("Unexpected request: ${request.url.encodedPath}")
             }
         }
@@ -181,6 +183,7 @@ class AuthRepositoryTest {
                         headers = headersOf(HttpHeaders.ContentType, "application/json")
                     )
                 }
+
                 else -> error("Unexpected request: ${request.url.encodedPath}")
             }
         }
@@ -211,6 +214,7 @@ class AuthRepositoryTest {
                         headers = headersOf(HttpHeaders.ContentType, "application/json")
                     )
                 }
+
                 else -> error("Unexpected request: ${request.url.encodedPath}")
             }
         }
@@ -240,6 +244,7 @@ class AuthRepositoryTest {
                         headers = headersOf(HttpHeaders.ContentType, "application/json")
                     )
                 }
+
                 else -> error("Unexpected request: ${request.url.encodedPath}")
             }
         }

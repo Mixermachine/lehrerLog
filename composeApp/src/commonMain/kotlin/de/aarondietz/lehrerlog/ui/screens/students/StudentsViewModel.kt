@@ -5,10 +5,10 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.AuthResult
-import de.aarondietz.lehrerlog.data.SchoolClassDto
-import de.aarondietz.lehrerlog.data.StudentDto
 import de.aarondietz.lehrerlog.data.ParentInviteCreateResponse
 import de.aarondietz.lehrerlog.data.ParentLinkDto
+import de.aarondietz.lehrerlog.data.SchoolClassDto
+import de.aarondietz.lehrerlog.data.StudentDto
 import de.aarondietz.lehrerlog.data.repository.ParentInviteRepository
 import de.aarondietz.lehrerlog.data.repository.ParentLinksRepository
 import de.aarondietz.lehrerlog.data.repository.SchoolClassRepository
@@ -90,6 +90,7 @@ class StudentsViewModel(
                         _isLoading.value = false
                     }
                 }
+
                 is AuthResult.Error -> {
                     logger.e { "Failed to get user information: ${result.message}" }
                     _error.value = "Failed to get user information: ${result.message}"

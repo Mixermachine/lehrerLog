@@ -3,31 +3,19 @@ package de.aarondietz.lehrerlog
 import de.aarondietz.lehrerlog.auth.TokenService
 import de.aarondietz.lehrerlog.data.StudentDto
 import de.aarondietz.lehrerlog.db.DatabaseFactory
-import de.aarondietz.lehrerlog.db.tables.SchoolClasses
-import de.aarondietz.lehrerlog.db.tables.Schools
-import de.aarondietz.lehrerlog.db.tables.StudentClasses
-import de.aarondietz.lehrerlog.db.tables.Students
-import de.aarondietz.lehrerlog.db.tables.SyncLog
-import de.aarondietz.lehrerlog.db.tables.Users
-import io.ktor.client.call.body
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.request.post
-import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.testing.testApplication
+import de.aarondietz.lehrerlog.db.tables.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.testing.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.UUID
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import java.util.*
+import kotlin.test.*
 
 class ClassStudentRouteEndToEndTest {
 

@@ -29,7 +29,7 @@ class HomeViewModel(
     private val lateStatsRepository: LateStatsRepository,
     private val punishmentRepository: PunishmentRepository,
     private val studentRepository: StudentRepository
-): ViewModel() {
+) : ViewModel() {
 
     private val _lateStats = MutableStateFlow(HomeLateStatsUiState(isLoading = true))
     val lateStats: StateFlow<HomeLateStatsUiState> = _lateStats.asStateFlow()

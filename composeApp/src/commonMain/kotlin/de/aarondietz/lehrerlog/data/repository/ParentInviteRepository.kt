@@ -3,11 +3,9 @@ package de.aarondietz.lehrerlog.data.repository
 import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.data.ParentInviteCreateRequest
 import de.aarondietz.lehrerlog.data.ParentInviteCreateResponse
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.request.header
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
 
 class ParentInviteRepository(
     private val httpClient: HttpClient,

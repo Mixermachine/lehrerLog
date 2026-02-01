@@ -1,31 +1,13 @@
 package de.aarondietz.lehrerlog.services
 
-import de.aarondietz.lehrerlog.data.CreateLatePeriodRequest
-import de.aarondietz.lehrerlog.data.LatePeriodDto
-import de.aarondietz.lehrerlog.data.LatePeriodSummaryDto
-import de.aarondietz.lehrerlog.data.LateStatus
-import de.aarondietz.lehrerlog.data.LateStudentStatsDto
-import de.aarondietz.lehrerlog.data.PunishmentRecordDto
-import de.aarondietz.lehrerlog.data.ResolvePunishmentRequest
-import de.aarondietz.lehrerlog.data.UpdateLatePeriodRequest
-import de.aarondietz.lehrerlog.db.tables.LatePeriods
-import de.aarondietz.lehrerlog.db.tables.PunishmentRecords
-import de.aarondietz.lehrerlog.db.tables.StudentLateStats
-import de.aarondietz.lehrerlog.db.tables.TeacherLatePolicy
-import de.aarondietz.lehrerlog.db.tables.TaskSubmissions
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertIgnore
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import de.aarondietz.lehrerlog.data.*
+import de.aarondietz.lehrerlog.db.tables.*
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
 
 class LatePolicyService {
 
@@ -133,8 +115,8 @@ class LatePolicyService {
         val currentStats = StudentLateStats.selectAll()
             .where {
                 (StudentLateStats.teacherId eq teacherId) and
-                    (StudentLateStats.studentId eq studentId) and
-                    (StudentLateStats.periodId eq periodId)
+                        (StudentLateStats.studentId eq studentId) and
+                        (StudentLateStats.periodId eq periodId)
             }
             .singleOrNull()
 
@@ -146,9 +128,11 @@ class LatePolicyService {
                 totalMissed += 1
                 missedSince += 1
             }
+
             LateStatus.LATE_FORGIVEN -> {
                 totalMissed += 1
             }
+
             else -> return@transaction periodId
         }
 
@@ -167,8 +151,8 @@ class LatePolicyService {
         } else {
             StudentLateStats.update({
                 (StudentLateStats.teacherId eq teacherId) and
-                    (StudentLateStats.studentId eq studentId) and
-                    (StudentLateStats.periodId eq periodId)
+                        (StudentLateStats.studentId eq studentId) and
+                        (StudentLateStats.periodId eq periodId)
             }) {
                 it[StudentLateStats.totalMissed] = totalMissed
                 it[StudentLateStats.missedSincePunishment] = missedSince
@@ -181,9 +165,9 @@ class LatePolicyService {
             val existingRecord = PunishmentRecords.selectAll()
                 .where {
                     (PunishmentRecords.teacherId eq teacherId) and
-                        (PunishmentRecords.studentId eq studentId) and
-                        (PunishmentRecords.periodId eq periodId) and
-                        PunishmentRecords.resolvedAt.isNull()
+                            (PunishmentRecords.studentId eq studentId) and
+                            (PunishmentRecords.periodId eq periodId) and
+                            PunishmentRecords.resolvedAt.isNull()
                 }
                 .firstOrNull()
             if (existingRecord == null) {
@@ -243,8 +227,8 @@ class LatePolicyService {
         StudentLateStats.selectAll()
             .where {
                 (StudentLateStats.teacherId eq teacherId) and
-                    (StudentLateStats.studentId eq studentId) and
-                    (StudentLateStats.periodId eq periodId)
+                        (StudentLateStats.studentId eq studentId) and
+                        (StudentLateStats.periodId eq periodId)
             }
             .singleOrNull()
             ?.let { row ->
@@ -257,45 +241,46 @@ class LatePolicyService {
             }
     }
 
-    fun resolvePunishment(teacherId: UUID, resolvedBy: UUID, request: ResolvePunishmentRequest): PunishmentRecordDto? = transaction {
-        val studentId = UUID.fromString(request.studentId)
-        val periodId = UUID.fromString(request.periodId)
-        val now = OffsetDateTime.now(ZoneOffset.UTC)
+    fun resolvePunishment(teacherId: UUID, resolvedBy: UUID, request: ResolvePunishmentRequest): PunishmentRecordDto? =
+        transaction {
+            val studentId = UUID.fromString(request.studentId)
+            val periodId = UUID.fromString(request.periodId)
+            val now = OffsetDateTime.now(ZoneOffset.UTC)
 
-        val record = PunishmentRecords.selectAll()
-            .where {
-                (PunishmentRecords.teacherId eq teacherId) and
-                    (PunishmentRecords.studentId eq studentId) and
-                    (PunishmentRecords.periodId eq periodId) and
-                    PunishmentRecords.resolvedAt.isNull()
+            val record = PunishmentRecords.selectAll()
+                .where {
+                    (PunishmentRecords.teacherId eq teacherId) and
+                            (PunishmentRecords.studentId eq studentId) and
+                            (PunishmentRecords.periodId eq periodId) and
+                            PunishmentRecords.resolvedAt.isNull()
+                }
+                .firstOrNull() ?: return@transaction null
+
+            PunishmentRecords.update({ PunishmentRecords.id eq record[PunishmentRecords.id].value }) {
+                it[PunishmentRecords.resolvedAt] = now
+                it[PunishmentRecords.resolvedBy] = resolvedBy
+                it[PunishmentRecords.note] = request.note?.trim()?.ifBlank { null }
             }
-            .firstOrNull() ?: return@transaction null
 
-        PunishmentRecords.update({ PunishmentRecords.id eq record[PunishmentRecords.id].value }) {
-            it[PunishmentRecords.resolvedAt] = now
-            it[PunishmentRecords.resolvedBy] = resolvedBy
-            it[PunishmentRecords.note] = request.note?.trim()?.ifBlank { null }
+            StudentLateStats.update({
+                (StudentLateStats.teacherId eq teacherId) and
+                        (StudentLateStats.studentId eq studentId) and
+                        (StudentLateStats.periodId eq periodId)
+            }) {
+                it[StudentLateStats.missedSincePunishment] = 0
+                it[StudentLateStats.punishmentRequired] = false
+                it[StudentLateStats.updatedAt] = now
+            }
+
+            recordToDto(record)
         }
-
-        StudentLateStats.update({
-            (StudentLateStats.teacherId eq teacherId) and
-                (StudentLateStats.studentId eq studentId) and
-                (StudentLateStats.periodId eq periodId)
-        }) {
-            it[StudentLateStats.missedSincePunishment] = 0
-            it[StudentLateStats.punishmentRequired] = false
-            it[StudentLateStats.updatedAt] = now
-        }
-
-        recordToDto(record)
-    }
 
     fun getPunishments(teacherId: UUID, studentId: UUID, periodId: UUID): List<PunishmentRecordDto> = transaction {
         PunishmentRecords.selectAll()
             .where {
                 (PunishmentRecords.teacherId eq teacherId) and
-                    (PunishmentRecords.studentId eq studentId) and
-                    (PunishmentRecords.periodId eq periodId)
+                        (PunishmentRecords.studentId eq studentId) and
+                        (PunishmentRecords.periodId eq periodId)
             }
             .orderBy(PunishmentRecords.triggeredAt, SortOrder.DESC)
             .map { recordToDto(it) }
@@ -308,7 +293,12 @@ class LatePolicyService {
         StudentLateStats.deleteWhere { (StudentLateStats.teacherId eq teacherId) and (StudentLateStats.periodId eq periodId) }
 
         val decisions = TaskSubmissions.selectAll()
-            .where { (TaskSubmissions.latePeriodId eq periodId) and (TaskSubmissions.lateStatus inList listOf(LateStatus.LATE_PUNISH.name, LateStatus.LATE_FORGIVEN.name)) }
+            .where {
+                (TaskSubmissions.latePeriodId eq periodId) and (TaskSubmissions.lateStatus inList listOf(
+                    LateStatus.LATE_PUNISH.name,
+                    LateStatus.LATE_FORGIVEN.name
+                ))
+            }
             .map { row -> row[TaskSubmissions.studentId].value to LateStatus.valueOf(row[TaskSubmissions.lateStatus]) }
 
         val grouped = decisions.groupBy { it.first }

@@ -1,13 +1,12 @@
 package de.aarondietz.lehrerlog.ui.screens.parent_management
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
@@ -18,13 +17,7 @@ import de.aarondietz.lehrerlog.data.ParentLinkDto
 import de.aarondietz.lehrerlog.data.ParentLinkStatus
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
-import lehrerlog.composeapp.generated.resources.Res
-import lehrerlog.composeapp.generated.resources.parent_link_created
-import lehrerlog.composeapp.generated.resources.parent_link_id
-import lehrerlog.composeapp.generated.resources.parent_link_revoke
-import lehrerlog.composeapp.generated.resources.parent_link_status_active
-import lehrerlog.composeapp.generated.resources.parent_link_status_pending
-import lehrerlog.composeapp.generated.resources.parent_link_status_revoked
+import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.junit.Rule
 import org.junit.Test
@@ -32,9 +25,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.ui.Alignment
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

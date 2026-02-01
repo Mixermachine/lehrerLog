@@ -13,20 +13,24 @@ external interface JsUserChoice : JsAny {
 var deferredPrompt: JsInstallPrompt? = null
 
 @OptIn(ExperimentalWasmJsInterop::class)
-@JsFun("""(callback) => {
+@JsFun(
+    """(callback) => {
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         callback(e);
     });
-}""")
+}"""
+)
 external fun onBeforeInstallPrompt(callback: (JsInstallPrompt) -> Unit)
 
 @OptIn(ExperimentalWasmJsInterop::class)
-@JsFun("""(callback) => {
+@JsFun(
+    """(callback) => {
     window.addEventListener('appinstalled', () => {
         callback();
     });
-}""")
+}"""
+)
 external fun onAppInstalled(callback: () -> Unit)
 
 actual fun initInstallPrompt(onCanInstall: (Boolean) -> Unit) {
@@ -58,18 +62,22 @@ private val standaloneCheckResult: Boolean = isStandaloneImpl()
 actual fun isStandalone(): Boolean = standaloneCheckResult
 
 @OptIn(ExperimentalWasmJsInterop::class)
-@JsFun("""() => {
+@JsFun(
+    """() => {
     if ('standalone' in navigator && navigator.standalone === true) return true;
     return window.matchMedia('(display-mode: standalone)').matches;
-}""")
+}"""
+)
 external fun isStandaloneImpl(): Boolean
 
 @OptIn(ExperimentalWasmJsInterop::class)
-@JsFun("""() => {
+@JsFun(
+    """() => {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js')
             .then(() => console.log('SW registered'))
             .catch((e) => console.log('SW error:', e));
     }
-}""")
+}"""
+)
 actual external fun registerServiceWorker()

@@ -1,40 +1,15 @@
 package de.aarondietz.lehrerlog
 
 import de.aarondietz.lehrerlog.auth.TokenService
-import de.aarondietz.lehrerlog.data.CreateTaskRequest
-import de.aarondietz.lehrerlog.data.CreateTaskSubmissionRequest
-import de.aarondietz.lehrerlog.data.TaskDto
-import de.aarondietz.lehrerlog.data.TaskSubmissionDto
-import de.aarondietz.lehrerlog.data.TaskSubmissionType
-import de.aarondietz.lehrerlog.data.TaskTargetsRequest
-import de.aarondietz.lehrerlog.data.UpdateTaskRequest
-import de.aarondietz.lehrerlog.data.UpdateTaskSubmissionRequest
+import de.aarondietz.lehrerlog.data.*
 import de.aarondietz.lehrerlog.db.DatabaseFactory
-import de.aarondietz.lehrerlog.db.tables.SchoolClasses
-import de.aarondietz.lehrerlog.db.tables.Schools
-import de.aarondietz.lehrerlog.db.tables.StudentClasses
-import de.aarondietz.lehrerlog.db.tables.Students
-import de.aarondietz.lehrerlog.db.tables.Users
-import de.aarondietz.lehrerlog.db.tables.UserRole
-import io.ktor.client.call.body
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.request.patch
-import io.ktor.client.request.post
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.testing.testApplication
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import de.aarondietz.lehrerlog.db.tables.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.testing.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -42,7 +17,8 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
+import kotlin.test.*
 
 class TaskRouteEndToEndTest {
 

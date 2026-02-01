@@ -1,22 +1,7 @@
 package de.aarondietz.lehrerlog
 
-import de.aarondietz.lehrerlog.data.LatePeriodDto
-import de.aarondietz.lehrerlog.data.LatePeriodSummaryDto
-import de.aarondietz.lehrerlog.data.LateStatus
-import de.aarondietz.lehrerlog.data.LateStudentStatsDto
-import de.aarondietz.lehrerlog.data.ParentInviteCreateResponse
-import de.aarondietz.lehrerlog.data.ParentInviteDto
-import de.aarondietz.lehrerlog.data.ParentInviteStatus
-import de.aarondietz.lehrerlog.data.ParentLinkDto
-import de.aarondietz.lehrerlog.data.ParentLinkStatus
-import de.aarondietz.lehrerlog.data.SchoolClass
-import de.aarondietz.lehrerlog.data.SchoolClassDto
-import de.aarondietz.lehrerlog.data.Student
-import de.aarondietz.lehrerlog.data.StudentDto
-import de.aarondietz.lehrerlog.data.TaskDto
-import de.aarondietz.lehrerlog.data.TaskSubmissionDto
-import de.aarondietz.lehrerlog.data.TaskSubmissionType
 import androidx.compose.runtime.mutableStateListOf
+import de.aarondietz.lehrerlog.data.*
 
 /**
  * Roborazzi test utilities

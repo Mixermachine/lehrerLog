@@ -1,5 +1,7 @@
 package de.aarondietz.lehrerlog.ui.screens.parent
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import de.aarondietz.lehrerlog.data.StudentDto
 import de.aarondietz.lehrerlog.data.repository.ParentRepository
 import de.aarondietz.lehrerlog.data.repository.ParentSelectionRepository
@@ -8,8 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 
 data class ParentStudentsUiState(
     val students: List<StudentDto> = emptyList(),

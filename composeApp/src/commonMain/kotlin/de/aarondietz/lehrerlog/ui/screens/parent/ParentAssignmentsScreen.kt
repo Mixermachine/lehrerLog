@@ -1,12 +1,6 @@
 package de.aarondietz.lehrerlog.ui.screens.parent
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
@@ -18,17 +12,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.data.TaskDto
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
-import lehrerlog.composeapp.generated.resources.Res
-import lehrerlog.composeapp.generated.resources.due_label
-import lehrerlog.composeapp.generated.resources.nav_parent_assignments
-import lehrerlog.composeapp.generated.resources.parent_no_assignments
-import lehrerlog.composeapp.generated.resources.parent_select_student
+import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -61,11 +51,13 @@ fun ParentAssignmentsScreenContent(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+
             state.isLoading -> {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
+
             state.errorMessage != null -> {
                 Text(
                     text = state.errorMessage,
@@ -73,12 +65,14 @@ fun ParentAssignmentsScreenContent(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+
             state.assignments.isEmpty() -> {
                 Text(
                     text = stringResource(Res.string.parent_no_assignments),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+
             else -> {
                 LazyColumn(
                     contentPadding = PaddingValues(vertical = spacing.sm),

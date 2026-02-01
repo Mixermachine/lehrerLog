@@ -12,7 +12,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.ui.theme.spacing
-import kotlin.math.max
 
 data class BarChartData(
     val label: String,

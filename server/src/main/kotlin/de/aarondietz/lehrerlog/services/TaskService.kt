@@ -1,11 +1,7 @@
 package de.aarondietz.lehrerlog.services
 
 import de.aarondietz.lehrerlog.data.TaskDto
-import de.aarondietz.lehrerlog.db.tables.SchoolClasses
-import de.aarondietz.lehrerlog.db.tables.StudentClasses
-import de.aarondietz.lehrerlog.db.tables.Students
-import de.aarondietz.lehrerlog.db.tables.Tasks
-import de.aarondietz.lehrerlog.db.tables.TaskTargets
+import de.aarondietz.lehrerlog.db.tables.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
@@ -14,7 +10,7 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeParseException
-import java.util.UUID
+import java.util.*
 
 class TaskService {
 
@@ -36,8 +32,8 @@ class TaskService {
         val classExists = SchoolClasses.selectAll()
             .where {
                 (SchoolClasses.id eq classId) and
-                    (SchoolClasses.schoolId eq schoolId) and
-                    SchoolClasses.archivedAt.isNull()
+                        (SchoolClasses.schoolId eq schoolId) and
+                        SchoolClasses.archivedAt.isNull()
             }
             .any()
         if (!classExists) {
@@ -61,9 +57,9 @@ class TaskService {
             .selectAll()
             .where {
                 (StudentClasses.schoolClassId eq classId) and
-                    (StudentClasses.validFrom lessEq now) and
-                    (StudentClasses.validTill.isNull() or (StudentClasses.validTill greater now)) and
-                    Students.deletedAt.isNull()
+                        (StudentClasses.validFrom lessEq now) and
+                        (StudentClasses.validTill.isNull() or (StudentClasses.validTill greater now)) and
+                        Students.deletedAt.isNull()
             }
             .forEach { row ->
                 TaskTargets.insertIgnore {
@@ -151,8 +147,8 @@ class TaskService {
             val validStudents = Students.selectAll()
                 .where {
                     (Students.schoolId eq schoolId) and
-                        (Students.id inList addStudentIds) and
-                        Students.deletedAt.isNull()
+                            (Students.id inList addStudentIds) and
+                            Students.deletedAt.isNull()
                 }
                 .map { it[Students.id].value }
                 .toSet()

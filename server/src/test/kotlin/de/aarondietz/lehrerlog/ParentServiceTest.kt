@@ -4,12 +4,7 @@ import de.aarondietz.lehrerlog.data.ParentInviteCreateRequest
 import de.aarondietz.lehrerlog.data.ParentInviteRedeemRequest
 import de.aarondietz.lehrerlog.data.ParentLinkStatus
 import de.aarondietz.lehrerlog.db.DatabaseFactory
-import de.aarondietz.lehrerlog.db.tables.ParentInvites
-import de.aarondietz.lehrerlog.db.tables.ParentStudentLinks
-import de.aarondietz.lehrerlog.db.tables.Schools
-import de.aarondietz.lehrerlog.db.tables.Students
-import de.aarondietz.lehrerlog.db.tables.UserRole
-import de.aarondietz.lehrerlog.db.tables.Users
+import de.aarondietz.lehrerlog.db.tables.*
 import de.aarondietz.lehrerlog.services.ParentService
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -17,12 +12,8 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.UUID
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import java.util.*
+import kotlin.test.*
 
 class ParentServiceTest {
 

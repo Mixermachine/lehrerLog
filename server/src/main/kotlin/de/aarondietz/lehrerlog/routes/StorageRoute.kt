@@ -3,14 +3,10 @@ package de.aarondietz.lehrerlog.routes
 import de.aarondietz.lehrerlog.auth.ErrorResponse
 import de.aarondietz.lehrerlog.auth.UserPrincipal
 import de.aarondietz.lehrerlog.services.StorageService
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.principal
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.route
+import io.ktor.http.*
+import io.ktor.server.auth.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 
 fun Route.storageRoute(
     storageService: StorageService = StorageService()

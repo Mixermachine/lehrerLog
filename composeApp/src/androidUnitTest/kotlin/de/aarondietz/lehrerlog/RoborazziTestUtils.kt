@@ -8,7 +8,7 @@ import com.dropbox.differ.ImageComparator
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
 import java.io.File
-import java.util.Locale
+import java.util.*
 
 /**
  * Shared utilities for Roborazzi snapshot tests.

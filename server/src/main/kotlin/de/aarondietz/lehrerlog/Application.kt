@@ -2,24 +2,9 @@ package de.aarondietz.lehrerlog
 
 import de.aarondietz.lehrerlog.auth.*
 import de.aarondietz.lehrerlog.db.DatabaseFactory
-import de.aarondietz.lehrerlog.db.tables.Schools
-import de.aarondietz.lehrerlog.db.tables.StorageOwnerType
-import de.aarondietz.lehrerlog.db.tables.StoragePlans
-import de.aarondietz.lehrerlog.db.tables.StorageSubscriptions
-import de.aarondietz.lehrerlog.db.tables.StorageUsage
+import de.aarondietz.lehrerlog.db.tables.*
 import de.aarondietz.lehrerlog.db.tables.UserRole
-import de.aarondietz.lehrerlog.db.tables.Users
-import de.aarondietz.lehrerlog.routes.authRoute
-import de.aarondietz.lehrerlog.routes.fileRoute
-import de.aarondietz.lehrerlog.routes.latePolicyRoute
-import de.aarondietz.lehrerlog.routes.parentRoute
-import de.aarondietz.lehrerlog.routes.schoolClassRoute
-import de.aarondietz.lehrerlog.routes.schoolRoute
-import de.aarondietz.lehrerlog.routes.storageRoute
-import de.aarondietz.lehrerlog.routes.studentRoute
-import de.aarondietz.lehrerlog.routes.syncRoute
-import de.aarondietz.lehrerlog.routes.taskRoute
-import de.aarondietz.lehrerlog.routes.userRoute
+import de.aarondietz.lehrerlog.routes.*
 import de.aarondietz.lehrerlog.schools.SchoolCatalogService
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -36,16 +21,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Duration
-import java.util.Base64
-import java.util.*
 import java.nio.file.Path
+import java.time.Duration
+import java.util.*
 
 fun main() {
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)

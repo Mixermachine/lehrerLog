@@ -38,6 +38,7 @@ class AuthRepository(
                     saveTokens(authResponse.accessToken, authResponse.refreshToken)
                     AuthResult.Success(authResponse)
                 }
+
                 else -> {
                     val error = try {
                         response.body<ErrorResponse>()
@@ -65,6 +66,7 @@ class AuthRepository(
                     saveTokens(authResponse.accessToken, authResponse.refreshToken)
                     AuthResult.Success(authResponse)
                 }
+
                 else -> {
                     val error = try {
                         response.body<ErrorResponse>()
@@ -106,6 +108,7 @@ class AuthRepository(
                     saveTokens(authResponse.accessToken, authResponse.refreshToken)
                     AuthResult.Success(authResponse)
                 }
+
                 else -> {
                     val error = try {
                         response.body<ErrorResponse>()
@@ -135,6 +138,7 @@ class AuthRepository(
                     saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken)
                     AuthResult.Success(tokenResponse)
                 }
+
                 else -> {
                     clearTokens()
                     val error = try {
@@ -185,12 +189,14 @@ class AuthRepository(
                     saveTokens(authResponse.accessToken, authResponse.refreshToken)
                     AuthResult.Success(authResponse)
                 }
+
                 HttpStatusCode.Unauthorized -> {
                     when (val refreshResult = refreshToken()) {
                         is AuthResult.Success -> joinSchool(schoolCode)
                         is AuthResult.Error -> AuthResult.Error("Session expired", 401)
                     }
                 }
+
                 else -> {
                     val error = try {
                         response.body<ErrorResponse>()
@@ -218,6 +224,7 @@ class AuthRepository(
                     val user = response.body<UserDto>()
                     AuthResult.Success(user)
                 }
+
                 HttpStatusCode.Unauthorized -> {
                     // Try to refresh token
                     when (val refreshResult = refreshToken()) {
@@ -225,6 +232,7 @@ class AuthRepository(
                         is AuthResult.Error -> AuthResult.Error("Session expired", 401)
                     }
                 }
+
                 else -> {
                     val error = try {
                         response.body<ErrorResponse>()

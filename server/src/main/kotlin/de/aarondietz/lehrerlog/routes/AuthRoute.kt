@@ -93,12 +93,14 @@ fun Route.authRoute(authService: AuthService) {
                     deviceInfo
                 )
 
-                call.respond(HttpStatusCode.Created, AuthResponseDto(
-                    accessToken = tokens.accessToken,
-                    refreshToken = tokens.refreshToken,
-                    expiresIn = tokens.expiresIn,
-                    user = user.toDto()
-                ))
+                call.respond(
+                    HttpStatusCode.Created, AuthResponseDto(
+                        accessToken = tokens.accessToken,
+                        refreshToken = tokens.refreshToken,
+                        expiresIn = tokens.expiresIn,
+                        user = user.toDto()
+                    )
+                )
             } catch (e: AuthException) {
                 call.respond(HttpStatusCode.Conflict, ErrorResponse(e.message ?: "Registration failed"))
             } catch (e: Exception) {
@@ -121,12 +123,14 @@ fun Route.authRoute(authService: AuthService) {
                     deviceInfo
                 )
 
-                call.respond(AuthResponseDto(
-                    accessToken = tokens.accessToken,
-                    refreshToken = tokens.refreshToken,
-                    expiresIn = tokens.expiresIn,
-                    user = user.toDto()
-                ))
+                call.respond(
+                    AuthResponseDto(
+                        accessToken = tokens.accessToken,
+                        refreshToken = tokens.refreshToken,
+                        expiresIn = tokens.expiresIn,
+                        user = user.toDto()
+                    )
+                )
             } catch (e: AuthException) {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse(e.message ?: "Invalid credentials"))
             } catch (e: Exception) {
@@ -146,11 +150,13 @@ fun Route.authRoute(authService: AuthService) {
                 val deviceInfo = call.request.header("User-Agent")
                 val tokens = authService.refresh(request.refreshToken, deviceInfo)
 
-                call.respond(mapOf(
-                    "accessToken" to tokens.accessToken,
-                    "refreshToken" to tokens.refreshToken,
-                    "expiresIn" to tokens.expiresIn
-                ))
+                call.respond(
+                    mapOf(
+                        "accessToken" to tokens.accessToken,
+                        "refreshToken" to tokens.refreshToken,
+                        "expiresIn" to tokens.expiresIn
+                    )
+                )
             } catch (e: AuthException) {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse(e.message ?: "Invalid refresh token"))
             } catch (e: Exception) {
@@ -196,16 +202,21 @@ fun Route.authRoute(authService: AuthService) {
                         deviceInfo = deviceInfo
                     )
 
-                    call.respond(AuthResponseDto(
-                        accessToken = tokens.accessToken,
-                        refreshToken = tokens.refreshToken,
-                        expiresIn = tokens.expiresIn,
-                        user = user.toDto()
-                    ))
+                    call.respond(
+                        AuthResponseDto(
+                            accessToken = tokens.accessToken,
+                            refreshToken = tokens.refreshToken,
+                            expiresIn = tokens.expiresIn,
+                            user = user.toDto()
+                        )
+                    )
                 } catch (e: AuthException) {
                     call.respond(HttpStatusCode.Conflict, ErrorResponse(e.message ?: "Failed to join school"))
                 } catch (e: Exception) {
-                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to join school: ${e.message}"))
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Failed to join school: ${e.message}")
+                    )
                 }
             }
 

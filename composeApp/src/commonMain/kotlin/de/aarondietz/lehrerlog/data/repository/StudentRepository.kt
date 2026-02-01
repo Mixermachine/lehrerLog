@@ -16,7 +16,7 @@ class StudentRepository(
     private val httpClient: HttpClient,
     private val tokenStorage: TokenStorage,
     private val baseUrl: String
-)  {
+) {
     private val studentsState = MutableStateFlow<List<StudentDto>>(emptyList())
 
     /**

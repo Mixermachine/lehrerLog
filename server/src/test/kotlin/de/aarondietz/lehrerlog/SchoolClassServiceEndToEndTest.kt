@@ -4,10 +4,13 @@ import de.aarondietz.lehrerlog.db.DatabaseFactory
 import de.aarondietz.lehrerlog.db.tables.*
 import de.aarondietz.lehrerlog.services.ClassUpdateResult
 import de.aarondietz.lehrerlog.services.SchoolClassService
-import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import kotlin.test.*
@@ -115,8 +118,8 @@ class SchoolClassServiceEndToEndTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.entityType eq EntityType.SCHOOL_CLASS.name) and
-                    (SyncLog.entityId eq UUID.fromString(schoolClass.id))
+                            (SyncLog.entityType eq EntityType.SCHOOL_CLASS.name) and
+                            (SyncLog.entityId eq UUID.fromString(schoolClass.id))
                 }
                 .toList()
         }
@@ -158,8 +161,8 @@ class SchoolClassServiceEndToEndTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.entityType eq EntityType.SCHOOL_CLASS.name) and
-                    (SyncLog.entityId eq UUID.fromString(schoolClass.id))
+                            (SyncLog.entityType eq EntityType.SCHOOL_CLASS.name) and
+                            (SyncLog.entityId eq UUID.fromString(schoolClass.id))
                 }
                 .orderBy(SyncLog.id)
                 .toList()
@@ -218,8 +221,8 @@ class SchoolClassServiceEndToEndTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.entityType eq EntityType.SCHOOL_CLASS.name) and
-                    (SyncLog.entityId eq UUID.fromString(schoolClass.id))
+                            (SyncLog.entityType eq EntityType.SCHOOL_CLASS.name) and
+                            (SyncLog.entityId eq UUID.fromString(schoolClass.id))
                 }
                 .orderBy(SyncLog.id)
                 .toList()

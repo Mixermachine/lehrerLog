@@ -4,13 +4,9 @@ import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.data.CreateLatePeriodRequest
 import de.aarondietz.lehrerlog.data.LatePeriodDto
 import de.aarondietz.lehrerlog.data.UpdateLatePeriodRequest
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.request.post
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
 
 class LatePeriodRepository(
     private val httpClient: HttpClient,

@@ -42,7 +42,11 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
                 }
 
                 val studentId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid student ID"))
                     return@get
@@ -96,7 +100,11 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
                 }
 
                 val studentId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid student ID"))
                     return@put
@@ -119,8 +127,15 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
                     userId = principal.id
                 )) {
                     is UpdateResult.Success -> call.respond(result.data)
-                    is UpdateResult.NotFound -> call.respond(HttpStatusCode.NotFound, ErrorResponse("Student not found"))
-                    is UpdateResult.VersionConflict -> call.respond(HttpStatusCode.Conflict, ErrorResponse("Version conflict. Student was modified by another user."))
+                    is UpdateResult.NotFound -> call.respond(
+                        HttpStatusCode.NotFound,
+                        ErrorResponse("Student not found")
+                    )
+
+                    is UpdateResult.VersionConflict -> call.respond(
+                        HttpStatusCode.Conflict,
+                        ErrorResponse("Version conflict. Student was modified by another user.")
+                    )
                 }
             }
 
@@ -135,7 +150,11 @@ fun Route.studentRoute(studentService: StudentService = StudentService()) {
                 }
 
                 val studentId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid student ID"))
                     return@delete

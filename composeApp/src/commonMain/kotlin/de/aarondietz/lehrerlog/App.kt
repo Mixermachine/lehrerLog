@@ -7,18 +7,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import de.aarondietz.lehrerlog.auth.UserRole
 import de.aarondietz.lehrerlog.ui.navigation.BottomBarEntry
 import de.aarondietz.lehrerlog.ui.navigation.ParentBottomBarEntry
-import de.aarondietz.lehrerlog.ui.screens.auth.AuthState
-import de.aarondietz.lehrerlog.ui.screens.auth.AuthViewModel
-import de.aarondietz.lehrerlog.ui.screens.auth.LoginScreen
-import de.aarondietz.lehrerlog.ui.screens.auth.ParentInviteRedeemScreen
-import de.aarondietz.lehrerlog.ui.screens.auth.RegisterScreen
+import de.aarondietz.lehrerlog.ui.screens.auth.*
 import de.aarondietz.lehrerlog.ui.screens.home.HomeScreen
 import de.aarondietz.lehrerlog.ui.screens.parent.ParentAssignmentsScreen
 import de.aarondietz.lehrerlog.ui.screens.parent.ParentStudentsScreen
@@ -26,10 +24,8 @@ import de.aarondietz.lehrerlog.ui.screens.parent.ParentSubmissionsScreen
 import de.aarondietz.lehrerlog.ui.screens.settings.SettingsScreen
 import de.aarondietz.lehrerlog.ui.screens.students.StudentsScreen
 import de.aarondietz.lehrerlog.ui.screens.tasks.TasksScreen
-import de.aarondietz.lehrerlog.auth.UserRole
-import org.jetbrains.compose.resources.stringResource
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
-import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.KoinApplication
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -70,9 +66,11 @@ private fun AppContent(authViewModel: AuthViewModel = koinViewModel()) {
                 CircularProgressIndicator()
             }
         }
+
         is AuthState.Unauthenticated, is AuthState.Error -> {
             AuthNavigation(authViewModel = authViewModel)
         }
+
         is AuthState.Authenticated -> {
             val user = (authState as AuthState.Authenticated).user
             if (user.role == UserRole.PARENT.name) {

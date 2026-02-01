@@ -19,7 +19,7 @@
         </activity>
         <activity
                 android:exported="false"
-                android:name=".RoborazziTestActivity" />
+                android:name=".RoborazziTestActivity"/>
     </application>
 
 </manifest>

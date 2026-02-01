@@ -2,8 +2,6 @@ package de.aarondietz.lehrerlog.schools
 
 import de.aarondietz.lehrerlog.data.SchoolSearchResultDto
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.net.URI
 import java.net.URLEncoder
@@ -23,6 +21,7 @@ class SchoolCatalogService(
     private val httpClient = HttpClient.newBuilder()
         .followRedirects(HttpClient.Redirect.NORMAL)
         .build()
+
     @Volatile
     private var catalog: List<SchoolCatalogEntry>? = null
 

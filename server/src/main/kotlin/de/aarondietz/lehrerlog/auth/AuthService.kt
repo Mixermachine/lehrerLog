@@ -1,13 +1,7 @@
 package de.aarondietz.lehrerlog.auth
 
-import de.aarondietz.lehrerlog.db.tables.RefreshTokens
-import de.aarondietz.lehrerlog.db.tables.Schools
-import de.aarondietz.lehrerlog.db.tables.StorageOwnerType
-import de.aarondietz.lehrerlog.db.tables.StoragePlans
-import de.aarondietz.lehrerlog.db.tables.StorageSubscriptions
-import de.aarondietz.lehrerlog.db.tables.StorageUsage
+import de.aarondietz.lehrerlog.db.tables.*
 import de.aarondietz.lehrerlog.db.tables.UserRole
-import de.aarondietz.lehrerlog.db.tables.Users
 import de.aarondietz.lehrerlog.schools.SchoolCatalogService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -115,7 +109,7 @@ class AuthService(
         val tokenRow = RefreshTokens.selectAll()
             .where {
                 (RefreshTokens.revokedAt.isNull()) and
-                (RefreshTokens.expiresAt greater now)
+                        (RefreshTokens.expiresAt greater now)
             }
             .toList()
             .find { row ->
@@ -168,36 +162,37 @@ class AuthService(
         }
     }
 
-    fun joinSchool(userId: UUID, schoolCode: String, deviceInfo: String? = null): Pair<AuthTokens, UserInfo> = transaction {
-        val schoolId = resolveSchoolId(schoolCode)
+    fun joinSchool(userId: UUID, schoolCode: String, deviceInfo: String? = null): Pair<AuthTokens, UserInfo> =
+        transaction {
+            val schoolId = resolveSchoolId(schoolCode)
 
-        val userRow = Users.selectAll()
-            .where { (Users.id eq userId) and (Users.isActive eq true) }
-            .firstOrNull() ?: throw AuthException("User not found or inactive")
+            val userRow = Users.selectAll()
+                .where { (Users.id eq userId) and (Users.isActive eq true) }
+                .firstOrNull() ?: throw AuthException("User not found or inactive")
 
-        val existingSchoolId = userRow[Users.schoolId]?.value
-        if (existingSchoolId != null && existingSchoolId != schoolId) {
-            throw AuthException("User already associated with a different school")
-        }
-
-        if (existingSchoolId == null) {
-            Users.update({ Users.id eq userId }) {
-                it[Users.schoolId] = schoolId
+            val existingSchoolId = userRow[Users.schoolId]?.value
+            if (existingSchoolId != null && existingSchoolId != schoolId) {
+                throw AuthException("User already associated with a different school")
             }
+
+            if (existingSchoolId == null) {
+                Users.update({ Users.id eq userId }) {
+                    it[Users.schoolId] = schoolId
+                }
+            }
+
+            val user = UserInfo(
+                id = userRow[Users.id].value,
+                email = userRow[Users.email],
+                firstName = userRow[Users.firstName],
+                lastName = userRow[Users.lastName],
+                role = userRow[Users.role],
+                schoolId = schoolId
+            )
+
+            val tokens = generateAndStoreTokens(user, deviceInfo)
+            tokens to user
         }
-
-        val user = UserInfo(
-            id = userRow[Users.id].value,
-            email = userRow[Users.email],
-            firstName = userRow[Users.firstName],
-            lastName = userRow[Users.lastName],
-            role = userRow[Users.role],
-            schoolId = schoolId
-        )
-
-        val tokens = generateAndStoreTokens(user, deviceInfo)
-        tokens to user
-    }
 
     fun getUserById(userId: UUID): UserInfo? = transaction {
         Users.selectAll()

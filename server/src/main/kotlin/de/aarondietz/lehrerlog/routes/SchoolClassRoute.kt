@@ -46,7 +46,11 @@ fun Route.schoolClassRoute(
                 }
 
                 val classId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid class ID"))
                     return@get
@@ -99,7 +103,11 @@ fun Route.schoolClassRoute(
                 }
 
                 val classId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid class ID"))
                     return@put
@@ -121,8 +129,15 @@ fun Route.schoolClassRoute(
                     userId = principal.id
                 )) {
                     is ClassUpdateResult.Success -> call.respond(result.data)
-                    is ClassUpdateResult.NotFound -> call.respond(HttpStatusCode.NotFound, ErrorResponse("Class not found"))
-                    is ClassUpdateResult.VersionConflict -> call.respond(HttpStatusCode.Conflict, ErrorResponse("Version conflict. Class was modified by another user."))
+                    is ClassUpdateResult.NotFound -> call.respond(
+                        HttpStatusCode.NotFound,
+                        ErrorResponse("Class not found")
+                    )
+
+                    is ClassUpdateResult.VersionConflict -> call.respond(
+                        HttpStatusCode.Conflict,
+                        ErrorResponse("Version conflict. Class was modified by another user.")
+                    )
                 }
             }
 
@@ -137,7 +152,11 @@ fun Route.schoolClassRoute(
                 }
 
                 val classId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid class ID"))
                     return@delete
@@ -162,14 +181,22 @@ fun Route.schoolClassRoute(
                 }
 
                 val classId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid class ID"))
                     return@post
                 }
 
                 val studentId = call.parameters["studentId"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid student ID"))
                     return@post
@@ -193,14 +220,22 @@ fun Route.schoolClassRoute(
                 }
 
                 val classId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid class ID"))
                     return@delete
                 }
 
                 val studentId = call.parameters["studentId"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid student ID"))
                     return@delete

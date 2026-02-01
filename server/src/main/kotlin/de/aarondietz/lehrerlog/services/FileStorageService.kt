@@ -1,26 +1,19 @@
 package de.aarondietz.lehrerlog.services
 
 import de.aarondietz.lehrerlog.data.FileMetadataDto
-import de.aarondietz.lehrerlog.db.tables.SubmissionFiles
-import de.aarondietz.lehrerlog.db.tables.TaskFiles
-import de.aarondietz.lehrerlog.db.tables.TaskSubmissions
-import de.aarondietz.lehrerlog.db.tables.TaskTargets
-import de.aarondietz.lehrerlog.db.tables.Tasks
-import de.aarondietz.lehrerlog.db.tables.ParentStudentLinks
 import de.aarondietz.lehrerlog.data.ParentLinkStatus
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
+import de.aarondietz.lehrerlog.db.tables.*
 import org.jetbrains.exposed.sql.JoinType
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
 
 class FileStorageService(
     private val storageService: StorageService = StorageService(),
@@ -28,7 +21,15 @@ class FileStorageService(
     private val objectStorageClient: ObjectStorageClient? = ObjectStorageClient.fromEnv()
 ) {
 
-    fun storeTaskFile(taskId: UUID, schoolId: UUID, userId: UUID, fileName: String, contentType: String, sizeBytes: Long, input: java.io.InputStream): FileMetadataDto {
+    fun storeTaskFile(
+        taskId: UUID,
+        schoolId: UUID,
+        userId: UUID,
+        fileName: String,
+        contentType: String,
+        sizeBytes: Long,
+        input: java.io.InputStream
+    ): FileMetadataDto {
         ensureTaskInSchool(taskId, schoolId)
 
         val quota = storageService.reserveBytes(userId, schoolId, sizeBytes)
@@ -70,7 +71,15 @@ class FileStorageService(
         }
     }
 
-    fun storeSubmissionFile(submissionId: UUID, schoolId: UUID, userId: UUID, fileName: String, contentType: String, sizeBytes: Long, input: java.io.InputStream): FileMetadataDto {
+    fun storeSubmissionFile(
+        submissionId: UUID,
+        schoolId: UUID,
+        userId: UUID,
+        fileName: String,
+        contentType: String,
+        sizeBytes: Long,
+        input: java.io.InputStream
+    ): FileMetadataDto {
         ensureSubmissionInSchool(submissionId, schoolId)
 
         storageService.reserveBytes(userId, schoolId, sizeBytes)
@@ -185,8 +194,8 @@ class FileStorageService(
                     .select(TaskTargets.taskId)
                     .where {
                         (TaskTargets.taskId eq taskId) and
-                            (ParentStudentLinks.parentUserId eq parentUserId) and
-                            (ParentStudentLinks.status eq ParentLinkStatus.ACTIVE.name)
+                                (ParentStudentLinks.parentUserId eq parentUserId) and
+                                (ParentStudentLinks.status eq ParentLinkStatus.ACTIVE.name)
                     }
                     .any()
                 if (!hasAccess) {
@@ -218,8 +227,8 @@ class FileStorageService(
                     .select(ParentStudentLinks.id)
                     .where {
                         (ParentStudentLinks.parentUserId eq parentUserId) and
-                            (ParentStudentLinks.studentId eq studentId) and
-                            (ParentStudentLinks.status eq ParentLinkStatus.ACTIVE.name)
+                                (ParentStudentLinks.studentId eq studentId) and
+                                (ParentStudentLinks.status eq ParentLinkStatus.ACTIVE.name)
                     }
                     .any()
                 if (!hasAccess) {

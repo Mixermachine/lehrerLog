@@ -4,41 +4,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.data.SchoolClassDto
 import de.aarondietz.lehrerlog.ui.composables.AddClassDialog
 import de.aarondietz.lehrerlog.ui.composables.AddStudentDialog
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
-import de.aarondietz.lehrerlog.ui.theme.spacing
 import de.aarondietz.lehrerlog.ui.theme.layoutMetrics
-import lehrerlog.composeapp.generated.resources.Res
-import lehrerlog.composeapp.generated.resources.add_class
-import lehrerlog.composeapp.generated.resources.add_student
-import lehrerlog.composeapp.generated.resources.delete_class
-import lehrerlog.composeapp.generated.resources.delete_student
-import lehrerlog.composeapp.generated.resources.delete_student_confirm
-import lehrerlog.composeapp.generated.resources.invite_parent
-import lehrerlog.composeapp.generated.resources.invite_parent_message
-import lehrerlog.composeapp.generated.resources.invite_parent_title
-import lehrerlog.composeapp.generated.resources.no_classes
-import lehrerlog.composeapp.generated.resources.action_cancel
-import lehrerlog.composeapp.generated.resources.collapse
-import lehrerlog.composeapp.generated.resources.expand
-import lehrerlog.composeapp.generated.resources.parent_links_title
-import lehrerlog.composeapp.generated.resources.parent_links_empty
-import lehrerlog.composeapp.generated.resources.parent_link_revoke
+import de.aarondietz.lehrerlog.ui.theme.spacing
+import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -368,12 +348,15 @@ internal fun ParentLinksDialog(
                         Text(stringResource(Res.string.parent_links_title))
                     }
                 }
+
                 state.error != null -> {
                     Text(state.error, color = MaterialTheme.colorScheme.error)
                 }
+
                 state.links.isEmpty() -> {
                     Text(stringResource(Res.string.parent_links_empty))
                 }
+
                 else -> {
                     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
                         state.links.forEach { link ->
@@ -417,6 +400,7 @@ internal fun ParentInviteDialog(
                         Text(stringResource(Res.string.invite_parent_message))
                     }
                 }
+
                 state.invite != null -> {
                     Column {
                         Text(stringResource(Res.string.invite_parent_message))
@@ -424,6 +408,7 @@ internal fun ParentInviteDialog(
                         Text(state.invite.code, style = MaterialTheme.typography.titleMedium)
                     }
                 }
+
                 state.error != null -> {
                     Text(state.error, color = MaterialTheme.colorScheme.error)
                 }

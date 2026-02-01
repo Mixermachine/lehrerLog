@@ -3,27 +3,16 @@ package de.aarondietz.lehrerlog
 import de.aarondietz.lehrerlog.data.LateStatus
 import de.aarondietz.lehrerlog.data.ResolvePunishmentRequest
 import de.aarondietz.lehrerlog.db.DatabaseFactory
-import de.aarondietz.lehrerlog.db.tables.Schools
-import de.aarondietz.lehrerlog.db.tables.Students
-import de.aarondietz.lehrerlog.db.tables.PunishmentRecords
-import de.aarondietz.lehrerlog.db.tables.LatePeriods
-import de.aarondietz.lehrerlog.db.tables.StudentLateStats
-import de.aarondietz.lehrerlog.db.tables.TeacherLatePolicy
-import de.aarondietz.lehrerlog.db.tables.Users
-import de.aarondietz.lehrerlog.db.tables.UserRole
+import de.aarondietz.lehrerlog.db.tables.*
 import de.aarondietz.lehrerlog.services.LatePolicyService
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.dao.id.EntityID
-import java.util.UUID
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import java.util.*
+import kotlin.test.*
 
 class LatePolicyServiceTest {
 

@@ -2,13 +2,14 @@ package de.aarondietz.lehrerlog.services
 
 import de.aarondietz.lehrerlog.data.SchoolClassDto
 import de.aarondietz.lehrerlog.data.StudentDto
-import de.aarondietz.lehrerlog.db.tables.*
+import de.aarondietz.lehrerlog.db.tables.EntityType
+import de.aarondietz.lehrerlog.db.tables.SyncLog
+import de.aarondietz.lehrerlog.db.tables.SyncOperation
 import de.aarondietz.lehrerlog.sync.*
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
@@ -34,7 +35,7 @@ class SyncService {
             val changes = SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq schoolId) and
-                    (SyncLog.id greater sinceLogId)
+                            (SyncLog.id greater sinceLogId)
                 }
                 .orderBy(SyncLog.id to SortOrder.ASC)
                 .limit(MAX_CHANGES_PER_REQUEST)
@@ -169,11 +170,13 @@ class SyncService {
                         entityId = change.entityId,
                         success = true
                     )
+
                     is UpdateResult.NotFound -> PushChangeResult(
                         entityId = change.entityId,
                         success = false,
                         errorMessage = "Student not found"
                     )
+
                     is UpdateResult.VersionConflict -> PushChangeResult(
                         entityId = change.entityId,
                         success = false,
@@ -258,11 +261,13 @@ class SyncService {
                         entityId = change.entityId,
                         success = true
                     )
+
                     is ClassUpdateResult.NotFound -> PushChangeResult(
                         entityId = change.entityId,
                         success = false,
                         errorMessage = "Class not found"
                     )
+
                     is ClassUpdateResult.VersionConflict -> PushChangeResult(
                         entityId = change.entityId,
                         success = false,
@@ -299,10 +304,12 @@ class SyncService {
                 val student = studentService.getStudent(entityId, schoolId)
                 student?.let { json.encodeToString(it) }
             }
+
             EntityType.SCHOOL_CLASS.name -> {
                 val schoolClass = schoolClassService.getClass(entityId, schoolId)
                 schoolClass?.let { json.encodeToString(it) }
             }
+
             else -> null
         }
     }

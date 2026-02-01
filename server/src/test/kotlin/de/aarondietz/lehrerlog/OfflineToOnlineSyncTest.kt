@@ -9,12 +9,13 @@ import de.aarondietz.lehrerlog.services.StudentService
 import de.aarondietz.lehrerlog.services.SyncService
 import de.aarondietz.lehrerlog.sync.PushChangeRequest
 import de.aarondietz.lehrerlog.sync.PushChangesRequest
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import kotlin.test.*
@@ -156,7 +157,7 @@ class OfflineToOnlineSyncTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.entityType eq EntityType.STUDENT.name)
+                            (SyncLog.entityType eq EntityType.STUDENT.name)
                 }
                 .toList()
         }
@@ -309,7 +310,7 @@ class OfflineToOnlineSyncTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.entityId eq UUID.fromString(student.id))
+                            (SyncLog.entityId eq UUID.fromString(student.id))
                 }
                 .orderBy(SyncLog.id)
                 .toList()
@@ -438,7 +439,7 @@ class OfflineToOnlineSyncTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.entityType eq EntityType.SCHOOL_CLASS.name)
+                            (SyncLog.entityType eq EntityType.SCHOOL_CLASS.name)
                 }
                 .toList()
         }

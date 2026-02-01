@@ -8,17 +8,12 @@ import de.aarondietz.lehrerlog.data.ParentInviteCreateRequest
 import de.aarondietz.lehrerlog.data.ParentInviteRedeemRequest
 import de.aarondietz.lehrerlog.db.tables.UserRole
 import de.aarondietz.lehrerlog.services.ParentService
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.principal
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
-import java.util.UUID
+import io.ktor.http.*
+import io.ktor.server.auth.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import java.util.*
 
 fun Route.parentRoute(parentService: ParentService = ParentService()) {
     route("/api/parent-invites") {
@@ -38,7 +33,10 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
             } catch (e: AuthException) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Invite redemption failed"))
             } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Invite redemption failed: ${e.message}"))
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse("Invite redemption failed: ${e.message}")
+                )
             }
         }
     }
@@ -81,7 +79,11 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
                 }
 
                 val studentId = call.request.queryParameters["studentId"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("studentId is required"))
                     return@get
@@ -108,7 +110,11 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
                 }
 
                 val linkId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid link ID"))
                     return@post
@@ -142,7 +148,11 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
                 }
 
                 val studentId = call.request.queryParameters["studentId"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("studentId is required"))
                     return@get
@@ -164,7 +174,11 @@ fun Route.parentRoute(parentService: ParentService = ParentService()) {
                 }
 
                 val studentId = call.request.queryParameters["studentId"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("studentId is required"))
                     return@get

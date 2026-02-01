@@ -19,12 +19,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -170,12 +170,15 @@ private fun RegisterScreenContent(
         val schoolHelperText = when {
             registerState.schoolQuery.isBlank() ->
                 stringResource(Res.string.school_search_hint)
+
             registerState.schoolQuery.trim().length < 2 ->
                 stringResource(Res.string.school_search_min_chars)
+
             !registerState.isSchoolLoading &&
-                registerState.schoolSuggestions.isEmpty() &&
-                registerState.selectedSchool == null ->
+                    registerState.schoolSuggestions.isEmpty() &&
+                    registerState.selectedSchool == null ->
                 stringResource(Res.string.school_search_no_results)
+
             else -> null
         }
 

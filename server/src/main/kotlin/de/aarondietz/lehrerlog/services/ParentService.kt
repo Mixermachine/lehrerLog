@@ -1,44 +1,17 @@
 package de.aarondietz.lehrerlog.services
 
-import de.aarondietz.lehrerlog.auth.AuthException
-import de.aarondietz.lehrerlog.auth.AuthTokens
-import de.aarondietz.lehrerlog.auth.JwtConfig
-import de.aarondietz.lehrerlog.auth.PasswordService
-import de.aarondietz.lehrerlog.auth.TokenService
-import de.aarondietz.lehrerlog.auth.UserInfo
-import de.aarondietz.lehrerlog.data.ParentInviteCreateRequest
-import de.aarondietz.lehrerlog.data.ParentInviteCreateResponse
-import de.aarondietz.lehrerlog.data.ParentInviteDto
-import de.aarondietz.lehrerlog.data.ParentInviteRedeemRequest
-import de.aarondietz.lehrerlog.data.ParentInviteStatus
-import de.aarondietz.lehrerlog.data.ParentLinkDto
-import de.aarondietz.lehrerlog.data.ParentLinkStatus
-import de.aarondietz.lehrerlog.data.StudentDto
-import de.aarondietz.lehrerlog.db.tables.ParentInvites
-import de.aarondietz.lehrerlog.db.tables.ParentStudentLinks
-import de.aarondietz.lehrerlog.db.tables.RefreshTokens
-import de.aarondietz.lehrerlog.db.tables.SchoolClasses
+import de.aarondietz.lehrerlog.auth.*
+import de.aarondietz.lehrerlog.data.*
+import de.aarondietz.lehrerlog.db.tables.*
 import de.aarondietz.lehrerlog.db.tables.SchoolClasses.archivedAt
-import de.aarondietz.lehrerlog.db.tables.StudentClasses
-import de.aarondietz.lehrerlog.db.tables.Students
 import de.aarondietz.lehrerlog.db.tables.UserRole
-import de.aarondietz.lehrerlog.db.tables.Users
-import de.aarondietz.lehrerlog.data.TaskDto
-import de.aarondietz.lehrerlog.data.TaskSubmissionDto
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
 
 class ParentService(
     private val passwordService: PasswordService = PasswordService(),
@@ -54,14 +27,14 @@ class ParentService(
         val studentRow = Students.selectAll()
             .where {
                 (Students.id eq studentId) and
-                    (Students.schoolId eq schoolId) and
-                    Students.deletedAt.isNull()
+                        (Students.schoolId eq schoolId) and
+                        Students.deletedAt.isNull()
             }
             .singleOrNull() ?: throw IllegalArgumentException("Student not found")
 
         ParentInvites.update({
             (ParentInvites.studentId eq studentId) and
-                (ParentInvites.status eq ParentInviteStatus.ACTIVE.name)
+                    (ParentInvites.status eq ParentInviteStatus.ACTIVE.name)
         }) {
             it[ParentInvites.status] = ParentInviteStatus.REVOKED.name
         }
@@ -93,105 +66,106 @@ class ParentService(
         )
     }
 
-    fun redeemInvite(request: ParentInviteRedeemRequest, deviceInfo: String?): Pair<AuthTokens, UserInfo> = transaction {
-        if (request.code.isBlank()) {
-            throw AuthException("Invite code is required")
-        }
-        if (request.password.length < 8) {
-            throw AuthException("Password must be at least 8 characters")
-        }
-
-        val hash = hashInviteCode(request.code)
-        val now = OffsetDateTime.now(ZoneOffset.UTC)
-        val inviteRow = ParentInvites.selectAll()
-            .where {
-                (ParentInvites.codeHash eq hash) and
-                    (ParentInvites.status eq ParentInviteStatus.ACTIVE.name)
+    fun redeemInvite(request: ParentInviteRedeemRequest, deviceInfo: String?): Pair<AuthTokens, UserInfo> =
+        transaction {
+            if (request.code.isBlank()) {
+                throw AuthException("Invite code is required")
             }
-            .firstOrNull() ?: throw AuthException("Invite code is invalid or expired")
+            if (request.password.length < 8) {
+                throw AuthException("Password must be at least 8 characters")
+            }
 
-        if (inviteRow[ParentInvites.expiresAt].isBefore(now)) {
+            val hash = hashInviteCode(request.code)
+            val now = OffsetDateTime.now(ZoneOffset.UTC)
+            val inviteRow = ParentInvites.selectAll()
+                .where {
+                    (ParentInvites.codeHash eq hash) and
+                            (ParentInvites.status eq ParentInviteStatus.ACTIVE.name)
+                }
+                .firstOrNull() ?: throw AuthException("Invite code is invalid or expired")
+
+            if (inviteRow[ParentInvites.expiresAt].isBefore(now)) {
+                ParentInvites.update({ ParentInvites.id eq inviteRow[ParentInvites.id] }) {
+                    it[ParentInvites.status] = ParentInviteStatus.EXPIRED.name
+                }
+                throw AuthException("Invite code is invalid or expired")
+            }
+
+            val studentId = inviteRow[ParentInvites.studentId].value
+            val userRow = Users.selectAll()
+                .where { Users.email eq request.email }
+                .firstOrNull()
+
+            val userInfo = if (userRow == null) {
+                val parentId = Users.insertAndGetId {
+                    it[email] = request.email
+                    it[passwordHash] = passwordService.hashPassword(request.password)
+                    it[firstName] = request.firstName
+                    it[lastName] = request.lastName
+                    it[role] = UserRole.PARENT
+                    it[schoolId] = null
+                    it[isActive] = true
+                }.value
+                UserInfo(
+                    id = parentId,
+                    email = request.email,
+                    firstName = request.firstName,
+                    lastName = request.lastName,
+                    role = UserRole.PARENT,
+                    schoolId = null
+                )
+            } else {
+                if (userRow[Users.role] != UserRole.PARENT) {
+                    throw AuthException("Account is not a parent account")
+                }
+                val storedHash = userRow[Users.passwordHash]
+                if (!passwordService.verifyPassword(request.password, storedHash)) {
+                    throw AuthException("Invalid credentials")
+                }
+                UserInfo(
+                    id = userRow[Users.id].value,
+                    email = userRow[Users.email],
+                    firstName = userRow[Users.firstName],
+                    lastName = userRow[Users.lastName],
+                    role = userRow[Users.role],
+                    schoolId = userRow[Users.schoolId]?.value
+                )
+            }
+
+            val linkExists = ParentStudentLinks.selectAll()
+                .where {
+                    (ParentStudentLinks.parentUserId eq userInfo.id) and
+                            (ParentStudentLinks.studentId eq studentId) and
+                            (ParentStudentLinks.status eq ParentLinkStatus.ACTIVE.name)
+                }
+                .any()
+            if (!linkExists) {
+                ParentStudentLinks.insert {
+                    it[ParentStudentLinks.parentUserId] = userInfo.id
+                    it[ParentStudentLinks.studentId] = studentId
+                    it[ParentStudentLinks.status] = ParentLinkStatus.ACTIVE.name
+                    it[createdBy] = inviteRow[ParentInvites.createdBy].value
+                    it[createdAt] = now
+                    it[revokedAt] = null
+                }
+            }
+
             ParentInvites.update({ ParentInvites.id eq inviteRow[ParentInvites.id] }) {
-                it[ParentInvites.status] = ParentInviteStatus.EXPIRED.name
+                it[ParentInvites.status] = ParentInviteStatus.USED.name
+                it[ParentInvites.usedBy] = userInfo.id
+                it[ParentInvites.usedAt] = now
             }
-            throw AuthException("Invite code is invalid or expired")
+
+            val tokens = generateAndStoreTokens(userInfo, deviceInfo)
+            tokens to userInfo
         }
-
-        val studentId = inviteRow[ParentInvites.studentId].value
-        val userRow = Users.selectAll()
-            .where { Users.email eq request.email }
-            .firstOrNull()
-
-        val userInfo = if (userRow == null) {
-            val parentId = Users.insertAndGetId {
-                it[email] = request.email
-                it[passwordHash] = passwordService.hashPassword(request.password)
-                it[firstName] = request.firstName
-                it[lastName] = request.lastName
-                it[role] = UserRole.PARENT
-                it[schoolId] = null
-                it[isActive] = true
-            }.value
-            UserInfo(
-                id = parentId,
-                email = request.email,
-                firstName = request.firstName,
-                lastName = request.lastName,
-                role = UserRole.PARENT,
-                schoolId = null
-            )
-        } else {
-            if (userRow[Users.role] != UserRole.PARENT) {
-                throw AuthException("Account is not a parent account")
-            }
-            val storedHash = userRow[Users.passwordHash]
-            if (!passwordService.verifyPassword(request.password, storedHash)) {
-                throw AuthException("Invalid credentials")
-            }
-            UserInfo(
-                id = userRow[Users.id].value,
-                email = userRow[Users.email],
-                firstName = userRow[Users.firstName],
-                lastName = userRow[Users.lastName],
-                role = userRow[Users.role],
-                schoolId = userRow[Users.schoolId]?.value
-            )
-        }
-
-        val linkExists = ParentStudentLinks.selectAll()
-            .where {
-                (ParentStudentLinks.parentUserId eq userInfo.id) and
-                    (ParentStudentLinks.studentId eq studentId) and
-                    (ParentStudentLinks.status eq ParentLinkStatus.ACTIVE.name)
-            }
-            .any()
-        if (!linkExists) {
-            ParentStudentLinks.insert {
-                it[ParentStudentLinks.parentUserId] = userInfo.id
-                it[ParentStudentLinks.studentId] = studentId
-                it[ParentStudentLinks.status] = ParentLinkStatus.ACTIVE.name
-                it[createdBy] = inviteRow[ParentInvites.createdBy].value
-                it[createdAt] = now
-                it[revokedAt] = null
-            }
-        }
-
-        ParentInvites.update({ ParentInvites.id eq inviteRow[ParentInvites.id] }) {
-            it[ParentInvites.status] = ParentInviteStatus.USED.name
-            it[ParentInvites.usedBy] = userInfo.id
-            it[ParentInvites.usedAt] = now
-        }
-
-        val tokens = generateAndStoreTokens(userInfo, deviceInfo)
-        tokens to userInfo
-    }
 
     fun listLinks(studentId: UUID, schoolId: UUID): List<ParentLinkDto> = transaction {
         val studentRow = Students.selectAll()
             .where {
                 (Students.id eq studentId) and
-                    (Students.schoolId eq schoolId) and
-                    Students.deletedAt.isNull()
+                        (Students.schoolId eq schoolId) and
+                        Students.deletedAt.isNull()
             }
             .singleOrNull() ?: throw IllegalArgumentException("Student not found")
 
@@ -218,8 +192,8 @@ class ParentService(
         val studentRow = Students.selectAll()
             .where {
                 (Students.id eq studentId) and
-                    (Students.schoolId eq schoolId) and
-                    Students.deletedAt.isNull()
+                        (Students.schoolId eq schoolId) and
+                        Students.deletedAt.isNull()
             }
             .singleOrNull() ?: return@transaction false
 
@@ -235,7 +209,7 @@ class ParentService(
         val studentIds = ParentStudentLinks.selectAll()
             .where {
                 (ParentStudentLinks.parentUserId eq parentUserId) and
-                    (ParentStudentLinks.status eq ParentLinkStatus.ACTIVE.name)
+                        (ParentStudentLinks.status eq ParentLinkStatus.ACTIVE.name)
             }
             .map { it[ParentStudentLinks.studentId].value }
 
@@ -281,9 +255,9 @@ class ParentService(
             .select(Students.schoolId)
             .where {
                 (ParentStudentLinks.parentUserId eq parentUserId) and
-                    (ParentStudentLinks.studentId eq studentId) and
-                    (ParentStudentLinks.status eq ParentLinkStatus.ACTIVE.name) and
-                    Students.deletedAt.isNull()
+                        (ParentStudentLinks.studentId eq studentId) and
+                        (ParentStudentLinks.status eq ParentLinkStatus.ACTIVE.name) and
+                        Students.deletedAt.isNull()
             }
             .firstOrNull()
             ?.get(Students.schoolId)
@@ -298,8 +272,8 @@ class ParentService(
             .select(StudentClasses.studentId, StudentClasses.schoolClassId)
             .where {
                 (StudentClasses.studentId inList studentIds) and
-                    StudentClasses.validTill.isNull() and
-                    archivedAt.isNull()
+                        StudentClasses.validTill.isNull() and
+                        archivedAt.isNull()
             }
             .forEach { row ->
                 val studentId = row[StudentClasses.studentId].value

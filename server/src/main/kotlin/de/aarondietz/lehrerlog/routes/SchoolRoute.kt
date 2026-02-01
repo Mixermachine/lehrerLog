@@ -2,11 +2,9 @@ package de.aarondietz.lehrerlog.routes
 
 import de.aarondietz.lehrerlog.data.SchoolSearchResultDto
 import de.aarondietz.lehrerlog.schools.SchoolCatalogService
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.route
+import io.ktor.http.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 
 fun Route.schoolRoute(schoolCatalogService: SchoolCatalogService) {
     route("/schools") {

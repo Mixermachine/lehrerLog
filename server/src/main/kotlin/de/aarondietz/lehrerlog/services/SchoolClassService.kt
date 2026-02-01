@@ -1,9 +1,11 @@
 package de.aarondietz.lehrerlog.services
 
 import de.aarondietz.lehrerlog.data.SchoolClassDto
-import de.aarondietz.lehrerlog.db.tables.*
+import de.aarondietz.lehrerlog.db.tables.EntityType
+import de.aarondietz.lehrerlog.db.tables.SchoolClasses
+import de.aarondietz.lehrerlog.db.tables.SyncLog
+import de.aarondietz.lehrerlog.db.tables.SyncOperation
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -30,8 +32,8 @@ class SchoolClassService {
             SchoolClasses.selectAll()
                 .where {
                     (SchoolClasses.id eq classId) and
-                        (SchoolClasses.schoolId eq schoolId) and
-                        SchoolClasses.archivedAt.isNull()
+                            (SchoolClasses.schoolId eq schoolId) and
+                            SchoolClasses.archivedAt.isNull()
                 }
                 .firstOrNull()
                 ?.toSchoolClassDto()
@@ -119,8 +121,8 @@ class SchoolClassService {
             val existing = SchoolClasses.selectAll()
                 .where {
                     (SchoolClasses.id eq classId) and
-                        (SchoolClasses.schoolId eq schoolId) and
-                        SchoolClasses.archivedAt.isNull()
+                            (SchoolClasses.schoolId eq schoolId) and
+                            SchoolClasses.archivedAt.isNull()
                 }
                 .firstOrNull() ?: return@transaction ClassUpdateResult.NotFound
 
@@ -164,8 +166,8 @@ class SchoolClassService {
             val existing = SchoolClasses.selectAll()
                 .where {
                     (SchoolClasses.id eq classId) and
-                        (SchoolClasses.schoolId eq schoolId) and
-                        SchoolClasses.archivedAt.isNull()
+                            (SchoolClasses.schoolId eq schoolId) and
+                            SchoolClasses.archivedAt.isNull()
                 }
                 .firstOrNull() ?: return@transaction false
 

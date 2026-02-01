@@ -2,13 +2,11 @@ package de.aarondietz.lehrerlog.data.repository
 
 import de.aarondietz.lehrerlog.auth.FakeTokenStorage
 import de.aarondietz.lehrerlog.data.LatePeriodDto
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
+import io.ktor.client.*
+import io.ktor.client.engine.mock.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -46,7 +44,10 @@ class LatePeriodRepositoryTest {
         val mockEngine = MockEngine { request ->
             assertEquals("/api/late-periods", request.url.encodedPath)
             respond(
-                content = json.encodeToString(kotlinx.serialization.builtins.ListSerializer(LatePeriodDto.serializer()), expectedPeriods),
+                content = json.encodeToString(
+                    kotlinx.serialization.builtins.ListSerializer(LatePeriodDto.serializer()),
+                    expectedPeriods
+                ),
                 status = HttpStatusCode.OK,
                 headers = headersOf("Content-Type", "application/json")
             )

@@ -36,8 +36,8 @@ class StudentService {
             Students.selectAll()
                 .where {
                     (Students.id eq studentId) and
-                        (Students.schoolId eq schoolId) and
-                        Students.deletedAt.isNull()
+                            (Students.schoolId eq schoolId) and
+                            Students.deletedAt.isNull()
                 }
                 .firstOrNull()
                 ?.let { row ->
@@ -135,8 +135,8 @@ class StudentService {
             val existing = Students.selectAll()
                 .where {
                     (Students.id eq studentId) and
-                        (Students.schoolId eq schoolId) and
-                        Students.deletedAt.isNull()
+                            (Students.schoolId eq schoolId) and
+                            Students.deletedAt.isNull()
                 }
                 .firstOrNull() ?: return@transaction UpdateResult.NotFound
 
@@ -182,8 +182,8 @@ class StudentService {
             val existing = Students.selectAll()
                 .where {
                     (Students.id eq studentId) and
-                        (Students.schoolId eq schoolId) and
-                        Students.deletedAt.isNull()
+                            (Students.schoolId eq schoolId) and
+                            Students.deletedAt.isNull()
                 }
                 .firstOrNull() ?: return@transaction false
 
@@ -216,16 +216,16 @@ class StudentService {
         val studentRow = Students.selectAll()
             .where {
                 (Students.id eq studentId) and
-                    (Students.schoolId eq schoolId) and
-                    Students.deletedAt.isNull()
+                        (Students.schoolId eq schoolId) and
+                        Students.deletedAt.isNull()
             }
             .firstOrNull() ?: return@transaction null
 
         val classExists = SchoolClasses.selectAll()
             .where {
                 (SchoolClasses.id eq classId) and
-                    (SchoolClasses.schoolId eq schoolId) and
-                    SchoolClasses.archivedAt.isNull()
+                        (SchoolClasses.schoolId eq schoolId) and
+                        SchoolClasses.archivedAt.isNull()
             }
             .any()
         if (!classExists) {
@@ -235,8 +235,8 @@ class StudentService {
         val alreadyAssigned = StudentClasses.selectAll()
             .where {
                 (StudentClasses.studentId eq studentId) and
-                    (StudentClasses.schoolClassId eq classId) and
-                    StudentClasses.validTill.isNull()
+                        (StudentClasses.schoolClassId eq classId) and
+                        StudentClasses.validTill.isNull()
             }
             .any()
 
@@ -275,16 +275,16 @@ class StudentService {
         val studentRow = Students.selectAll()
             .where {
                 (Students.id eq studentId) and
-                    (Students.schoolId eq schoolId) and
-                    Students.deletedAt.isNull()
+                        (Students.schoolId eq schoolId) and
+                        Students.deletedAt.isNull()
             }
             .firstOrNull() ?: return@transaction null
 
         val classExists = SchoolClasses.selectAll()
             .where {
                 (SchoolClasses.id eq classId) and
-                    (SchoolClasses.schoolId eq schoolId) and
-                    SchoolClasses.archivedAt.isNull()
+                        (SchoolClasses.schoolId eq schoolId) and
+                        SchoolClasses.archivedAt.isNull()
             }
             .any()
         if (!classExists) {
@@ -294,8 +294,8 @@ class StudentService {
         val now = OffsetDateTime.now(ZoneOffset.UTC)
         val updated = StudentClasses.update({
             (StudentClasses.studentId eq studentId) and
-                (StudentClasses.schoolClassId eq classId) and
-                StudentClasses.validTill.isNull()
+                    (StudentClasses.schoolClassId eq classId) and
+                    StudentClasses.validTill.isNull()
         }) {
             it[StudentClasses.validTill] = now
         }
@@ -352,15 +352,19 @@ class StudentService {
     private fun loadValidClassIds(schoolId: UUID, classIds: List<String>): List<UUID> {
         if (classIds.isEmpty()) return emptyList()
         val parsedIds = classIds.mapNotNull {
-            try { UUID.fromString(it) } catch (e: Exception) { null }
+            try {
+                UUID.fromString(it)
+            } catch (e: Exception) {
+                null
+            }
         }
         if (parsedIds.isEmpty()) return emptyList()
         return SchoolClasses
             .selectAll()
             .where {
                 (SchoolClasses.id inList parsedIds) and
-                    (SchoolClasses.schoolId eq schoolId) and
-                    SchoolClasses.archivedAt.isNull()
+                        (SchoolClasses.schoolId eq schoolId) and
+                        SchoolClasses.archivedAt.isNull()
             }
             .map { it[SchoolClasses.id].value }
     }
@@ -377,10 +381,10 @@ class StudentService {
             .select(StudentClasses.studentId, StudentClasses.schoolClassId)
             .where {
                 (StudentClasses.studentId inList studentIds) and
-                    (SchoolClasses.schoolId eq schoolId) and
-                    StudentClasses.validTill.isNull() and
-                    SchoolClasses.archivedAt.isNull() and
-                    Students.deletedAt.isNull()
+                        (SchoolClasses.schoolId eq schoolId) and
+                        StudentClasses.validTill.isNull() and
+                        SchoolClasses.archivedAt.isNull() and
+                        Students.deletedAt.isNull()
             }
             .forEach { row ->
                 val studentId = row[StudentClasses.studentId].value

@@ -5,17 +5,8 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.AuthResult
-import de.aarondietz.lehrerlog.data.SchoolClassDto
-import de.aarondietz.lehrerlog.data.StudentDto
-import de.aarondietz.lehrerlog.data.TaskDto
-import de.aarondietz.lehrerlog.data.TaskSubmissionDto
-import de.aarondietz.lehrerlog.data.TaskSubmissionType
-import de.aarondietz.lehrerlog.data.TaskSubmissionSummaryDto
-import de.aarondietz.lehrerlog.data.repository.SchoolClassRepository
-import de.aarondietz.lehrerlog.data.repository.StudentRepository
-import de.aarondietz.lehrerlog.data.repository.TaskRepository
-import de.aarondietz.lehrerlog.data.repository.FileUploadResult
-import de.aarondietz.lehrerlog.data.repository.UploadFilePayload
+import de.aarondietz.lehrerlog.data.*
+import de.aarondietz.lehrerlog.data.repository.*
 import de.aarondietz.lehrerlog.ui.util.PickedFile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -75,6 +66,7 @@ class TasksViewModel(
                         _error.value = "User is not associated with a school."
                     }
                 }
+
                 is AuthResult.Error -> {
                     logger.e { "Failed to load user: ${result.message}" }
                     _error.value = "Failed to load user: ${result.message}"

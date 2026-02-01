@@ -4,22 +4,18 @@ import de.aarondietz.lehrerlog.data.LateStatus
 import de.aarondietz.lehrerlog.data.TaskSubmissionDto
 import de.aarondietz.lehrerlog.data.TaskSubmissionSummaryDto
 import de.aarondietz.lehrerlog.data.TaskSubmissionType
-import de.aarondietz.lehrerlog.db.tables.LatePeriods
-import de.aarondietz.lehrerlog.db.tables.Students
-import de.aarondietz.lehrerlog.db.tables.TaskSubmissions
-import de.aarondietz.lehrerlog.db.tables.TaskTargets
-import de.aarondietz.lehrerlog.db.tables.Tasks
-import de.aarondietz.lehrerlog.db.tables.Users
+import de.aarondietz.lehrerlog.db.tables.*
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
 
 class TaskSubmissionService {
 
     class DuplicateSubmissionException(message: String) : IllegalStateException(message)
+
     private val latePolicyService = LatePolicyService()
 
     fun listSubmissions(taskId: UUID, schoolId: UUID): List<TaskSubmissionDto> = transaction {
@@ -61,8 +57,8 @@ class TaskSubmissionService {
         val studentExists = Students.selectAll()
             .where {
                 (Students.id eq studentId) and
-                    (Students.schoolId eq schoolId) and
-                    Students.deletedAt.isNull()
+                        (Students.schoolId eq schoolId) and
+                        Students.deletedAt.isNull()
             }
             .any()
         if (!studentExists) {

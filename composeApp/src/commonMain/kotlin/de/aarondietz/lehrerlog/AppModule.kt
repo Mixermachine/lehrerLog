@@ -4,32 +4,20 @@ import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.auth.createTokenStorage
-import de.aarondietz.lehrerlog.data.repository.LatePeriodRepository
-import de.aarondietz.lehrerlog.data.repository.SchoolClassRepository
-import de.aarondietz.lehrerlog.data.repository.SchoolRepository
-import de.aarondietz.lehrerlog.data.repository.StudentRepository
-import de.aarondietz.lehrerlog.data.repository.TaskRepository
-import de.aarondietz.lehrerlog.data.repository.ParentRepository
-import de.aarondietz.lehrerlog.data.repository.ParentSelectionRepository
-import de.aarondietz.lehrerlog.data.repository.ParentInviteRepository
-import de.aarondietz.lehrerlog.data.repository.ParentLinksRepository
-import de.aarondietz.lehrerlog.data.repository.LateStatsRepository
-import de.aarondietz.lehrerlog.data.repository.PunishmentRepository
-import de.aarondietz.lehrerlog.data.repository.StorageRepository
+import de.aarondietz.lehrerlog.data.repository.*
 import de.aarondietz.lehrerlog.network.createHttpClient
 import de.aarondietz.lehrerlog.ui.screens.auth.AuthViewModel
 import de.aarondietz.lehrerlog.ui.screens.home.HomeViewModel
 import de.aarondietz.lehrerlog.ui.screens.late_periods.LatePeriodManagementViewModel
+import de.aarondietz.lehrerlog.ui.screens.parent.ParentAssignmentsViewModel
+import de.aarondietz.lehrerlog.ui.screens.parent.ParentStudentsViewModel
+import de.aarondietz.lehrerlog.ui.screens.parent.ParentSubmissionsViewModel
+import de.aarondietz.lehrerlog.ui.screens.parent_management.ParentInviteManagementViewModel
 import de.aarondietz.lehrerlog.ui.screens.settings.SettingsViewModel
 import de.aarondietz.lehrerlog.ui.screens.students.StudentsViewModel
 import de.aarondietz.lehrerlog.ui.screens.tasks.TasksViewModel
-import de.aarondietz.lehrerlog.ui.screens.parent.ParentStudentsViewModel
-import de.aarondietz.lehrerlog.ui.screens.parent.ParentAssignmentsViewModel
-import de.aarondietz.lehrerlog.ui.screens.parent.ParentSubmissionsViewModel
-import de.aarondietz.lehrerlog.ui.screens.parent_management.ParentInviteManagementViewModel
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
-import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val commonModule = module {

@@ -1,24 +1,13 @@
 package de.aarondietz.lehrerlog.data.repository
 
 import de.aarondietz.lehrerlog.auth.TokenStorage
-import de.aarondietz.lehrerlog.data.CreateTaskRequest
-import de.aarondietz.lehrerlog.data.CreateTaskSubmissionRequest
-import de.aarondietz.lehrerlog.data.TaskDto
-import de.aarondietz.lehrerlog.data.TaskSubmissionDto
-import de.aarondietz.lehrerlog.data.TaskSubmissionSummaryDto
-import de.aarondietz.lehrerlog.data.TaskTargetsRequest
-import de.aarondietz.lehrerlog.data.UpdateTaskRequest
-import de.aarondietz.lehrerlog.data.UpdateTaskSubmissionRequest
-import de.aarondietz.lehrerlog.data.FileMetadataDto
+import de.aarondietz.lehrerlog.data.*
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
-import io.ktor.client.request.forms.MultiPartFormDataContent
-import io.ktor.client.request.forms.formData
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
+import io.ktor.client.request.forms.*
+import io.ktor.http.*
 
 class TaskRepository(
     private val httpClient: HttpClient,

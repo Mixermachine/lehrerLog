@@ -8,4 +8,4 @@ data class Task(
     val id: String = Uuid.random().toString(),
     val name: String,
 
-)
+    )

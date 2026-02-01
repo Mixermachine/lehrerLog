@@ -1,30 +1,14 @@
 package de.aarondietz.lehrerlog
 
 import de.aarondietz.lehrerlog.db.DatabaseFactory
-import de.aarondietz.lehrerlog.db.tables.Schools
-import de.aarondietz.lehrerlog.db.tables.StorageOwnerType
-import de.aarondietz.lehrerlog.db.tables.StoragePlans
-import de.aarondietz.lehrerlog.db.tables.StorageSubscriptions
-import de.aarondietz.lehrerlog.db.tables.StorageUsage
-import de.aarondietz.lehrerlog.db.tables.UserRole
-import de.aarondietz.lehrerlog.db.tables.Users
+import de.aarondietz.lehrerlog.db.tables.*
 import de.aarondietz.lehrerlog.services.StorageService
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.update
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.UUID
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
+import java.util.*
+import kotlin.test.*
 
 class StorageQuotaServiceTest {
 
@@ -131,7 +115,7 @@ class StorageQuotaServiceTest {
         transaction {
             StorageUsage.update({
                 (StorageUsage.ownerType eq StorageOwnerType.SCHOOL.name) and
-                    (StorageUsage.ownerId eq schoolId!!)
+                        (StorageUsage.ownerId eq schoolId!!)
             }) {
                 it[StorageUsage.usedTotalBytes] = 100L * 1024L * 1024L - 512L
             }

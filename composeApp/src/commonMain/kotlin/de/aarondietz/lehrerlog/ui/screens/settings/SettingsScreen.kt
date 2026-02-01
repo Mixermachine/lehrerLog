@@ -10,19 +10,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
-import lehrerlog.composeapp.generated.resources.Res
-import lehrerlog.composeapp.generated.resources.logout
-import lehrerlog.composeapp.generated.resources.storage_quota_title
-import lehrerlog.composeapp.generated.resources.storage_quota_used
-import lehrerlog.composeapp.generated.resources.storage_quota_remaining
-import lehrerlog.composeapp.generated.resources.storage_quota_warning
-import lehrerlog.composeapp.generated.resources.storage_quota_exceeded
-import lehrerlog.composeapp.generated.resources.storage_quota_refresh
+import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.roundToInt
 
@@ -82,6 +75,7 @@ fun SettingsScreen(
                         quotaState.isLoading -> {
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                         }
+
                         quotaState.error != null -> {
                             Text(
                                 text = quotaState.error!!,
@@ -89,6 +83,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
+
                         quotaState.quota != null -> {
                             val quota = quotaState.quota!!
                             val usedPercent = if (quota.maxTotalBytes > 0) {

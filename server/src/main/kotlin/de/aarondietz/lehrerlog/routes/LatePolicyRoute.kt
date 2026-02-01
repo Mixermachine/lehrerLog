@@ -6,14 +6,12 @@ import de.aarondietz.lehrerlog.data.CreateLatePeriodRequest
 import de.aarondietz.lehrerlog.data.ResolvePunishmentRequest
 import de.aarondietz.lehrerlog.data.UpdateLatePeriodRequest
 import de.aarondietz.lehrerlog.services.LatePolicyService
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.principal
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
+import io.ktor.http.*
+import io.ktor.server.auth.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import java.util.UUID
+import java.util.*
 
 fun Route.latePolicyRoute(
     latePolicyService: LatePolicyService = LatePolicyService()
@@ -85,11 +83,12 @@ fun Route.latePolicyRoute(
 
             get("/students") {
                 val principal = call.principal<UserPrincipal>()!!
-                val periodId = call.request.queryParameters["periodId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-                    ?: run {
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("periodId is required"))
-                        return@get
-                    }
+                val periodId =
+                    call.request.queryParameters["periodId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                        ?: run {
+                            call.respond(HttpStatusCode.BadRequest, ErrorResponse("periodId is required"))
+                            return@get
+                        }
                 val stats = latePolicyService.getStatsForPeriod(principal.id, periodId)
                 call.respond(stats)
             }
@@ -102,11 +101,12 @@ fun Route.latePolicyRoute(
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid student ID"))
                     return@get
                 }
-            val periodId = call.request.queryParameters["periodId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-                ?: run {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("periodId is required"))
-                    return@get
-                }
+            val periodId =
+                call.request.queryParameters["periodId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                    ?: run {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("periodId is required"))
+                        return@get
+                    }
             val stats = latePolicyService.getStatsForStudent(principal.id, studentId, periodId)
             if (stats == null) {
                 call.respond(HttpStatusCode.NotFound, ErrorResponse("Stats not found"))
@@ -118,16 +118,18 @@ fun Route.latePolicyRoute(
         route("/api/punishments") {
             get {
                 val principal = call.principal<UserPrincipal>()!!
-                val studentId = call.request.queryParameters["studentId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-                    ?: run {
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("studentId is required"))
-                        return@get
-                    }
-                val periodId = call.request.queryParameters["periodId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-                    ?: run {
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("periodId is required"))
-                        return@get
-                    }
+                val studentId =
+                    call.request.queryParameters["studentId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                        ?: run {
+                            call.respond(HttpStatusCode.BadRequest, ErrorResponse("studentId is required"))
+                            return@get
+                        }
+                val periodId =
+                    call.request.queryParameters["periodId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                        ?: run {
+                            call.respond(HttpStatusCode.BadRequest, ErrorResponse("periodId is required"))
+                            return@get
+                        }
                 val records = latePolicyService.getPunishments(principal.id, studentId, periodId)
                 call.respond(records)
             }

@@ -3,10 +3,9 @@ package de.aarondietz.lehrerlog.data.repository
 import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.data.StorageQuotaDto
 import de.aarondietz.lehrerlog.data.StorageUsageDto
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.get
-import io.ktor.client.request.header
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
 
 class StorageRepository(
     private val httpClient: HttpClient,

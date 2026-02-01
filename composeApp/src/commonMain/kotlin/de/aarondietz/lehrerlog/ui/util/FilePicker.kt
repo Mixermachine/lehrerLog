@@ -1,10 +1,10 @@
 package de.aarondietz.lehrerlog.ui.util
 
-import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import androidx.compose.ui.tooling.preview.Preview
+import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 
 data class PickedFile(
     val name: String,

@@ -1,10 +1,7 @@
 package de.aarondietz.lehrerlog.db
 
-import de.aarondietz.lehrerlog.db.tables.*
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.transaction
 
 object DatabaseFactory {
 
@@ -18,8 +15,10 @@ object DatabaseFactory {
                 val password = System.getenv("DATABASE_PASSWORD") ?: "postgres"
                 DatabaseConfig(url, "org.postgresql.Driver", user, password)
             }
+
             else -> { // Default to H2 for development
-                val url = System.getenv("DATABASE_URL") ?: "jdbc:h2:./build/lehrerlog;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH"
+                val url = System.getenv("DATABASE_URL")
+                    ?: "jdbc:h2:./build/lehrerlog;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH"
                 DatabaseConfig(url, "org.h2.Driver", "", "")
             }
         }

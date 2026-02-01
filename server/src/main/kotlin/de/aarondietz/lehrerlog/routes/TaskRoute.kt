@@ -2,29 +2,15 @@ package de.aarondietz.lehrerlog.routes
 
 import de.aarondietz.lehrerlog.auth.ErrorResponse
 import de.aarondietz.lehrerlog.auth.UserPrincipal
-import de.aarondietz.lehrerlog.data.CreateTaskRequest
-import de.aarondietz.lehrerlog.data.CreateTaskSubmissionRequest
-import de.aarondietz.lehrerlog.data.TaskTargetsRequest
-import de.aarondietz.lehrerlog.data.UpdateTaskRequest
-import de.aarondietz.lehrerlog.data.UpdateTaskSubmissionRequest
+import de.aarondietz.lehrerlog.data.*
 import de.aarondietz.lehrerlog.services.TaskService
 import de.aarondietz.lehrerlog.services.TaskSubmissionService
-import de.aarondietz.lehrerlog.data.TaskSubmissionType
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.principal
-import io.ktor.server.request.receive
+import io.ktor.http.*
+import io.ktor.server.auth.*
 import io.ktor.server.request.*
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.put
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.patch
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
-import java.util.UUID
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import java.util.*
 
 fun Route.taskRoute(
     taskService: TaskService = TaskService(),
@@ -115,7 +101,11 @@ fun Route.taskRoute(
                 }
 
                 val taskId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid task ID"))
                     return@put
@@ -150,7 +140,11 @@ fun Route.taskRoute(
                 }
 
                 val taskId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid task ID"))
                     return@delete
@@ -173,7 +167,11 @@ fun Route.taskRoute(
                 }
 
                 val taskId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid task ID"))
                     return@post
@@ -208,7 +206,11 @@ fun Route.taskRoute(
                 }
 
                 val taskId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid task ID"))
                     return@get
@@ -231,7 +233,11 @@ fun Route.taskRoute(
                 }
 
                 val taskId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid task ID"))
                     return@get
@@ -250,7 +256,11 @@ fun Route.taskRoute(
                 }
 
                 val taskId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid task ID"))
                     return@post
@@ -290,7 +300,11 @@ fun Route.taskRoute(
                 }
 
                 val taskId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid task ID"))
                     return@post
@@ -333,7 +347,11 @@ fun Route.taskRoute(
                 }
 
                 val submissionId = call.parameters["id"]?.let {
-                    try { UUID.fromString(it) } catch (e: Exception) { null }
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid submission ID"))
                     return@patch

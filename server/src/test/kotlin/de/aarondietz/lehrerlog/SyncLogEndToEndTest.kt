@@ -4,11 +4,13 @@ import de.aarondietz.lehrerlog.db.DatabaseFactory
 import de.aarondietz.lehrerlog.db.tables.*
 import de.aarondietz.lehrerlog.services.SchoolClassService
 import de.aarondietz.lehrerlog.services.StudentService
-import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import kotlin.test.*
@@ -246,7 +248,7 @@ class SyncLogEndToEndTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.id greater secondLogId)
+                            (SyncLog.id greater secondLogId)
                 }
                 .orderBy(SyncLog.id)
                 .toList()
@@ -288,7 +290,7 @@ class SyncLogEndToEndTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.entityId eq UUID.fromString(student.id))
+                            (SyncLog.entityId eq UUID.fromString(student.id))
                 }
                 .orderBy(SyncLog.id)
                 .toList()
@@ -335,7 +337,7 @@ class SyncLogEndToEndTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.entityType eq EntityType.STUDENT.name)
+                            (SyncLog.entityType eq EntityType.STUDENT.name)
                 }
                 .toList()
         }
@@ -345,7 +347,7 @@ class SyncLogEndToEndTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.entityType eq EntityType.SCHOOL_CLASS.name)
+                            (SyncLog.entityType eq EntityType.SCHOOL_CLASS.name)
                 }
                 .toList()
         }
@@ -374,7 +376,7 @@ class SyncLogEndToEndTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.entityId eq UUID.fromString(student.id))
+                            (SyncLog.entityId eq UUID.fromString(student.id))
                 }
                 .single()
         }
@@ -413,7 +415,7 @@ class SyncLogEndToEndTest {
             SyncLog.selectAll()
                 .where {
                     (SyncLog.schoolId eq testSchoolId!!) and
-                    (SyncLog.id greater lastIdFromFirstPage)
+                            (SyncLog.id greater lastIdFromFirstPage)
                 }
                 .orderBy(SyncLog.id)
                 .limit(5)

@@ -1,26 +1,11 @@
 package de.aarondietz.lehrerlog.ui.screens.tasks
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.data.LateStatus
 import de.aarondietz.lehrerlog.data.StudentDto
@@ -31,33 +16,8 @@ import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import de.aarondietz.lehrerlog.ui.util.PickedFile
 import de.aarondietz.lehrerlog.ui.util.rememberFilePickerLauncher
-import lehrerlog.composeapp.generated.resources.Res
-import lehrerlog.composeapp.generated.resources.action_cancel
-import lehrerlog.composeapp.generated.resources.submission_upload_file
-import lehrerlog.composeapp.generated.resources.submission_edit
-import lehrerlog.composeapp.generated.resources.submission_grade
-import lehrerlog.composeapp.generated.resources.submission_mark_in_person
-import lehrerlog.composeapp.generated.resources.submission_note
-import lehrerlog.composeapp.generated.resources.submission_save
-import lehrerlog.composeapp.generated.resources.submission_status_missing
-import lehrerlog.composeapp.generated.resources.submission_status_submitted
-import lehrerlog.composeapp.generated.resources.submission_type_file
-import lehrerlog.composeapp.generated.resources.submission_type_in_person
-import lehrerlog.composeapp.generated.resources.task_details
-import lehrerlog.composeapp.generated.resources.task_loading
-import lehrerlog.composeapp.generated.resources.task_refresh
-import lehrerlog.composeapp.generated.resources.task_students_empty
-import lehrerlog.composeapp.generated.resources.task_upload_assignment
-import lehrerlog.composeapp.generated.resources.task_edit
-import lehrerlog.composeapp.generated.resources.task_delete
-import lehrerlog.composeapp.generated.resources.task_delete_confirm
-import lehrerlog.composeapp.generated.resources.action_delete
-import lehrerlog.composeapp.generated.resources.late_status_forgiven
-import lehrerlog.composeapp.generated.resources.late_status_on_time
-import lehrerlog.composeapp.generated.resources.late_status_punish
-import lehrerlog.composeapp.generated.resources.late_status_undecided
+import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun TaskDetailDialog(

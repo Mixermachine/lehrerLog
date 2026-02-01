@@ -15,12 +15,12 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.nio.file.Files
 import java.nio.file.Path
@@ -170,13 +170,15 @@ class AuthEndToEndTest {
 
         val response = testClient.post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterRequestDto(
-                email = email,
-                password = "SecurePassword123",
-                firstName = "John",
-                lastName = "Doe",
-                schoolCode = null
-            ))
+            setBody(
+                RegisterRequestDto(
+                    email = email,
+                    password = "SecurePassword123",
+                    firstName = "John",
+                    lastName = "Doe",
+                    schoolCode = null
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.BadRequest, response.status)
@@ -198,13 +200,15 @@ class AuthEndToEndTest {
 
         val response = testClient.post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterRequestDto(
-                email = email,
-                password = "SecurePassword456",
-                firstName = "Jane",
-                lastName = "Smith",
-                schoolCode = testSchoolCode()
-            ))
+            setBody(
+                RegisterRequestDto(
+                    email = email,
+                    password = "SecurePassword456",
+                    firstName = "Jane",
+                    lastName = "Smith",
+                    schoolCode = testSchoolCode()
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.Created, response.status)
@@ -228,13 +232,15 @@ class AuthEndToEndTest {
 
         val response = testClient.post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterRequestDto(
-                email = email,
-                password = "SecurePassword789",
-                firstName = "Test",
-                lastName = "User",
-                schoolCode = "INVALID_CODE"
-            ))
+            setBody(
+                RegisterRequestDto(
+                    email = email,
+                    password = "SecurePassword789",
+                    firstName = "Test",
+                    lastName = "User",
+                    schoolCode = "INVALID_CODE"
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.Conflict, response.status)
@@ -295,13 +301,15 @@ class AuthEndToEndTest {
 
         val response = testClient.post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterRequestDto(
-                email = email,
-                password = "short",  // Less than 8 characters
-                firstName = "Short",
-                lastName = "Password",
-                schoolCode = testSchoolCode()
-            ))
+            setBody(
+                RegisterRequestDto(
+                    email = email,
+                    password = "short",  // Less than 8 characters
+                    firstName = "Short",
+                    lastName = "Password",
+                    schoolCode = testSchoolCode()
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.BadRequest, response.status)
@@ -322,13 +330,15 @@ class AuthEndToEndTest {
 
         val response = testClient.post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterRequestDto(
-                email = "",
-                password = "SecurePassword",
-                firstName = "",
-                lastName = "User",
-                schoolCode = testSchoolCode()
-            ))
+            setBody(
+                RegisterRequestDto(
+                    email = "",
+                    password = "SecurePassword",
+                    firstName = "",
+                    lastName = "User",
+                    schoolCode = testSchoolCode()
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.BadRequest, response.status)
@@ -349,22 +359,26 @@ class AuthEndToEndTest {
         // First, register a user
         testClient.post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterRequestDto(
-                email = email,
-                password = "LoginPassword123",
-                firstName = "Login",
-                lastName = "Test",
-                schoolCode = testSchoolCode()
-            ))
+            setBody(
+                RegisterRequestDto(
+                    email = email,
+                    password = "LoginPassword123",
+                    firstName = "Login",
+                    lastName = "Test",
+                    schoolCode = testSchoolCode()
+                )
+            )
         }
 
         // Now try to login
         val loginResponse = testClient.post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(LoginRequestDto(
-                email = email,
-                password = "LoginPassword123"
-            ))
+            setBody(
+                LoginRequestDto(
+                    email = email,
+                    password = "LoginPassword123"
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.OK, loginResponse.status)
@@ -392,22 +406,26 @@ class AuthEndToEndTest {
         // Register a user
         testClient.post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterRequestDto(
-                email = email,
-                password = "CorrectPassword123",
-                firstName = "Wrong",
-                lastName = "Password",
-                schoolCode = testSchoolCode()
-            ))
+            setBody(
+                RegisterRequestDto(
+                    email = email,
+                    password = "CorrectPassword123",
+                    firstName = "Wrong",
+                    lastName = "Password",
+                    schoolCode = testSchoolCode()
+                )
+            )
         }
 
         // Try to login with wrong password
         val loginResponse = testClient.post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(LoginRequestDto(
-                email = email,
-                password = "WrongPassword456"
-            ))
+            setBody(
+                LoginRequestDto(
+                    email = email,
+                    password = "WrongPassword456"
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.Unauthorized, loginResponse.status)
@@ -430,10 +448,12 @@ class AuthEndToEndTest {
 
         val loginResponse = testClient.post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(LoginRequestDto(
-                email = email,
-                password = "SomePassword123"
-            ))
+            setBody(
+                LoginRequestDto(
+                    email = email,
+                    password = "SomePassword123"
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.Unauthorized, loginResponse.status)
@@ -454,10 +474,12 @@ class AuthEndToEndTest {
 
         val loginResponse = testClient.post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(LoginRequestDto(
-                email = "",
-                password = ""
-            ))
+            setBody(
+                LoginRequestDto(
+                    email = "",
+                    password = ""
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.BadRequest, loginResponse.status)
@@ -484,13 +506,15 @@ class AuthEndToEndTest {
         // Register and get tokens
         val registerResponse = testClient.post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterRequestDto(
-                email = email,
-                password = "JwtPassword123",
-                firstName = "JWT",
-                lastName = "Test",
-                schoolCode = testSchoolCode()
-            ))
+            setBody(
+                RegisterRequestDto(
+                    email = email,
+                    password = "JwtPassword123",
+                    firstName = "JWT",
+                    lastName = "Test",
+                    schoolCode = testSchoolCode()
+                )
+            )
         }
 
         val authResponse = registerResponse.body<AuthResponseDto>()
@@ -518,13 +542,15 @@ class AuthEndToEndTest {
         // Step 1: Register a new user
         val registerResponse = testClient.post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterRequestDto(
-                email = email,
-                password = "CompleteFlow123",
-                firstName = "Complete",
-                lastName = "Flow",
-                schoolCode = testSchoolCode()
-            ))
+            setBody(
+                RegisterRequestDto(
+                    email = email,
+                    password = "CompleteFlow123",
+                    firstName = "Complete",
+                    lastName = "Flow",
+                    schoolCode = testSchoolCode()
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.Created, registerResponse.status)
@@ -535,10 +561,12 @@ class AuthEndToEndTest {
         // Step 2: Login with the same credentials
         val loginResponse = testClient.post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(LoginRequestDto(
-                email = email,
-                password = "CompleteFlow123"
-            ))
+            setBody(
+                LoginRequestDto(
+                    email = email,
+                    password = "CompleteFlow123"
+                )
+            )
         }
 
         assertEquals(HttpStatusCode.OK, loginResponse.status)

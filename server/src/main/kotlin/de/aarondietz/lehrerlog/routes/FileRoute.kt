@@ -2,32 +2,23 @@ package de.aarondietz.lehrerlog.routes
 
 import de.aarondietz.lehrerlog.auth.ErrorResponse
 import de.aarondietz.lehrerlog.auth.UserPrincipal
-import de.aarondietz.lehrerlog.db.tables.UserRole
 import de.aarondietz.lehrerlog.db.tables.TaskSubmissions
+import de.aarondietz.lehrerlog.db.tables.UserRole
 import de.aarondietz.lehrerlog.services.FileStorageService
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.principal
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
-import io.ktor.server.request.receiveMultipart
-import io.ktor.server.response.respond
-import io.ktor.server.response.respondFile
-import io.ktor.server.response.respondOutputStream
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import io.ktor.http.*
+import io.ktor.http.content.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.utils.io.*
+import io.ktor.utils.io.core.readBytes
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import io.ktor.utils.io.core.readBytes
-import io.ktor.utils.io.readRemaining
-import java.util.UUID
+import java.util.*
+import kotlin.io.use
 
 fun Route.fileRoute(
     fileStorageService: FileStorageService = FileStorageService()
@@ -71,8 +62,16 @@ fun Route.fileRoute(
                     call.respond(HttpStatusCode.Created, meta)
                 } catch (e: IllegalArgumentException) {
                     when (e.message) {
-                        "FILE_TOO_LARGE" -> call.respond(HttpStatusCode.PayloadTooLarge, ErrorResponse("File exceeds size limit"))
-                        "QUOTA_EXCEEDED" -> call.respond(HttpStatusCode.Conflict, ErrorResponse("Storage quota exceeded"))
+                        "FILE_TOO_LARGE" -> call.respond(
+                            HttpStatusCode.PayloadTooLarge,
+                            ErrorResponse("File exceeds size limit")
+                        )
+
+                        "QUOTA_EXCEEDED" -> call.respond(
+                            HttpStatusCode.Conflict,
+                            ErrorResponse("Storage quota exceeded")
+                        )
+
                         else -> call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Invalid request"))
                     }
                 }
@@ -96,11 +95,12 @@ fun Route.fileRoute(
                         return@post
                     }
 
-                val submissionId = call.parameters["submissionId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-                    ?: run {
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid submission ID"))
-                        return@post
-                    }
+                val submissionId =
+                    call.parameters["submissionId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                        ?: run {
+                            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid submission ID"))
+                            return@post
+                        }
 
                 val belongsToTask = transaction {
                     TaskSubmissions.selectAll()
@@ -131,8 +131,16 @@ fun Route.fileRoute(
                     call.respond(HttpStatusCode.Created, meta)
                 } catch (e: IllegalArgumentException) {
                     when (e.message) {
-                        "FILE_TOO_LARGE" -> call.respond(HttpStatusCode.PayloadTooLarge, ErrorResponse("File exceeds size limit"))
-                        "QUOTA_EXCEEDED" -> call.respond(HttpStatusCode.Conflict, ErrorResponse("Storage quota exceeded"))
+                        "FILE_TOO_LARGE" -> call.respond(
+                            HttpStatusCode.PayloadTooLarge,
+                            ErrorResponse("File exceeds size limit")
+                        )
+
+                        "QUOTA_EXCEEDED" -> call.respond(
+                            HttpStatusCode.Conflict,
+                            ErrorResponse("Storage quota exceeded")
+                        )
+
                         else -> call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Invalid request"))
                     }
                 }
@@ -200,6 +208,7 @@ private suspend fun ApplicationCall.receiveSingleFile(): IncomingFile? {
                     found = IncomingFile(fileName, contentType, bytes)
                 }
             }
+
             else -> Unit
         }
         part.dispose()

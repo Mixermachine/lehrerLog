@@ -83,6 +83,7 @@ class AuthViewModel(
                     is AuthResult.Success -> {
                         _authState.value = AuthState.Authenticated(result.data)
                     }
+
                     is AuthResult.Error -> {
                         _authState.value = AuthState.Unauthenticated
                     }
@@ -116,6 +117,7 @@ class AuthViewModel(
                     _loginState.value = LoginUiState()
                     _authState.value = AuthState.Authenticated(result.data.user)
                 }
+
                 is AuthResult.Error -> {
                     _loginState.value = _loginState.value.copy(
                         isLoading = false,
@@ -198,26 +200,32 @@ class AuthViewModel(
                 _registerState.value = state.copy(error = "Email is required")
                 return
             }
+
             state.password.isBlank() -> {
                 _registerState.value = state.copy(error = "Password is required")
                 return
             }
+
             state.password.length < 8 -> {
                 _registerState.value = state.copy(error = "Password must be at least 8 characters")
                 return
             }
+
             state.password != state.confirmPassword -> {
                 _registerState.value = state.copy(error = "Passwords do not match")
                 return
             }
+
             state.firstName.isBlank() -> {
                 _registerState.value = state.copy(error = "First name is required")
                 return
             }
+
             state.lastName.isBlank() -> {
                 _registerState.value = state.copy(error = "Last name is required")
                 return
             }
+
             state.selectedSchool == null -> {
                 _registerState.value = state.copy(error = "School is required")
                 return
@@ -239,6 +247,7 @@ class AuthViewModel(
                     _registerState.value = RegisterUiState()
                     _authState.value = AuthState.Authenticated(result.data.user)
                 }
+
                 is AuthResult.Error -> {
                     _registerState.value = _registerState.value.copy(
                         isLoading = false,
@@ -309,6 +318,7 @@ class AuthViewModel(
                     _parentInviteState.value = ParentInviteUiState()
                     _authState.value = AuthState.Authenticated(result.data.user)
                 }
+
                 is AuthResult.Error -> {
                     _parentInviteState.value = state.copy(isLoading = false, error = result.message)
                 }
