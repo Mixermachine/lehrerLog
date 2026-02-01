@@ -570,10 +570,10 @@ read_env_value() {
   grep -E "^${key}=" "$env_file" | tail -n 1 | cut -d= -f2- | tr -d '\r'
 }
 
-if [[ -z "$OBJECT_STORAGE_ACCESS_KEY" ]]; then
+if [[ -z "${OBJECT_STORAGE_ACCESS_KEY:-}" ]]; then
   OBJECT_STORAGE_ACCESS_KEY="$(read_env_value "$SERVER_ENV_FILE" "OBJECT_STORAGE_ACCESS_KEY")"
 fi
-if [[ -z "$OBJECT_STORAGE_SECRET_KEY" ]]; then
+if [[ -z "${OBJECT_STORAGE_SECRET_KEY:-}" ]]; then
   OBJECT_STORAGE_SECRET_KEY="$(read_env_value "$SERVER_ENV_FILE" "OBJECT_STORAGE_SECRET_KEY")"
 fi
 
