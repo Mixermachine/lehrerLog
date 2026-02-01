@@ -45,7 +45,7 @@ class AuthEndToEndTest {
         private var isInitialized = false
 
         // Generate unique prefix for this test run (e.g., "testing93821")
-        private val TEST_PREFIX = "testing${(10000..99999).random()}"
+        private val TEST_PREFIX = TestPrefixGenerator.next()
 
         // Uppercase version for school codes
         private val TEST_PREFIX_UPPER = TEST_PREFIX.uppercase()

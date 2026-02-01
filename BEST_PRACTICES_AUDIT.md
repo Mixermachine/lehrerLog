@@ -941,13 +941,15 @@ fun validateEnvironment() {
 ### Phase 4: Low Priority Polish (Week 4)
 
 - [ ] Standardize code patterns (string trimming, etc.)
-- [ ] Fix test prefix generation for parallel execution
+- [x] Fix test prefix generation for parallel execution ✅ **COMPLETED** - Added `TestPrefixGenerator` to avoid collisions
 - [ ] Update dependencies to latest stable versions
 - [ ] Improve health check validation
 - [ ] Remove unused imports (run ktlint)
-- [ ] Add request correlation IDs
+- [x] Add request correlation IDs ✅ **COMPLETED** - Added Ktor CallId with `X-Request-Id` propagation
 - [ ] ~~Document rollback procedures~~ ⏸️ **DEFERRED** (consolidate migrations first)
 - [ ] Add rate limiting to all public endpoints
+
+**Verification:** `:server:test` passed on 2026-02-01 (JDK 21).
 
 ---
 

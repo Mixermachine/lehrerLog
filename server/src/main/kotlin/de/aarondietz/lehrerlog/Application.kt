@@ -15,6 +15,7 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.BadRequestException
+import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.ratelimit.*
@@ -104,6 +105,16 @@ fun Application.module() {
         allowMethod(HttpMethod.Options)
 
         maxAgeInSeconds = 3600
+    }
+
+    install(CallId) {
+        retrieve { it.request.headers["X-Request-Id"] }
+        generate { UUID.randomUUID().toString() }
+        verify { it.length <= 128 }
+    }
+
+    intercept(ApplicationCallPipeline.Setup) {
+        call.callId?.let { call.response.headers.append("X-Request-Id", it) }
     }
 
     val appEnvironment = environment

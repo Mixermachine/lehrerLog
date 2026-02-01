@@ -35,7 +35,7 @@ class OfflineToOnlineSyncTest {
         private var testUserId: UUID? = null
         private var isInitialized = false
 
-        private val TEST_PREFIX = "testing${(10000..99999).random()}"
+        private val TEST_PREFIX = TestPrefixGenerator.next()
         private val TEST_PREFIX_UPPER = TEST_PREFIX.uppercase()
     }
 

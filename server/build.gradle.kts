@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.ktor.server.websockets)
     implementation(libs.ktor.server.rate.limit)
     implementation(libs.ktor.server.status.pages)
+    implementation(libs.ktor.server.call.id)
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.ktor.client.content.negotiation)
