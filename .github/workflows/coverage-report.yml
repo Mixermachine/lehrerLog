@@ -1,0 +1,171 @@
+name: Test Coverage Report
+
+on:
+  workflow_call:
+    inputs:
+      uploadToCodecov:
+        description: "Upload coverage to Codecov"
+        type: boolean
+        default: false
+      runServer:
+        description: "Generate server coverage"
+        type: boolean
+        default: true
+      runClient:
+        description: "Generate client coverage"
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      uploadToCodecov:
+        description: "Upload coverage to Codecov"
+        type: boolean
+        default: false
+      runServer:
+        description: "Generate server coverage"
+        type: boolean
+        default: true
+      runClient:
+        description: "Generate client coverage"
+        type: boolean
+        default: true
+  pull_request:
+    branches:
+      - master
+      - main
+    paths:
+      - 'server/src/**'
+      - 'composeApp/src/**'
+      - 'shared/src/**'
+
+jobs:
+  server-coverage:
+    if: inputs.runServer == true || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v3.5.0
+
+      - name: Run server tests and generate coverage
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :server:test :server:jacocoTestReport
+
+      - name: Verify coverage thresholds
+        run: ./gradlew :server:jacocoTestCoverageVerification
+
+      - name: Upload server coverage to Codecov
+        if: inputs.uploadToCodecov == true
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./server/build/reports/jacoco/jacoco.xml
+          flags: server
+          name: server-coverage
+          fail_ci_if_error: false
+
+      - name: Archive server coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-coverage-report
+          path: server/build/reports/jacoco/html/
+          retention-days: 14
+
+      - name: Add coverage comment to PR
+        if: github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          paths: server/build/reports/jacoco/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 60
+          min-coverage-changed-files: 50
+          title: 'Server Test Coverage'
+
+  client-coverage:
+    if: inputs.runClient == true || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Node
+        uses: actions/setup-node@v6.2.0
+        with:
+          node-version: "18"
+
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v3.5.0
+
+      - name: Run client tests and generate coverage
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :composeApp:prepareRobolectricAndroidAll
+          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:koverHtmlReport :composeApp:koverXmlReport
+
+      - name: Verify coverage thresholds
+        run: ./gradlew :composeApp:koverVerify
+
+      - name: Upload client coverage to Codecov
+        if: inputs.uploadToCodecov == true
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./composeApp/build/reports/kover/report.xml
+          flags: client
+          name: client-coverage
+          fail_ci_if_error: false
+
+      - name: Archive client coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-coverage-report
+          path: composeApp/build/reports/kover/html/
+          retention-days: 14
+
+  coverage-summary:
+    needs: [server-coverage, client-coverage]
+    if: always() && (needs.server-coverage.result == 'success' || needs.client-coverage.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download server coverage
+        if: needs.server-coverage.result == 'success'
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: server-coverage-report
+          path: coverage/server/
+
+      - name: Download client coverage
+        if: needs.client-coverage.result == 'success'
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: client-coverage-report
+          path: coverage/client/
+
+      - name: Create coverage summary
+        run: |
+          echo "# Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage reports have been generated for:" >> $GITHUB_STEP_SUMMARY
+          if [ -d "coverage/server" ]; then
+            echo "- ✅ Server (JaCoCo)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -d "coverage/client" ]; then
+            echo "- ✅ Client (Kover)" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the artifacts from this workflow run to view detailed HTML reports." >> $GITHUB_STEP_SUMMARY

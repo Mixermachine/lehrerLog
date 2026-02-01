@@ -16,6 +16,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.roborazzi)
+    alias(libs.plugins.kover)
     kotlin("plugin.serialization") version libs.versions.kotlin.get()
 
 }
@@ -236,6 +237,7 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.components.ui.tooling.preview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
@@ -390,4 +392,79 @@ compose.desktop {
             packageVersion = desktopPackageVersion
         }
     }
+}
+
+// Kover configuration for Kotlin Multiplatform test coverage
+kover {
+    currentProject {
+        // Include all source sets
+        sources {
+            excludeJava = false
+        }
+    }
+
+    reports {
+        // Configure report filters
+        filters {
+            excludes {
+                // Exclude generated code
+                classes("de.aarondietz.lehrerlog.ServerConfig*")
+
+                // Exclude platform-specific entry points
+                classes("de.aarondietz.lehrerlog.MainKt")
+                classes("de.aarondietz.lehrerlog.App*")
+
+                // Exclude data classes (DTOs) - same as server
+                packages("de.aarondietz.lehrerlog.data")
+
+                // Exclude generated resources
+                packages("de.aarondietz.lehrerlog.generated")
+
+                // Exclude Koin modules (dependency injection configuration)
+                classes("*Module*Kt")
+
+                // Exclude preview functions (Compose previews)
+                annotatedBy("*Preview*")
+            }
+        }
+
+        // Total coverage report for all test variants
+        total {
+            html {
+                onCheck = false // Don't fail build on coverage threshold
+                title = "LehrerLog Client Coverage Report"
+            }
+            xml {
+                onCheck = false
+            }
+            verify {
+                onCheck = true // Verify coverage on check task
+                rule {
+                    minBound(60) // 60% minimum coverage
+                }
+                rule("Class-level coverage") {
+                    minBound(50)
+                    // Apply to each class
+                    groupBy = kotlinx.kover.gradle.plugin.dsl.GroupingEntityType.CLASS
+                }
+            }
+        }
+
+        // Android-specific coverage
+        filters {
+            excludes {
+                // Exclude Android framework callbacks
+                classes("*.BuildConfig")
+                classes("*.*_Factory")
+                classes("*.*_Impl")
+            }
+        }
+    }
+}
+
+// Register coverage check task
+tasks.register("checkCoverage") {
+    group = "verification"
+    description = "Run tests and verify code coverage meets thresholds"
+    dependsOn("koverHtmlReport", "koverXmlReport", "koverVerify")
 }

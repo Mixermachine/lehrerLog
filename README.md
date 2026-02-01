@@ -112,7 +112,49 @@ in your IDE's toolbar or run it directly from the terminal:
 ### Build and Run iOS Application
 
 To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+in your IDE's toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+
+## Testing & Coverage
+
+### Run Tests
+
+**Server tests:**
+```shell
+./gradlew :server:test
+```
+
+**Client tests (Android unit tests with Robolectric):**
+```shell
+./gradlew :composeApp:testDevDebugUnitTest
+```
+
+**All tests:**
+```shell
+./gradlew test allTests
+```
+
+### Coverage Reports
+
+Generate test coverage reports with JaCoCo (server) and Kover (client):
+
+**Server coverage:**
+```shell
+./gradlew :server:test :server:jacocoTestReport
+# View: server/build/reports/jacoco/html/index.html
+```
+
+**Client coverage:**
+```shell
+./gradlew :composeApp:testDevDebugUnitTest :composeApp:koverHtmlReport
+# View: composeApp/build/reports/kover/html/index.html
+```
+
+**Verify coverage thresholds (60% overall, 50% per class):**
+```shell
+./gradlew :server:checkCoverage :composeApp:checkCoverage
+```
+
+📚 See [COVERAGE_QUICK_START.md](COVERAGE_QUICK_START.md) for quick reference or [docs/test_coverage.md](docs/test_coverage.md) for complete guide.
 
 ---
 

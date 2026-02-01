@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.ktor)
     application
+    jacoco
 }
 
 group = "de.aarondietz.lehrerlog"
@@ -87,4 +88,73 @@ tasks.register<JavaExec>("flywayRepair") {
     description = "Runs Flyway repair against the configured local database."
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("de.aarondietz.lehrerlog.db.FlywayRepair")
+}
+
+// JaCoCo configuration for test coverage
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport) // Generate report after tests run
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test) // Tests must run before generating report
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/html"))
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/jacoco.xml"))
+    }
+
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                exclude(
+                    // Exclude generated code
+                    "**/de/aarondietz/lehrerlog/ServerConfig*",
+                    // Exclude data classes (DTOs)
+                    "**/de/aarondietz/lehrerlog/data/**",
+                    // Exclude database table definitions
+                    "**/de/aarondietz/lehrerlog/db/tables/**",
+                    // Exclude main application entry point
+                    "**/de/aarondietz/lehrerlog/ApplicationKt*"
+                )
+            }
+        })
+    )
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.jacocoTestReport)
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.60".toBigDecimal() // 60% minimum coverage
+            }
+        }
+        rule {
+            element = "CLASS"
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.50".toBigDecimal() // 50% minimum per class
+            }
+            excludes = listOf(
+                "de.aarondietz.lehrerlog.ServerConfig*",
+                "de.aarondietz.lehrerlog.data.*",
+                "de.aarondietz.lehrerlog.db.tables.*",
+                "de.aarondietz.lehrerlog.ApplicationKt"
+            )
+        }
+    }
+}
+
+// Register coverage check task
+tasks.register("checkCoverage") {
+    group = "verification"
+    description = "Run tests and verify code coverage meets thresholds"
+    dependsOn(tasks.test, tasks.jacocoTestCoverageVerification)
 }

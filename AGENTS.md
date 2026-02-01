@@ -33,8 +33,12 @@ Use `./gradlew` (macOS/Linux) or `.\gradlew.bat` (Windows).
 | Run Web (JS) | `:composeApp:jsBrowserDevelopmentRun` |
 | Build Android | `:composeApp:assembleDebug` |
 | Test Server | `:server:test` |
+| Test Client | `:composeApp:testDevDebugUnitTest` |
 | Test All | `test` or `allTests` |
 | Test Sync | `:server:test --tests "*Sync*Test"` |
+| **Coverage Server** | `:server:test :server:jacocoTestReport` |
+| **Coverage Client** | `:composeApp:testDevDebugUnitTest :composeApp:koverHtmlReport` |
+| **Check Coverage** | `:server:checkCoverage :composeApp:checkCoverage` |
 | Flyway Repair | `:server:flywayRepair` |
 
 ## File Structure
@@ -105,6 +109,13 @@ All authenticated routes must validate `principal.schoolId`:
 - Every new UI element must have explicit UI coverage (Compose UI test or Roborazzi snapshot).
 - Every server service requires tests for its public behavior.
 - Before finishing work, required tests must be implemented and executed successfully.
+
+### Coverage Reports
+
+- **Server (JaCoCo)**: `server/build/reports/jacoco/html/index.html` (60% min, 50% per class)
+- **Client (Kover)**: `composeApp/build/reports/kover/html/index.html` (60% min, 50% per class)
+- Run `:server:checkCoverage` and `:composeApp:checkCoverage` before committing
+- See [COVERAGE_QUICK_START.md](COVERAGE_QUICK_START.md) for quick reference
 
 ### ROBORAZZI & COMPOSE UI
 
