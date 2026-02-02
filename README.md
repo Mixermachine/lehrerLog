@@ -114,6 +114,22 @@ in your IDE's toolbar or run it directly from the terminal:
 To build and run the development version of the iOS app, use the run configuration from the run widget
 in your IDE's toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
 
+## Client Logging
+
+The client uses Kermit with file rotation. Logs can be viewed and exported from **Settings → Logs**.
+
+**Log file locations:**
+
+- Android: `cacheDir/logs` (shared via FileProvider)
+- iOS: Application Support `logs/`
+- Desktop (JVM): `~/.lehrerlog/logs`
+- Web (Wasm/JS): localStorage keys `lehrerlog_log_*` (OPFS used when available, best-effort)
+
+**Troubleshooting:**
+
+- If no logs appear, perform an action that triggers logging and refresh the Logs section.
+- In private browsing or with blocked site storage, web logs may not persist.
+
 ## Testing & Coverage
 
 ### Run Tests

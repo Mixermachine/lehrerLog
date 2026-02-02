@@ -17,7 +17,6 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
-import java.time.ZoneOffset
 import java.util.*
 import kotlin.test.*
 
@@ -73,7 +72,7 @@ class ParentRouteEndToEndTest {
             StudentClasses.insert {
                 it[StudentClasses.studentId] = studentIdValue
                 it[StudentClasses.schoolClassId] = classIdValue
-                it[StudentClasses.validFrom] = OffsetDateTime.now(ZoneOffset.UTC)
+                it[StudentClasses.validFrom] = OffsetDateTime.now().minusDays(1)
                 it[StudentClasses.validTill] = null
             }
         }
@@ -242,5 +241,66 @@ class ParentRouteEndToEndTest {
             url { parameters.append("studentId", studentId!!.toString()) }
         }.body<List<ParentLinkDto>>()
         assertEquals(ParentLinkStatus.REVOKED, linksAfter.first().status)
+    }
+
+    @Test
+    fun `parent route validation errors`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) { json() }
+        }
+
+        val teacherToken = tokenService.generateAccessToken(
+            userId = teacherId!!,
+            email = "teacher@example.com",
+            role = UserRole.TEACHER,
+            schoolId = schoolId
+        )
+        val parentToken = tokenService.generateAccessToken(
+            userId = UUID.randomUUID(),
+            email = "parent@example.com",
+            role = UserRole.PARENT,
+            schoolId = null
+        )
+
+        val missingStudentId = client.get("/api/parent-links") {
+            header("Authorization", "Bearer $teacherToken")
+        }
+        assertEquals(HttpStatusCode.BadRequest, missingStudentId.status)
+
+        val invalidRevoke = client.post("/api/parent-links/not-a-uuid/revoke") {
+            header("Authorization", "Bearer $teacherToken")
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidRevoke.status)
+
+        val forbiddenInvite = client.post("/api/parent-invites") {
+            header("Authorization", "Bearer $parentToken")
+            contentType(ContentType.Application.Json)
+            setBody(ParentInviteCreateRequest(studentId = studentId!!.toString()))
+        }
+        assertEquals(HttpStatusCode.Forbidden, forbiddenInvite.status)
+
+        val missingAssignments = client.get("/api/parent/assignments") {
+            header("Authorization", "Bearer $parentToken")
+        }
+        assertEquals(HttpStatusCode.BadRequest, missingAssignments.status)
+
+        val missingSubmissions = client.get("/api/parent/submissions") {
+            header("Authorization", "Bearer $parentToken")
+        }
+        assertEquals(HttpStatusCode.BadRequest, missingSubmissions.status)
+
+        val teacherAssignments = client.get("/api/parent/assignments") {
+            header("Authorization", "Bearer $teacherToken")
+            url { parameters.append("studentId", studentId!!.toString()) }
+        }
+        assertEquals(HttpStatusCode.Forbidden, teacherAssignments.status)
+
+        val teacherSubmissions = client.get("/api/parent/submissions") {
+            header("Authorization", "Bearer $teacherToken")
+            url { parameters.append("studentId", studentId!!.toString()) }
+        }
+        assertEquals(HttpStatusCode.Forbidden, teacherSubmissions.status)
     }
 }

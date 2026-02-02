@@ -40,6 +40,13 @@ data class JoinSchoolRequestDto(
 )
 
 @Serializable
+data class RefreshResponseDto(
+    val accessToken: String,
+    val refreshToken: String,
+    val expiresIn: Long
+)
+
+@Serializable
 data class AuthResponseDto(
     val accessToken: String,
     val refreshToken: String,
@@ -65,8 +72,13 @@ fun Route.authRoute(authService: AuthService) {
                 try {
                     val request = call.receive<RegisterRequestDto>()
 
+                    val email = request.email.trim()
+                    val firstName = request.firstName.trim()
+                    val lastName = request.lastName.trim()
+                    val schoolCode = request.schoolCode?.trim()
+
                     // Validate input
-                    if (request.email.isBlank() || request.password.isBlank()) {
+                    if (email.isBlank() || request.password.isBlank()) {
                         call.respond(HttpStatusCode.BadRequest, ErrorResponse("Email and password are required"))
                         return@post
                     }
@@ -78,11 +90,11 @@ fun Route.authRoute(authService: AuthService) {
                         )
                         return@post
                     }
-                    if (request.firstName.isBlank() || request.lastName.isBlank()) {
+                    if (firstName.isBlank() || lastName.isBlank()) {
                         call.respond(HttpStatusCode.BadRequest, ErrorResponse("First name and last name are required"))
                         return@post
                     }
-                    if (request.schoolCode.isNullOrBlank()) {
+                    if (schoolCode.isNullOrBlank()) {
                         call.respond(HttpStatusCode.BadRequest, ErrorResponse("School code is required"))
                         return@post
                     }
@@ -90,11 +102,11 @@ fun Route.authRoute(authService: AuthService) {
                     val deviceInfo = call.request.header("User-Agent")
                     val (tokens, user) = authService.register(
                         RegisterRequest(
-                            email = request.email,
+                            email = email,
                             password = request.password,
-                            firstName = request.firstName,
-                            lastName = request.lastName,
-                            schoolCode = request.schoolCode
+                            firstName = firstName,
+                            lastName = lastName,
+                            schoolCode = schoolCode
                         ),
                         deviceInfo
                     )
@@ -118,14 +130,15 @@ fun Route.authRoute(authService: AuthService) {
                 try {
                     val request = call.receive<LoginRequestDto>()
 
-                    if (request.email.isBlank() || request.password.isBlank()) {
+                    val email = request.email.trim()
+                    if (email.isBlank() || request.password.isBlank()) {
                         call.respond(HttpStatusCode.BadRequest, ErrorResponse("Email and password are required"))
                         return@post
                     }
 
                     val deviceInfo = call.request.header("User-Agent")
                     val (tokens, user) = authService.login(
-                        LoginRequest(request.email, request.password),
+                        LoginRequest(email, request.password),
                         deviceInfo
                     )
 
@@ -158,10 +171,10 @@ fun Route.authRoute(authService: AuthService) {
                 val tokens = authService.refresh(request.refreshToken, deviceInfo)
 
                 call.respond(
-                    mapOf(
-                        "accessToken" to tokens.accessToken,
-                        "refreshToken" to tokens.refreshToken,
-                        "expiresIn" to tokens.expiresIn
+                    RefreshResponseDto(
+                        accessToken = tokens.accessToken,
+                        refreshToken = tokens.refreshToken,
+                        expiresIn = tokens.expiresIn
                     )
                 )
             } catch (e: AuthException) {

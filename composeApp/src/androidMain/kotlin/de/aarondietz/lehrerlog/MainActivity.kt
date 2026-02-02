@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import de.aarondietz.lehrerlog.auth.initAndroidTokenStorage
+import de.aarondietz.lehrerlog.logging.initAndroidLogFileWriter
+import de.aarondietz.lehrerlog.logging.initAndroidLogSharing
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,6 +17,8 @@ class MainActivity : ComponentActivity() {
 
         // Initialize token storage with context
         initAndroidTokenStorage(applicationContext)
+        initAndroidLogFileWriter(applicationContext)
+        initAndroidLogSharing(applicationContext)
 
         setContent {
             App()

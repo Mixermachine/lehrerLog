@@ -116,7 +116,7 @@ class AuthRepositoryTest {
         )
 
         assertTrue(result is AuthResult.Success)
-        val authResponse = (result as AuthResult.Success).data
+        val authResponse = result.data
         assertEquals("mock-access-token", authResponse.accessToken)
         assertEquals("test@example.com", authResponse.user.email)
         assertEquals("Test", authResponse.user.firstName)
@@ -152,7 +152,7 @@ class AuthRepositoryTest {
         )
 
         assertTrue(result is AuthResult.Error)
-        val errorMessage = (result as AuthResult.Error).message
+        val errorMessage = result.message
         assertTrue(errorMessage.contains("Invalid school code"))
     }
 
@@ -196,7 +196,7 @@ class AuthRepositoryTest {
         )
 
         assertTrue(result is AuthResult.Success)
-        val authResponse = (result as AuthResult.Success).data
+        val authResponse = result.data
         assertEquals("mock-access-token", authResponse.accessToken)
         assertEquals("test@example.com", authResponse.user.email)
     }
@@ -227,7 +227,7 @@ class AuthRepositoryTest {
         )
 
         assertTrue(result is AuthResult.Error)
-        val errorMessage = (result as AuthResult.Error).message
+        val errorMessage = result.message
         assertTrue(errorMessage.contains("Invalid credentials"))
     }
 
@@ -260,7 +260,7 @@ class AuthRepositoryTest {
         )
 
         assertTrue(result is AuthResult.Error)
-        val errorMessage = (result as AuthResult.Error).message
+        val errorMessage = result.message
         assertTrue(errorMessage.contains("Password must be at least 8 characters"))
     }
 
@@ -278,7 +278,231 @@ class AuthRepositoryTest {
         )
 
         assertTrue(result is AuthResult.Error)
-        val errorMessage = (result as AuthResult.Error).message
+        val errorMessage = result.message
         assertTrue(errorMessage.contains("error", ignoreCase = true))
+    }
+
+    @Test
+    fun testRefreshTokenSuccess() = runTest {
+        val tokenResponse = TokenResponse(
+            accessToken = "new-access",
+            refreshToken = "new-refresh",
+            expiresIn = 900
+        )
+        tokenStorage.saveRefreshToken("old-refresh")
+
+        httpClient = createMockClient { request ->
+            when (request.url.encodedPath) {
+                "/auth/refresh" -> respond(
+                    content = json.encodeToString(tokenResponse),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+
+                else -> error("Unexpected request: ${request.url.encodedPath}")
+            }
+        }
+
+        authRepository = AuthRepository(httpClient, tokenStorage)
+        val result = authRepository.refreshToken()
+
+        assertTrue(result is AuthResult.Success)
+        assertEquals("new-access", tokenStorage.getAccessToken())
+        assertEquals("new-refresh", tokenStorage.getRefreshToken())
+    }
+
+    @Test
+    fun testRefreshTokenMissing() = runTest {
+        httpClient = createMockClient {
+            error("Refresh should not be called")
+        }
+        authRepository = AuthRepository(httpClient, tokenStorage)
+
+        val result = authRepository.refreshToken()
+        assertTrue(result is AuthResult.Error)
+        assertTrue(result.message.contains("refresh", ignoreCase = true))
+    }
+
+    @Test
+    fun testRedeemParentInviteSuccess() = runTest {
+        val expectedResponse = AuthResponse(
+            accessToken = "invite-access",
+            refreshToken = "invite-refresh",
+            expiresIn = 900,
+            user = UserDto(
+                id = "parent-123",
+                email = "parent@example.com",
+                firstName = "Pat",
+                lastName = "Guardian",
+                role = "PARENT",
+                schoolId = null
+            )
+        )
+
+        httpClient = createMockClient { request ->
+            when (request.url.encodedPath) {
+                "/api/parent-invites/redeem" -> respond(
+                    content = json.encodeToString(expectedResponse),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+
+                else -> error("Unexpected request: ${request.url.encodedPath}")
+            }
+        }
+
+        authRepository = AuthRepository(httpClient, tokenStorage)
+        val result = authRepository.redeemParentInvite(
+            code = "ABCD1234",
+            email = "parent@example.com",
+            password = "ParentPass123!",
+            firstName = "Pat",
+            lastName = "Guardian"
+        )
+
+        assertTrue(result is AuthResult.Success)
+        assertEquals("invite-access", tokenStorage.getAccessToken())
+    }
+
+    @Test
+    fun testLogoutClearsTokens() = runTest {
+        tokenStorage.saveAccessToken("access")
+        tokenStorage.saveRefreshToken("refresh")
+
+        httpClient = createMockClient { request ->
+            when (request.url.encodedPath) {
+                "/auth/logout" -> respond(
+                    content = "{}",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+
+                else -> error("Unexpected request: ${request.url.encodedPath}")
+            }
+        }
+
+        authRepository = AuthRepository(httpClient, tokenStorage)
+        val result = authRepository.logout()
+
+        assertTrue(result is AuthResult.Success)
+        assertNull(tokenStorage.getAccessToken())
+        assertNull(tokenStorage.getRefreshToken())
+    }
+
+    @Test
+    fun testJoinSchoolRefreshesOnUnauthorized() = runTest {
+        val authResponse = AuthResponse(
+            accessToken = "joined-access",
+            refreshToken = "joined-refresh",
+            expiresIn = 900,
+            user = UserDto(
+                id = "user-join",
+                email = "join@example.com",
+                firstName = "Join",
+                lastName = "School",
+                role = "TEACHER",
+                schoolId = "school-123"
+            )
+        )
+        val refreshed = TokenResponse(
+            accessToken = "refreshed-access",
+            refreshToken = "refreshed-refresh",
+            expiresIn = 900
+        )
+
+        var joinAttempts = 0
+        tokenStorage.saveAccessToken("expired-access")
+        tokenStorage.saveRefreshToken("refresh-token")
+
+        httpClient = createMockClient { request ->
+            when (request.url.encodedPath) {
+                "/auth/join-school" -> {
+                    joinAttempts += 1
+                    if (joinAttempts == 1) {
+                        respond(
+                            content = json.encodeToString(ErrorResponse("Unauthorized")),
+                            status = HttpStatusCode.Unauthorized,
+                            headers = headersOf(HttpHeaders.ContentType, "application/json")
+                        )
+                    } else {
+                        respond(
+                            content = json.encodeToString(authResponse),
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, "application/json")
+                        )
+                    }
+                }
+
+                "/auth/refresh" -> respond(
+                    content = json.encodeToString(refreshed),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+
+                else -> error("Unexpected request: ${request.url.encodedPath}")
+            }
+        }
+
+        authRepository = AuthRepository(httpClient, tokenStorage)
+        val result = authRepository.joinSchool("SCHOOLCODE")
+
+        assertTrue(result is AuthResult.Success)
+        assertEquals("joined-access", tokenStorage.getAccessToken())
+    }
+
+    @Test
+    fun testGetCurrentUserRefreshesOnUnauthorized() = runTest {
+        val user = UserDto(
+            id = "user-1",
+            email = "teacher@example.com",
+            firstName = "Alex",
+            lastName = "Teacher",
+            role = "TEACHER",
+            schoolId = "school-123"
+        )
+        val refreshed = TokenResponse(
+            accessToken = "refreshed-access",
+            refreshToken = "refreshed-refresh",
+            expiresIn = 900
+        )
+
+        var attempts = 0
+        tokenStorage.saveAccessToken("expired-access")
+        tokenStorage.saveRefreshToken("refresh-token")
+
+        httpClient = createMockClient { request ->
+            when (request.url.encodedPath) {
+                "/auth/me" -> {
+                    attempts += 1
+                    if (attempts == 1) {
+                        respond(
+                            content = json.encodeToString(ErrorResponse("Unauthorized")),
+                            status = HttpStatusCode.Unauthorized,
+                            headers = headersOf(HttpHeaders.ContentType, "application/json")
+                        )
+                    } else {
+                        respond(
+                            content = json.encodeToString(user),
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, "application/json")
+                        )
+                    }
+                }
+
+                "/auth/refresh" -> respond(
+                    content = json.encodeToString(refreshed),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+
+                else -> error("Unexpected request: ${request.url.encodedPath}")
+            }
+        }
+
+        authRepository = AuthRepository(httpClient, tokenStorage)
+        val result = authRepository.getCurrentUser()
+
+        assertTrue(result is AuthResult.Success)
+        assertEquals("teacher@example.com", result.data.email)
     }
 }

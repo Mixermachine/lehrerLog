@@ -25,12 +25,16 @@ kotlin {
     }
 
     js {
-        browser()
+        browser {
+            testTask {}
+        }
     }
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        browser()
+        browser {
+            testTask {}
+        }
     }
 
     sourceSets {

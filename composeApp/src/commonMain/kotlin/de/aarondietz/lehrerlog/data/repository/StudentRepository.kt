@@ -5,6 +5,7 @@ import de.aarondietz.lehrerlog.data.StudentDto
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,6 +53,7 @@ class StudentRepository(
     ): Result<StudentDto> {
         return try {
             val student = httpClient.post("$baseUrl/api/students") {
+                contentType(ContentType.Application.Json)
                 setBody(
                     de.aarondietz.lehrerlog.data.CreateStudentRequest(
                         firstName = firstName,

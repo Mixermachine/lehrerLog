@@ -7,6 +7,7 @@ import de.aarondietz.lehrerlog.data.UpdateLatePeriodRequest
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 
 class LatePeriodRepository(
     private val httpClient: HttpClient,
@@ -27,6 +28,7 @@ class LatePeriodRepository(
     suspend fun createPeriod(name: String, startsAt: String, endsAt: String?): Result<LatePeriodDto> {
         return try {
             val period = httpClient.post("$baseUrl/api/late-periods") {
+                contentType(ContentType.Application.Json)
                 setBody(CreateLatePeriodRequest(name, startsAt, endsAt))
                 tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }.body<LatePeriodDto>()
@@ -44,6 +46,7 @@ class LatePeriodRepository(
     ): Result<LatePeriodDto> {
         return try {
             val period = httpClient.put("$baseUrl/api/late-periods/$periodId") {
+                contentType(ContentType.Application.Json)
                 setBody(UpdateLatePeriodRequest(name, startsAt, endsAt))
                 tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }.body<LatePeriodDto>()

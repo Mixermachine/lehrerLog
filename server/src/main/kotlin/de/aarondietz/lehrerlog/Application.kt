@@ -14,7 +14,7 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.BadRequestException
+import io.ktor.server.plugins.*
 import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
@@ -140,10 +140,20 @@ fun Application.module() {
         (System.getenv("AUTH_RATE_LIMIT_REFILL_SECONDS") ?: System.getProperty("AUTH_RATE_LIMIT_REFILL_SECONDS"))
             ?.toLongOrNull()
             ?: 60L
+    val publicRateLimit = (System.getenv("PUBLIC_RATE_LIMIT") ?: System.getProperty("PUBLIC_RATE_LIMIT"))
+        ?.toIntOrNull()
+        ?: 60
+    val publicRateLimitRefillSeconds =
+        (System.getenv("PUBLIC_RATE_LIMIT_REFILL_SECONDS") ?: System.getProperty("PUBLIC_RATE_LIMIT_REFILL_SECONDS"))
+            ?.toLongOrNull()
+            ?: 60L
 
     install(RateLimit) {
         register(RateLimitName("auth")) {
             rateLimiter(limit = authRateLimit, refillPeriod = authRateLimitRefillSeconds.seconds)
+        }
+        register(RateLimitName("public")) {
+            rateLimiter(limit = publicRateLimit, refillPeriod = publicRateLimitRefillSeconds.seconds)
         }
     }
 
@@ -179,40 +189,60 @@ fun Application.module() {
         .build()
 
     routing {
-        get("/health") {
-            val objectStorageUrl = System.getenv("OBJECT_STORAGE_HEALTH_URL")?.trim().orEmpty()
-            val objectStorageToken = System.getenv("OBJECT_STORAGE_HEALTH_TOKEN")?.trim().orEmpty()
-            val dbHealthy = try {
-                transaction {
-                    exec("SELECT 1") { it.next() }
+        rateLimit(RateLimitName("public")) {
+            get("/health") {
+                val objectStorageUrl = (System.getenv("OBJECT_STORAGE_HEALTH_URL")
+                    ?: System.getProperty("OBJECT_STORAGE_HEALTH_URL"))
+                    ?.trim()
+                    .orEmpty()
+                val objectStorageToken = (System.getenv("OBJECT_STORAGE_HEALTH_TOKEN")
+                    ?: System.getProperty("OBJECT_STORAGE_HEALTH_TOKEN"))
+                    ?.trim()
+                    .orEmpty()
+                val dbHealthy = try {
+                    transaction {
+                        exec("SELECT 1") { it.next() }
+                    }
+                    true
+                } catch (e: Exception) {
+                    environment.log.error("Database health check failed", e)
+                    false
                 }
-                true
-            } catch (e: Exception) {
-                environment.log.error("Database health check failed", e)
-                false
-            }
 
-            val objectStorageStatus = if (objectStorageUrl.isBlank()) {
-                "unknown"
-            } else {
-                val storageHealthy = checkObjectStorageHealth(
-                    environment,
-                    healthHttpClient,
-                    objectStorageUrl,
-                    objectStorageToken
-                )
-                if (storageHealthy) "healthy" else "unhealthy"
-            }
+                val objectStorageStatus = when {
+                    objectStorageUrl.isBlank() -> "unknown"
+                    parseHealthUri(objectStorageUrl) == null -> {
+                        environment.log.warn("Object storage health URL is invalid")
+                        "invalid"
+                    }
 
-            val overallHealthy = dbHealthy && (objectStorageUrl.isBlank() || objectStorageStatus == "healthy")
-            if (overallHealthy) {
-                call.respond(HealthResponse(status = "ok", database = "connected", objectStorage = objectStorageStatus))
-            } else {
-                val dbStatus = if (dbHealthy) "connected" else "disconnected"
-                call.respond(
-                    HttpStatusCode.ServiceUnavailable,
-                    HealthResponse(status = "unhealthy", database = dbStatus, objectStorage = objectStorageStatus)
-                )
+                    else -> {
+                        val storageHealthy = checkObjectStorageHealth(
+                            environment,
+                            healthHttpClient,
+                            objectStorageUrl,
+                            objectStorageToken
+                        )
+                        if (storageHealthy) "healthy" else "unhealthy"
+                    }
+                }
+
+                val overallHealthy = dbHealthy && (objectStorageUrl.isBlank() || objectStorageStatus == "healthy")
+                if (overallHealthy) {
+                    call.respond(
+                        HealthResponse(
+                            status = "ok",
+                            database = "connected",
+                            objectStorage = objectStorageStatus
+                        )
+                    )
+                } else {
+                    val dbStatus = if (dbHealthy) "connected" else "disconnected"
+                    call.respond(
+                        HttpStatusCode.ServiceUnavailable,
+                        HealthResponse(status = "unhealthy", database = dbStatus, objectStorage = objectStorageStatus)
+                    )
+                }
             }
         }
         registerApiRoutes(authService, schoolCatalogService)
@@ -245,6 +275,12 @@ data class HealthResponse(
     val database: String,
     val objectStorage: String
 )
+
+private fun parseHealthUri(rawUrl: String): URI? {
+    return runCatching { URI.create(rawUrl) }
+        .getOrNull()
+        ?.takeIf { it.scheme in setOf("http", "https") && !it.host.isNullOrBlank() }
+}
 
 private suspend fun checkObjectStorageHealth(
     environment: ApplicationEnvironment,

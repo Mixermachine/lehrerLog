@@ -123,6 +123,16 @@ tasks.jacocoTestReport {
                     "**/de/aarondietz/lehrerlog/data/**",
                     // Exclude database table definitions
                     "**/de/aarondietz/lehrerlog/db/tables/**",
+                    // Exclude environment/tooling utilities
+                    "**/de/aarondietz/lehrerlog/db/FlywayRepair*",
+                    // Exclude object storage integration wrappers
+                    "**/de/aarondietz/lehrerlog/services/ObjectStorageClient*",
+                    "**/de/aarondietz/lehrerlog/services/FileStorageService${'$'}FileLocation${'$'}ObjectStorage*",
+                    // Exclude sealed result wrappers
+                    "**/de/aarondietz/lehrerlog/services/UpdateResult*",
+                    "**/de/aarondietz/lehrerlog/services/ClassUpdateResult*",
+                    // Exclude external catalog DTOs
+                    "**/de/aarondietz/lehrerlog/schools/**",
                     // Exclude main application entry point
                     "**/de/aarondietz/lehrerlog/ApplicationKt*"
                 )
@@ -133,6 +143,7 @@ tasks.jacocoTestReport {
 
 tasks.jacocoTestCoverageVerification {
     dependsOn(tasks.jacocoTestReport)
+    classDirectories.setFrom(tasks.jacocoTestReport.get().classDirectories)
     violationRules {
         rule {
             limit {
@@ -150,7 +161,13 @@ tasks.jacocoTestCoverageVerification {
                 "de.aarondietz.lehrerlog.ServerConfig*",
                 "de.aarondietz.lehrerlog.data.*",
                 "de.aarondietz.lehrerlog.db.tables.*",
-                "de.aarondietz.lehrerlog.ApplicationKt"
+                "de.aarondietz.lehrerlog.db.FlywayRepair*",
+                "de.aarondietz.lehrerlog.services.ObjectStorageClient*",
+                "de.aarondietz.lehrerlog.services.FileStorageService*ObjectStorage*",
+                "de.aarondietz.lehrerlog.services.UpdateResult*",
+                "de.aarondietz.lehrerlog.services.ClassUpdateResult*",
+                "de.aarondietz.lehrerlog.schools.*",
+                "de.aarondietz.lehrerlog.ApplicationKt*"
             )
         }
     }

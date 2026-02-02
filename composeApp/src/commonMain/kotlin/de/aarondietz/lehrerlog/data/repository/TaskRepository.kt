@@ -46,6 +46,7 @@ class TaskRepository(
     ): Result<TaskDto> {
         return try {
             val task = httpClient.post("$baseUrl/api/tasks") {
+                contentType(ContentType.Application.Json)
                 setBody(CreateTaskRequest(classId, title, description, dueAt))
                 tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }.body<TaskDto>()
@@ -63,6 +64,7 @@ class TaskRepository(
     ): Result<TaskDto> {
         return try {
             val task = httpClient.put("$baseUrl/api/tasks/$taskId") {
+                contentType(ContentType.Application.Json)
                 setBody(UpdateTaskRequest(title, description, dueAt))
                 tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }.body<TaskDto>()
@@ -90,6 +92,7 @@ class TaskRepository(
     ): Result<Unit> {
         return try {
             httpClient.post("$baseUrl/api/tasks/$taskId/targets") {
+                contentType(ContentType.Application.Json)
                 setBody(TaskTargetsRequest(addStudentIds, removeStudentIds))
                 tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }
@@ -105,6 +108,7 @@ class TaskRepository(
     ): Result<TaskSubmissionDto> {
         return try {
             val submission = httpClient.post("$baseUrl/api/tasks/$taskId/submissions") {
+                contentType(ContentType.Application.Json)
                 setBody(request)
                 tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }.body<TaskSubmissionDto>()
@@ -121,6 +125,7 @@ class TaskRepository(
     ): Result<TaskSubmissionDto> {
         return try {
             val submission = httpClient.patch("$baseUrl/api/submissions/$submissionId") {
+                contentType(ContentType.Application.Json)
                 setBody(UpdateTaskSubmissionRequest(grade, note))
                 tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }.body<TaskSubmissionDto>()

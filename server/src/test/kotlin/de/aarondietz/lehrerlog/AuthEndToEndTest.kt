@@ -5,9 +5,7 @@ import de.aarondietz.lehrerlog.auth.PasswordService
 import de.aarondietz.lehrerlog.auth.TokenService
 import de.aarondietz.lehrerlog.db.DatabaseFactory
 import de.aarondietz.lehrerlog.db.tables.*
-import de.aarondietz.lehrerlog.routes.AuthResponseDto
-import de.aarondietz.lehrerlog.routes.LoginRequestDto
-import de.aarondietz.lehrerlog.routes.RegisterRequestDto
+import de.aarondietz.lehrerlog.routes.*
 import de.aarondietz.lehrerlog.schools.SchoolCatalogEntry
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -20,6 +18,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.nio.file.Files
@@ -657,5 +656,134 @@ class AuthEndToEndTest {
         assertEquals(registerAuth.user.id, loginAuth.user.id)
         assertEquals(registerAuth.user.email, loginAuth.user.email)
         assertEquals(registerAuth.user.schoolId, loginAuth.user.schoolId)
+    }
+
+    @Test
+    fun `test refresh logout and me endpoints`() = testApplication {
+        application { module() }
+
+        val testClient = createClient {
+            install(ContentNegotiation) { json() }
+        }
+
+        val email = uniqueTestEmail("refresh.logout")
+
+        val registerResponse = testClient.post("/auth/register") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                RegisterRequestDto(
+                    email = email,
+                    password = validPassword(),
+                    firstName = "Refresh",
+                    lastName = "Logout",
+                    schoolCode = testSchoolCode()
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, registerResponse.status)
+        val auth = registerResponse.body<AuthResponseDto>()
+
+        val meResponse = testClient.get("/auth/me") {
+            header("Authorization", "Bearer ${auth.accessToken}")
+        }
+        assertEquals(HttpStatusCode.OK, meResponse.status)
+        val me = meResponse.body<UserDto>()
+        assertEquals(auth.user.id, me.id)
+        assertEquals(auth.user.role, me.role)
+
+        val refreshResponse = testClient.post("/auth/refresh") {
+            contentType(ContentType.Application.Json)
+            setBody(RefreshRequestDto(refreshToken = auth.refreshToken))
+        }
+        assertEquals(HttpStatusCode.OK, refreshResponse.status)
+        val refreshed = refreshResponse.body<RefreshResponseDto>()
+        assertTrue(refreshed.accessToken.isNotBlank())
+
+        val logoutResponse = testClient.post("/auth/logout") {
+            header("Authorization", "Bearer ${auth.accessToken}")
+            contentType(ContentType.Application.Json)
+            setBody(LogoutRequestDto(refreshToken = auth.refreshToken))
+        }
+        assertEquals(HttpStatusCode.OK, logoutResponse.status)
+
+        val logoutAllResponse = testClient.post("/auth/logout-all") {
+            header("Authorization", "Bearer ${auth.accessToken}")
+        }
+        assertEquals(HttpStatusCode.OK, logoutAllResponse.status)
+    }
+
+    @Test
+    fun `test join school endpoint`() = testApplication {
+        application { module() }
+
+        val testClient = createClient {
+            install(ContentNegotiation) { json() }
+        }
+
+        val passwordService = PasswordService()
+        val tokenService = TokenService()
+        val email = uniqueTestEmail("join.school")
+
+        val userId = transaction {
+            Users.insertAndGetId {
+                it[Users.email] = email
+                it[Users.passwordHash] = passwordService.hashPassword(validPassword())
+                it[Users.firstName] = "Join"
+                it[Users.lastName] = "School"
+                it[Users.role] = UserRole.TEACHER
+                it[Users.schoolId] = null
+                it[Users.isActive] = true
+            }.value
+        }
+
+        val accessToken = tokenService.generateAccessToken(
+            userId = userId,
+            email = email,
+            role = UserRole.TEACHER,
+            schoolId = null
+        )
+
+        val joinResponse = testClient.post("/auth/join-school") {
+            header("Authorization", "Bearer $accessToken")
+            contentType(ContentType.Application.Json)
+            setBody(JoinSchoolRequestDto(schoolCode = testSchoolCode()))
+        }
+        assertEquals(HttpStatusCode.OK, joinResponse.status)
+        val joinAuth = joinResponse.body<AuthResponseDto>()
+        assertEquals(testSchoolId!!.toString(), joinAuth.user.schoolId)
+    }
+
+    @Test
+    fun `test refresh validation errors`() = testApplication {
+        application { module() }
+
+        val testClient = createClient {
+            install(ContentNegotiation) { json() }
+        }
+
+        val tokenService = TokenService()
+
+        val emptyRefresh = testClient.post("/auth/refresh") {
+            contentType(ContentType.Application.Json)
+            setBody(RefreshRequestDto(refreshToken = ""))
+        }
+        assertEquals(HttpStatusCode.BadRequest, emptyRefresh.status)
+
+        val invalidRefresh = testClient.post("/auth/refresh") {
+            contentType(ContentType.Application.Json)
+            setBody(RefreshRequestDto(refreshToken = "not-a-real-token"))
+        }
+        assertEquals(HttpStatusCode.Unauthorized, invalidRefresh.status)
+
+        val missingUserToken = tokenService.generateAccessToken(
+            userId = UUID.randomUUID(),
+            email = "missing.user@example.com",
+            role = UserRole.TEACHER,
+            schoolId = null
+        )
+        val missingUserResponse = testClient.get("/auth/me") {
+            header("Authorization", "Bearer $missingUserToken")
+        }
+        assertEquals(HttpStatusCode.NotFound, missingUserResponse.status)
     }
 }

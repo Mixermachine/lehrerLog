@@ -1,10 +1,13 @@
 package de.aarondietz.lehrerlog
 
-import co.touchlab.kermit.Logger
+import co.touchlab.kermit.Severity
 import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.auth.createTokenStorage
 import de.aarondietz.lehrerlog.data.repository.*
+import de.aarondietz.lehrerlog.logging.LogFileWriter
+import de.aarondietz.lehrerlog.logging.LogRepository
+import de.aarondietz.lehrerlog.logging.LoggerConfig
 import de.aarondietz.lehrerlog.network.createHttpClient
 import de.aarondietz.lehrerlog.ui.screens.auth.AuthViewModel
 import de.aarondietz.lehrerlog.ui.screens.home.HomeViewModel
@@ -22,9 +25,18 @@ import org.koin.dsl.module
 
 val commonModule = module {
     // Logging
-    single {
-        Logger.withTag("LehrerLog")
+    single { LogFileWriter().apply { initialize() } }
+    single(createdAtStart = true) {
+        LoggerConfig.apply {
+            initialize(
+                fileWriter = get(),
+                minSeverity = if (isDebugBuild()) Severity.Debug else Severity.Info,
+                enableFileLogging = true,
+                enableConsoleLogging = isDebugBuild()
+            )
+        }
     }
+    single { LogRepository(get()) }
 
     single { createHttpClient() }
     single<TokenStorage> { createTokenStorage() }
@@ -32,7 +44,7 @@ val commonModule = module {
 
     // Repositories
     single { StudentRepository(get(), get(), ServerConfig.SERVER_URL) }
-    single { SchoolClassRepository(get(), get(), ServerConfig.SERVER_URL, get()) }
+    single { SchoolClassRepository(get(), get(), ServerConfig.SERVER_URL) }
     single { SchoolRepository(get(), ServerConfig.SERVER_URL) }
     single { TaskRepository(get(), get(), ServerConfig.SERVER_URL) }
     single { ParentRepository(get(), get(), ServerConfig.SERVER_URL) }
@@ -47,13 +59,13 @@ val commonModule = module {
     viewModel { AuthViewModel(get(), get()) }
     viewModel { HomeViewModel(get(), get(), get()) }
     viewModel { SettingsViewModel(get(), get()) }
-    viewModel { StudentsViewModel(get(), get(), get(), get(), get(), get()) }
-    viewModel { TasksViewModel(get(), get(), get(), get(), get()) }
+    viewModel { StudentsViewModel(get(), get(), get(), get(), get()) }
+    viewModel { TasksViewModel(get(), get(), get(), get()) }
     viewModel { ParentStudentsViewModel(get(), get()) }
     viewModel { ParentAssignmentsViewModel(get(), get()) }
     viewModel { ParentSubmissionsViewModel(get(), get()) }
-    viewModel { ParentInviteManagementViewModel(get(), get(), get()) }
-    viewModel { LatePeriodManagementViewModel(get(), get()) }
+    viewModel { ParentInviteManagementViewModel(get(), get()) }
+    viewModel { LatePeriodManagementViewModel(get()) }
 }
 
 // For platform-specific dependencies

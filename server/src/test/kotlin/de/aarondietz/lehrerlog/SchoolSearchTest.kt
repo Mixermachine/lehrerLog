@@ -10,6 +10,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.ratelimit.*
 import io.ktor.server.routing.*
 import io.ktor.server.testing.*
 import kotlinx.serialization.json.Json
@@ -18,6 +19,7 @@ import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.time.Duration.Companion.seconds
 
 class SchoolSearchTest {
 
@@ -73,6 +75,11 @@ class SchoolSearchTest {
         application {
             install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) {
                 json()
+            }
+            install(RateLimit) {
+                register(RateLimitName("public")) {
+                    rateLimiter(limit = 100, refillPeriod = 60.seconds)
+                }
             }
             routing {
                 schoolRoute(service)

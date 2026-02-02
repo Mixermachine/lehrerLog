@@ -1,11 +1,12 @@
 package de.aarondietz.lehrerlog.data.repository
 
-import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.data.SchoolClassDto
+import de.aarondietz.lehrerlog.logging.logger
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,9 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 class SchoolClassRepository(
     private val httpClient: HttpClient,
     private val tokenStorage: TokenStorage,
-    private val baseUrl: String,
-    private val logger: Logger
+    private val baseUrl: String
 ) {
+    private val logger by lazy { logger() }
     private val classesState = MutableStateFlow<List<SchoolClassDto>>(emptyList())
 
     /**
@@ -56,6 +57,7 @@ class SchoolClassRepository(
         logger.d { "createClass called: name=$name, alternativeName=$alternativeName" }
         return try {
             val schoolClass = httpClient.post("$baseUrl/api/classes") {
+                contentType(ContentType.Application.Json)
                 setBody(
                     de.aarondietz.lehrerlog.data.CreateSchoolClassRequest(
                         name = name,

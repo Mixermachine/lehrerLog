@@ -2,7 +2,6 @@ package de.aarondietz.lehrerlog.ui.screens.students
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.AuthResult
 import de.aarondietz.lehrerlog.data.ParentInviteCreateResponse
@@ -13,6 +12,7 @@ import de.aarondietz.lehrerlog.data.repository.ParentInviteRepository
 import de.aarondietz.lehrerlog.data.repository.ParentLinksRepository
 import de.aarondietz.lehrerlog.data.repository.SchoolClassRepository
 import de.aarondietz.lehrerlog.data.repository.StudentRepository
+import de.aarondietz.lehrerlog.logging.logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -26,9 +26,9 @@ class StudentsViewModel(
     private val schoolClassRepository: SchoolClassRepository,
     private val parentInviteRepository: ParentInviteRepository,
     private val parentLinksRepository: ParentLinksRepository,
-    private val authRepository: AuthRepository,
-    private val logger: Logger
+    private val authRepository: AuthRepository
 ) : ViewModel() {
+    private val logger by lazy { logger() }
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()

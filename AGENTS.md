@@ -21,6 +21,18 @@ Kotlin Multiplatform (KMP) + Compose Multiplatform application for teachers.
 - **Async:** Coroutines + Flow
 - **Auth:** JWT with refresh tokens, role-based (`ADMIN`, `SCHOOL_ADMIN`, `TEACHER`)
 
+## Client Logging
+
+- Use `logger()` extension (class-based tags) instead of injecting `Logger`.
+- Configure logging in `AppModule.kt` via `LoggerConfig` and `LogFileWriter`.
+- Android must call `initAndroidLogFileWriter()` and `initAndroidLogSharing()` in `MainActivity`.
+- Log file locations:
+    - Android: `cacheDir/logs`
+    - iOS: Application Support `logs/`
+    - Desktop: `~/.lehrerlog/logs`
+    - Web: localStorage (OPFS if available)
+- Never log secrets or PII; log anonymized identifiers only.
+
 ## Commands
 
 Use `./gradlew` (macOS/Linux) or `.\gradlew.bat` (Windows).

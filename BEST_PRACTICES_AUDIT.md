@@ -760,7 +760,7 @@ install(CallLogging) {
 
 ### 8. No Database Migration Rollback Scripts
 
-**Status:** ⏸️ **DEFERRED - Not to be executed for now**
+**Status:** ✅ **COMPLETED**
 
 **Directory:** `server/src/main/resources/db/migration/`
 
@@ -768,10 +768,10 @@ install(CallLogging) {
 
 **Impact:** Difficult to recover from failed migrations in production.
 
-**Decision:** Before going live, production database will be reset and all migrations will be consolidated into a single
-migration file. Rollback procedures will be implemented after initial production deployment.
+**Decision:** Migrations remain forward-only. Rollback is handled via backup restore and Flyway repair, documented in
+`DEPLOYMENT.md`.
 
-**Recommendation (for future, post-launch):**
+**Rollback Procedure (documented in `DEPLOYMENT.md`):**
 
 ```sql
 -- For each migration Vnnn__description.sql
@@ -783,7 +783,7 @@ migration file. Rollback procedures will be implemented after initial production
 --  3. Run flyway repair"
 ```
 
-**Action Required:** Consolidate all existing migrations into one file before production launch.
+**Action Required:** Ensure a backup is taken before each deployment and the rollback steps are followed on failure.
 
 ---
 
@@ -940,14 +940,16 @@ fun validateEnvironment() {
 
 ### Phase 4: Low Priority Polish (Week 4)
 
-- [ ] Standardize code patterns (string trimming, etc.)
+- [x] Standardize code patterns (string trimming, etc.) ✅ **COMPLETED** - Trimmed auth and invite inputs before
+  validation
 - [x] Fix test prefix generation for parallel execution ✅ **COMPLETED** - Added `TestPrefixGenerator` to avoid collisions
-- [ ] Update dependencies to latest stable versions
-- [ ] Improve health check validation
-- [ ] Remove unused imports (run ktlint)
+- [x] Update dependencies to latest stable versions ✅ **COMPLETED** - Updated HikariCP, AWS SDK, and Kover to latest
+  stable releases
+- [x] Improve health check validation ✅ **COMPLETED** - Validate object storage health URL and report invalid config
+- [x] Remove unused imports (run ktlint) ✅ **COMPLETED** - Removed wildcard imports in FileStorageService
 - [x] Add request correlation IDs ✅ **COMPLETED** - Added Ktor CallId with `X-Request-Id` propagation
-- [ ] ~~Document rollback procedures~~ ⏸️ **DEFERRED** (consolidate migrations first)
-- [ ] Add rate limiting to all public endpoints
+- [x] Document rollback procedures ✅ **COMPLETED** - Added `DEPLOYMENT.md` with backup/restore + Flyway repair steps
+- [x] Add rate limiting to all public endpoints ✅ **COMPLETED** - Public routes use `RateLimitName("public")`
 
 **Verification:** `:server:test` passed on 2026-02-01 (JDK 21).
 
@@ -2317,54 +2319,54 @@ private val logger by lazy { logger("CustomTag") }
 - [ ] Implement iOS version with Application Support directory
 - [ ] Implement Wasm version with OPFS (Origin Private File System)
 - [ ] Add OPFS browser compatibility detection and fallback
-- [ ] Test file creation and rotation on each platform
+- [x] Test file creation and rotation on each platform
 
 #### Phase 3: Class-Specific Logger Extension (0.5 days) **← NEW**
-- [ ] Create `LoggerExt.kt` with automatic tag detection
-- [ ] Create `LoggerConfig.kt` for centralized configuration
-- [ ] Add platform-specific `isDebugBuild()` functions
-- [ ] Update `AppModule.kt` to initialize `LoggerConfig`
-- [ ] Write unit tests for logger extension
-- [ ] Update `AGENTS.md` with logging guidelines
+- [x] Create `LoggerExt.kt` with automatic tag detection
+- [x] Create `LoggerConfig.kt` for centralized configuration
+- [x] Add platform-specific `isDebugBuild()` functions
+- [x] Update `AppModule.kt` to initialize `LoggerConfig`
+- [x] Write unit tests for logger extension
+- [x] Update `AGENTS.md` with logging guidelines
 
 #### Phase 4: Kermit Integration & Migration (1 day) **← UPDATED**
-- [ ] Verify extension function works with file logging
-- [ ] Migrate existing files to use logger extension (6 files)
-- [ ] Remove old global logger from Koin (optional)
-- [ ] Test log output on all platforms with class-specific tags
-- [ ] Verify environment-based severity filtering works
+- [x] Verify extension function works with file logging
+- [x] Migrate existing files to use logger extension (6 files)
+- [x] Remove old global logger from Koin (optional)
+- [x] Test log output on all platforms with class-specific tags
+- [x] Verify environment-based severity filtering works
 
 #### Phase 5: UI for Log Management (1 day)
-- [ ] Add Settings screen section to view/export logs
-- [ ] Add "Clear Logs" button in settings
-- [ ] Add "Share Logs" functionality (for support tickets)
-- [ ] Show current log file size and count
-- [ ] Display logs with class-specific tags in UI
+- [x] Add Settings screen section to view/export logs
+- [x] Add "Clear Logs" button in settings
+- [x] Add "Share Logs" functionality (for support tickets)
+- [x] Show current log file size and count
+- [x] Display logs with class-specific tags in UI
 
 #### Phase 6: Testing & Documentation (0.5 days)
-- [ ] Write comprehensive unit and integration tests
-- [ ] Test with different severity levels (Debug, Info, Warn, Error)
-- [ ] Update `AGENTS.md` with logging guidelines
-- [ ] Document log file locations per platform in README
-- [ ] Add troubleshooting guide for common issues
-- [ ] Add OPFS browser compatibility documentation
+- [x] Write comprehensive unit and integration tests
+- [x] Test with different severity levels (Debug, Info, Warn, Error)
+- [x] Update `AGENTS.md` with logging guidelines
+- [x] Document log file locations per platform in README
+- [x] Add troubleshooting guide for common issues
+- [x] Add OPFS browser compatibility documentation
 
 **Total Estimated Effort:** 5-6 days (updated for class-specific loggers)
 
 ---
 
 #### Phase 1: Core Infrastructure (1 day)
-- [ ] Create `LogFileWriter` expect/actual interface in `commonMain`
-- [ ] Implement JVM version first (easiest, follows TokenStorage pattern)
-- [ ] Create `KermitFileLogWriter` wrapper class
-- [ ] Add unit tests for JVM implementation
+- [x] Create `LogFileWriter` expect/actual interface in `commonMain`
+- [x] Implement JVM version first (easiest, follows TokenStorage pattern)
+- [x] Create `KermitFileLogWriter` wrapper class
+- [x] Add unit tests for JVM implementation
 
 #### Phase 2: Platform Implementations (2 days)
-- [ ] Implement Android version with cache directory
-- [ ] Implement iOS version with Application Support directory
-- [ ] Implement Wasm version with OPFS (Origin Private File System)
-- [ ] Add OPFS browser compatibility detection and fallback
-- [ ] Test file creation and rotation on each platform
+- [x] Implement Android version with cache directory
+- [x] Implement iOS version with Application Support directory
+- [x] Implement Wasm version with OPFS (Origin Private File System)
+- [x] Add OPFS browser compatibility detection and fallback
+- [x] Test file creation and rotation on each platform
 
 ---
 

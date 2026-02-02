@@ -11,13 +11,23 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import io.ktor.server.testing.*
+import io.ktor.utils.io.*
+import io.ktor.utils.io.core.readBytes
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.net.ServerSocket
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.io.use
 import kotlin.test.*
 
 class FileRouteEndToEndTest {
@@ -503,5 +513,446 @@ class FileRouteEndToEndTest {
             header("Authorization", "Bearer $parentToken")
         }
         assertEquals(HttpStatusCode.NotFound, deniedSubmissionDownload.status)
+    }
+
+    @Test
+    fun `file route upload validation errors`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) { json() }
+        }
+
+        val token = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "test@example.com",
+            role = UserRole.TEACHER,
+            schoolId = schoolId
+        )
+
+        val taskResponse = client.post("/api/tasks") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = classId!!.toString(),
+                    title = "Uploads",
+                    description = null,
+                    dueAt = "2026-02-12"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, taskResponse.status)
+        val task = taskResponse.body<TaskDto>()
+
+        val missingFile = client.post("/api/tasks/${task.id}/files") {
+            header("Authorization", "Bearer $token")
+            setBody(MultiPartFormDataContent(formData { }))
+        }
+        assertEquals(HttpStatusCode.BadRequest, missingFile.status)
+
+        val fileBytes = "pdf-content".encodeToByteArray()
+        val invalidTaskId = client.post("/api/tasks/not-a-uuid/files") {
+            header("Authorization", "Bearer $token")
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "file",
+                            fileBytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "application/pdf")
+                                append(HttpHeaders.ContentDisposition, "filename=\"invalid.pdf\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidTaskId.status)
+
+        val missingSubmission = client.post("/api/tasks/${task.id}/submissions/${UUID.randomUUID()}/files") {
+            header("Authorization", "Bearer $token")
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "file",
+                            fileBytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "application/pdf")
+                                append(HttpHeaders.ContentDisposition, "filename=\"missing.pdf\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.NotFound, missingSubmission.status)
+
+        val parentEmail = "parent.${(10000..99999).random()}@example.com"
+        transaction {
+            parentId = Users.insertAndGetId {
+                it[email] = parentEmail
+                it[passwordHash] = "test"
+                it[firstName] = "Parent"
+                it[lastName] = "Upload"
+                it[role] = UserRole.PARENT
+                it[Users.schoolId] = null
+                it[isActive] = true
+            }.value
+        }
+
+        val parentToken = tokenService.generateAccessToken(
+            userId = parentId!!,
+            email = parentEmail,
+            role = UserRole.PARENT,
+            schoolId = null
+        )
+
+        val parentUpload = client.post("/api/tasks/${task.id}/files") {
+            header("Authorization", "Bearer $parentToken")
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "file",
+                            fileBytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "application/pdf")
+                                append(HttpHeaders.ContentDisposition, "filename=\"parent.pdf\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Forbidden, parentUpload.status)
+    }
+
+    @Test
+    fun `file route download and quota errors`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) { json() }
+        }
+
+        val token = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "test@example.com",
+            role = UserRole.TEACHER,
+            schoolId = schoolId
+        )
+        val noSchoolToken = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "test@example.com",
+            role = UserRole.TEACHER,
+            schoolId = null
+        )
+
+        val invalidFileId = client.get("/api/files/not-a-uuid") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidFileId.status)
+
+        val forbiddenDownload = client.get("/api/files/${UUID.randomUUID()}") {
+            header("Authorization", "Bearer $noSchoolToken")
+        }
+        assertEquals(HttpStatusCode.Forbidden, forbiddenDownload.status)
+
+        val notFoundDownload = client.get("/api/files/${UUID.randomUUID()}") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.NotFound, notFoundDownload.status)
+
+        val taskResponse = client.post("/api/tasks") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = classId!!.toString(),
+                    title = "Quota Task",
+                    description = null,
+                    dueAt = "2026-02-13"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, taskResponse.status)
+        val task = taskResponse.body<TaskDto>()
+
+        val fileBytes = "data".encodeToByteArray()
+        val invalidSubmissionId = client.post("/api/tasks/${task.id}/submissions/not-a-uuid/files") {
+            header("Authorization", "Bearer $token")
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "file",
+                            fileBytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "application/pdf")
+                                append(HttpHeaders.ContentDisposition, "filename=\"invalid-submission.pdf\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidSubmissionId.status)
+
+        val defaultPlanId = UUID.fromString("00000000-0000-0000-0000-000000000001")
+        val (originalMaxFile, originalMaxTotal) = transaction {
+            val row = StoragePlans.selectAll()
+                .where { StoragePlans.id eq defaultPlanId }
+                .single()
+            row[StoragePlans.maxFileBytes] to row[StoragePlans.maxTotalBytes]
+        }
+
+        val ownerFilter = (StorageUsage.ownerType eq StorageOwnerType.SCHOOL.name) and
+                (StorageUsage.ownerId eq schoolId!!)
+
+        try {
+            transaction {
+                StoragePlans.update({ StoragePlans.id eq defaultPlanId }) {
+                    it[maxFileBytes] = 3L
+                    it[maxTotalBytes] = originalMaxTotal
+                }
+                StorageUsage.update({ ownerFilter }) {
+                    it[usedTotalBytes] = 0
+                }
+            }
+
+            val tooLarge = client.post("/api/tasks/${task.id}/files") {
+                header("Authorization", "Bearer $token")
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append(
+                                "file",
+                                fileBytes,
+                                Headers.build {
+                                    append(HttpHeaders.ContentType, "application/pdf")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"too-large.pdf\"")
+                                }
+                            )
+                        }
+                    )
+                )
+            }
+            assertEquals(HttpStatusCode.PayloadTooLarge, tooLarge.status)
+
+            transaction {
+                StoragePlans.update({ StoragePlans.id eq defaultPlanId }) {
+                    it[maxFileBytes] = originalMaxFile
+                    it[maxTotalBytes] = 3L
+                }
+                StorageUsage.update({ ownerFilter }) {
+                    it[usedTotalBytes] = 0
+                }
+            }
+
+            val quotaExceeded = client.post("/api/tasks/${task.id}/files") {
+                header("Authorization", "Bearer $token")
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append(
+                                "file",
+                                fileBytes,
+                                Headers.build {
+                                    append(HttpHeaders.ContentType, "application/pdf")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"quota.pdf\"")
+                                }
+                            )
+                        }
+                    )
+                )
+            }
+            assertEquals(HttpStatusCode.Conflict, quotaExceeded.status)
+        } finally {
+            transaction {
+                StoragePlans.update({ StoragePlans.id eq defaultPlanId }) {
+                    it[maxFileBytes] = originalMaxFile
+                    it[maxTotalBytes] = originalMaxTotal
+                }
+                StorageUsage.update({ ownerFilter }) {
+                    it[usedTotalBytes] = 0
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `download task file from object storage`() = testApplication {
+        val objectStorage = startObjectStorageStub()
+        System.setProperty("OBJECT_STORAGE_ENDPOINT", objectStorage.endpoint)
+        System.setProperty("OBJECT_STORAGE_BUCKET", objectStorage.bucket)
+        System.setProperty("OBJECT_STORAGE_REGION", "us-east-1")
+        System.setProperty("OBJECT_STORAGE_ACCESS_KEY", "test-access")
+        System.setProperty("OBJECT_STORAGE_SECRET_KEY", "test-secret")
+        System.setProperty("OBJECT_STORAGE_PATH_STYLE", "true")
+
+        try {
+            application { module() }
+
+            val client = createClient {
+                install(ContentNegotiation) { json() }
+            }
+
+            val token = tokenService.generateAccessToken(
+                userId = userId!!,
+                email = "test@example.com",
+                role = UserRole.TEACHER,
+                schoolId = schoolId
+            )
+
+            val createTaskResponse = client.post("/api/tasks") {
+                header("Authorization", "Bearer $token")
+                contentType(ContentType.Application.Json)
+                setBody(
+                    CreateTaskRequest(
+                        schoolClassId = classId!!.toString(),
+                        title = "Object Storage Homework",
+                        description = "Upload",
+                        dueAt = "2026-02-10"
+                    )
+                )
+            }
+            assertEquals(HttpStatusCode.Created, createTaskResponse.status)
+            val task = createTaskResponse.body<TaskDto>()
+
+            val fileBytes = "object-storage-content".encodeToByteArray()
+            val uploadResponse = client.post("/api/tasks/${task.id}/files") {
+                header("Authorization", "Bearer $token")
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append(
+                                "file",
+                                fileBytes,
+                                Headers.build {
+                                    append(HttpHeaders.ContentType, "application/pdf")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"storage.pdf\"")
+                                }
+                            )
+                        }
+                    )
+                )
+            }
+            assertEquals(HttpStatusCode.Created, uploadResponse.status)
+            val metadata = uploadResponse.body<FileMetadataDto>()
+
+            val downloadResponse = client.get("/api/files/${metadata.id}") {
+                header("Authorization", "Bearer $token")
+            }
+            assertEquals(HttpStatusCode.OK, downloadResponse.status)
+            val downloadedBytes = downloadResponse.body<ByteArray>()
+            assertEquals(fileBytes.size, downloadedBytes.size)
+        } finally {
+            System.clearProperty("OBJECT_STORAGE_ENDPOINT")
+            System.clearProperty("OBJECT_STORAGE_BUCKET")
+            System.clearProperty("OBJECT_STORAGE_REGION")
+            System.clearProperty("OBJECT_STORAGE_ACCESS_KEY")
+            System.clearProperty("OBJECT_STORAGE_SECRET_KEY")
+            System.clearProperty("OBJECT_STORAGE_PATH_STYLE")
+            objectStorage.stop()
+        }
+    }
+
+    private data class ObjectStorageStub(
+        val endpoint: String,
+        val bucket: String,
+        private val engine: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>
+    ) {
+        fun stop() {
+            engine.stop(500, 500)
+        }
+    }
+
+    private fun startObjectStorageStub(): ObjectStorageStub {
+        val bucket = "test-bucket"
+        val storedObjects = ConcurrentHashMap<String, ByteArray>()
+        val port = ServerSocket(0).use { it.localPort }
+
+        val engine = embeddedServer(Netty, port = port) {
+            routing {
+                put("/{path...}") {
+                    val objectKey = extractObjectKey(call.request.path())
+                        ?: return@put call.respond(HttpStatusCode.BadRequest)
+                    val rawBytes = call.receiveChannel().readRemaining().readBytes()
+                    val decodedLength = call.request.headers["x-amz-decoded-content-length"]?.toIntOrNull()
+                    val bytes = if (decodedLength != null) {
+                        decodeAwsChunkedPayload(rawBytes, decodedLength)
+                    } else {
+                        rawBytes
+                    }
+                    storedObjects[objectKey] = bytes
+                    call.response.headers.append(HttpHeaders.ETag, "\"test\"")
+                    call.respond(HttpStatusCode.OK)
+                }
+                get("/{path...}") {
+                    val objectKey = extractObjectKey(call.request.path())
+                        ?: return@get call.respond(HttpStatusCode.BadRequest)
+                    val bytes = storedObjects[objectKey]
+                        ?: return@get call.respond(HttpStatusCode.NotFound)
+                    call.respondBytes(bytes, ContentType.Application.OctetStream)
+                }
+            }
+        }.start()
+
+        return ObjectStorageStub(endpoint = "http://localhost:$port", bucket = bucket, engine = engine)
+    }
+
+    private fun extractObjectKey(path: String): String? {
+        val trimmed = path.trimStart('/')
+        val parts = trimmed.split("/", limit = 2)
+        if (parts.size < 2) {
+            return null
+        }
+        return parts[1]
+    }
+
+    private fun decodeAwsChunkedPayload(raw: ByteArray, expectedLength: Int): ByteArray {
+        val output = ByteArray(expectedLength)
+        var outputOffset = 0
+        var index = 0
+
+        while (index < raw.size) {
+            val lineEnd = findCrlf(raw, index)
+            if (lineEnd == -1) {
+                break
+            }
+            val header = raw.copyOfRange(index, lineEnd).toString(Charsets.US_ASCII)
+            val sizeHex = header.substringBefore(';')
+            val chunkSize = sizeHex.toIntOrNull(16) ?: break
+            index = lineEnd + 2
+            if (chunkSize == 0) {
+                break
+            }
+            raw.copyInto(output, outputOffset, index, index + chunkSize)
+            outputOffset += chunkSize
+            index += chunkSize + 2
+            if (outputOffset >= expectedLength) {
+                break
+            }
+        }
+
+        return if (outputOffset == output.size) {
+            output
+        } else {
+            output.copyOf(outputOffset)
+        }
+    }
+
+    private fun findCrlf(raw: ByteArray, start: Int): Int {
+        var index = start
+        while (index + 1 < raw.size) {
+            if (raw[index] == '\r'.code.toByte() && raw[index + 1] == '\n'.code.toByte()) {
+                return index
+            }
+            index += 1
+        }
+        return -1
     }
 }

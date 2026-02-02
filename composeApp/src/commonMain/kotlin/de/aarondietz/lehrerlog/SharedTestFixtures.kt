@@ -2,6 +2,8 @@ package de.aarondietz.lehrerlog
 
 import androidx.compose.runtime.mutableStateListOf
 import de.aarondietz.lehrerlog.data.*
+import de.aarondietz.lehrerlog.logging.LogFileEntry
+import de.aarondietz.lehrerlog.logging.LogOverview
 
 /**
  * Roborazzi test utilities
@@ -19,6 +21,14 @@ object SharedTestFixtures {
     const val scenarioParentLinks = "ParentLinks"
     const val scenarioLateOverview = "LateOverview"
     const val scenarioTaskDetail = "TaskDetail"
+    const val scenarioSettingsLogs = "SettingsLogs"
+    const val scenarioLogin = "Login"
+    const val scenarioLoginError = "LoginError"
+    const val scenarioRegister = "Register"
+    const val scenarioRegisterError = "RegisterError"
+    const val scenarioLatePeriodManagement = "LatePeriodManagement"
+    const val scenarioParentInviteManagement = "ParentInviteManagement"
+    const val scenarioTasksScreen = "TasksScreen"
     const val roborazziTitle = "Roborazzi Snapshot"
     const val roborazziFieldLabel = "Input Label"
     const val roborazziFieldValue = "Example Value"
@@ -54,6 +64,47 @@ object SharedTestFixtures {
     const val testLoginError = "Invalid credentials."
     const val testSchoolQuery = "Gymnasium Musterstadt"
     const val testRegisterError = "Passwords do not match."
+    const val testAuthUserId = "auth-user-001"
+    const val testAuthFirstName = "Alex"
+    const val testAuthLastName = "Teacher"
+    const val testAuthRole = "TEACHER"
+    const val testAuthAccessToken = "access-token-001"
+    const val testAuthRefreshToken = "refresh-token-001"
+    const val testAuthExpiresIn = 900L
+    const val testBaseUrl = "http://localhost"
+    const val testSchoolSearchCode = "TEST-SCHOOL"
+    const val testSchoolSearchName = "Test School"
+    const val testSchoolSearchCity = "Test City"
+    const val testSchoolSearchPostcode = "12345"
+    const val testLogTimestamp = "2026-01-01T00:00:00Z"
+    const val testLogLevel = "INFO"
+    const val testLogTag = "TestLogger"
+    const val testLogMessage = "Log entry for diagnostics."
+    const val testLogFileName = "app_2026-01-01.log"
+    const val testLogFilePath = "app_2026-01-01.log"
+    const val testLogFileSizeBytes = 2048L
+    const val testLogFileModifiedAt = 1735689600000L
+    const val testLogTotalSizeBytes = 4096L
+    const val testLogCurrentSizeBytes = 2048L
+    const val testLogPreviewLine = "2026-01-01T00:00:00Z [INFO] [TestLogger] Log entry for diagnostics."
+    const val testLogPreviewLineSecondary = "2026-01-01T00:00:01Z [WARN] [TestLogger] Second log line."
+    const val testStorageOwnerId = "storage-owner-001"
+    const val testStoragePlanId = "storage-plan-001"
+    const val testStoragePlanName = "Standard"
+    const val testStorageMaxTotalBytes = 10_000_000L
+    const val testStorageMaxFileBytes = 2_000_000L
+    const val testStorageUsedBytes = 2_000_000L
+    const val testStorageRemainingBytes = 8_000_000L
+    const val testTaskSummaryTotalStudents = 2
+    const val testTaskSummarySubmittedStudents = 1
+    const val testPunishmentId = "punishment-001"
+    const val testPunishmentTriggeredAt = "2026-01-02T10:00:00Z"
+    const val testFileId = "file-001"
+    const val testFileObjectKey = "tasks/task-001/file-001"
+    const val testFileContentType = "application/pdf"
+    const val testFileCreatedAt = "2026-01-01T00:00:00Z"
+    const val testFileName = "assignment.pdf"
+    val testFileBytes = "file-content".encodeToByteArray()
 
     fun snapshotPath(testClass: String, scenario: String): String {
         return "$snapshotRoot/${testClass}_${scenario}.png"
@@ -185,6 +236,94 @@ object SharedTestFixtures {
             totalMissed = 2,
             missedSincePunishment = 1,
             punishmentRequired = true
+        )
+    }
+
+    fun testFileMetadataDto(): FileMetadataDto {
+        return FileMetadataDto(
+            id = testFileId,
+            objectKey = testFileObjectKey,
+            sizeBytes = testFileBytes.size.toLong(),
+            mimeType = testFileContentType,
+            createdAt = testFileCreatedAt
+        )
+    }
+
+    fun testLogOverview(): LogOverview {
+        return LogOverview(
+            files = listOf(
+                LogFileEntry(
+                    name = testLogFileName,
+                    path = testLogFilePath,
+                    sizeBytes = testLogFileSizeBytes,
+                    lastModifiedAt = testLogFileModifiedAt
+                )
+            ),
+            totalSizeBytes = testLogTotalSizeBytes,
+            currentFileSizeBytes = testLogCurrentSizeBytes,
+            previewLines = listOf(testLogPreviewLine, testLogPreviewLineSecondary)
+        )
+    }
+
+    fun testUserDto(schoolId: String? = testSchoolId): de.aarondietz.lehrerlog.auth.UserDto {
+        return de.aarondietz.lehrerlog.auth.UserDto(
+            id = testAuthUserId,
+            email = testLoginEmail,
+            firstName = testAuthFirstName,
+            lastName = testAuthLastName,
+            role = testAuthRole,
+            schoolId = schoolId
+        )
+    }
+
+    fun testAuthResponse(schoolId: String? = testSchoolId): de.aarondietz.lehrerlog.auth.AuthResponse {
+        return de.aarondietz.lehrerlog.auth.AuthResponse(
+            accessToken = testAuthAccessToken,
+            refreshToken = testAuthRefreshToken,
+            expiresIn = testAuthExpiresIn,
+            user = testUserDto(schoolId)
+        )
+    }
+
+    fun testSchoolSearchResultDto(): SchoolSearchResultDto {
+        return SchoolSearchResultDto(
+            code = testSchoolSearchCode,
+            name = testSchoolSearchName,
+            city = testSchoolSearchCity,
+            postcode = testSchoolSearchPostcode
+        )
+    }
+
+    fun testTaskSubmissionSummaryDto(taskId: String): TaskSubmissionSummaryDto {
+        return TaskSubmissionSummaryDto(
+            taskId = taskId,
+            totalStudents = testTaskSummaryTotalStudents,
+            submittedStudents = testTaskSummarySubmittedStudents
+        )
+    }
+
+    fun testStorageQuotaDto(): StorageQuotaDto {
+        return StorageQuotaDto(
+            ownerType = StorageOwnerType.TEACHER,
+            ownerId = testStorageOwnerId,
+            planId = testStoragePlanId,
+            planName = testStoragePlanName,
+            maxTotalBytes = testStorageMaxTotalBytes,
+            maxFileBytes = testStorageMaxFileBytes,
+            usedTotalBytes = testStorageUsedBytes,
+            remainingBytes = testStorageRemainingBytes
+        )
+    }
+
+    fun testPunishmentRecordDto(studentId: String, periodId: String): PunishmentRecordDto {
+        return PunishmentRecordDto(
+            id = testPunishmentId,
+            studentId = studentId,
+            periodId = periodId,
+            triggeredAt = testPunishmentTriggeredAt,
+            resolvedAt = null,
+            resolvedBy = null,
+            note = null
         )
     }
 }

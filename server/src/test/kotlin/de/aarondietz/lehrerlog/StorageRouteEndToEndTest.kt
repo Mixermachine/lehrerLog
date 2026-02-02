@@ -8,6 +8,7 @@ import de.aarondietz.lehrerlog.db.tables.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -114,5 +115,55 @@ class StorageRouteEndToEndTest {
         assertEquals(200, usageResponse.status.value)
         val usage = usageResponse.body<StorageUsageDto>()
         assertEquals(1024L, usage.usedTotalBytes)
+    }
+
+    @Test
+    fun `storage routes handle missing school and subscriptions`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) { json() }
+        }
+
+        val noSchoolToken = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "test@example.com",
+            role = UserRole.TEACHER,
+            schoolId = null
+        )
+
+        val forbiddenQuota = client.get("/api/storage/quota") {
+            header("Authorization", "Bearer $noSchoolToken")
+        }
+        assertEquals(HttpStatusCode.Forbidden, forbiddenQuota.status)
+
+        val forbiddenUsage = client.get("/api/storage/usage") {
+            header("Authorization", "Bearer $noSchoolToken")
+        }
+        assertEquals(HttpStatusCode.Forbidden, forbiddenUsage.status)
+
+        transaction {
+            schoolId?.let { id ->
+                StorageUsage.deleteWhere { (StorageUsage.ownerType eq StorageOwnerType.SCHOOL.name) and (StorageUsage.ownerId eq id) }
+                StorageSubscriptions.deleteWhere { StorageSubscriptions.id eq id }
+            }
+        }
+
+        val token = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "test@example.com",
+            role = UserRole.TEACHER,
+            schoolId = schoolId
+        )
+
+        val missingQuota = client.get("/api/storage/quota") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.NotFound, missingQuota.status)
+
+        val missingUsage = client.get("/api/storage/usage") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.NotFound, missingUsage.status)
     }
 }

@@ -272,6 +272,39 @@ class TaskRouteEndToEndTest {
         assertEquals(HttpStatusCode.Created, submissionResponse.status)
         val submission = submissionResponse.body<TaskSubmissionDto>()
 
+        val listSubmissions = client.get("/api/tasks/${task.id}/submissions") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.OK, listSubmissions.status)
+        val submissions = listSubmissions.body<List<TaskSubmissionDto>>()
+        assertTrue(submissions.any { it.id == submission.id })
+
+        val addTargets = client.post("/api/tasks/${task.id}/targets") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                TaskTargetsRequest(
+                    addStudentIds = listOf(studentTwoId!!.toString()),
+                    removeStudentIds = emptyList()
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.NoContent, addTargets.status)
+
+        val inPersonSubmission = client.post("/api/tasks/${task.id}/submissions/in-person") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskSubmissionRequest(
+                    studentId = studentTwoId!!.toString(),
+                    submissionType = TaskSubmissionType.IN_PERSON,
+                    grade = null,
+                    note = "In person"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, inPersonSubmission.status)
+
         val updateSubmission = client.patch("/api/submissions/${submission.id}") {
             header("Authorization", "Bearer $token")
             contentType(ContentType.Application.Json)
@@ -294,5 +327,312 @@ class TaskRouteEndToEndTest {
         }
         assertEquals(HttpStatusCode.OK, byClassAfter.status)
         assertEquals(0, byClassAfter.body<List<TaskDto>>().size)
+    }
+
+    @Test
+    fun `task route validation errors`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) { json() }
+        }
+
+        val token = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "teacher@example.com",
+            role = UserRole.TEACHER,
+            schoolId = schoolId
+        )
+        val noSchoolToken = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "teacher@example.com",
+            role = UserRole.TEACHER,
+            schoolId = null
+        )
+
+        val missingQuery = client.get("/api/tasks") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.BadRequest, missingQuery.status)
+
+        val invalidClassId = client.get("/api/tasks?classId=not-a-uuid") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidClassId.status)
+
+        val invalidStudentId = client.get("/api/tasks?studentId=not-a-uuid") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidStudentId.status)
+
+        val forbiddenSchool = client.get("/api/tasks?classId=${classId!!}") {
+            header("Authorization", "Bearer $noSchoolToken")
+        }
+        assertEquals(HttpStatusCode.Forbidden, forbiddenSchool.status)
+
+        val missingTitle = client.post("/api/tasks") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = classId!!.toString(),
+                    title = "",
+                    description = null,
+                    dueAt = ""
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, missingTitle.status)
+
+        val task = client.post("/api/tasks") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = classId!!.toString(),
+                    title = "Validation Task",
+                    description = null,
+                    dueAt = "2026-02-01"
+                )
+            )
+        }.body<TaskDto>()
+
+        val invalidUpdateId = client.put("/api/tasks/not-a-uuid") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(UpdateTaskRequest(title = "Title", description = null, dueAt = "2026-02-01"))
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidUpdateId.status)
+
+        val invalidDelete = client.delete("/api/tasks/not-a-uuid") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidDelete.status)
+
+        val notFoundDelete = client.delete("/api/tasks/${UUID.randomUUID()}") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.NotFound, notFoundDelete.status)
+
+        val invalidSummary = client.get("/api/tasks/not-a-uuid/summary") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidSummary.status)
+
+        val invalidSubmissions = client.get("/api/tasks/not-a-uuid/submissions") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidSubmissions.status)
+
+        val invalidTargets = client.post("/api/tasks/${task.id}/targets") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                TaskTargetsRequest(
+                    addStudentIds = listOf("not-a-uuid"),
+                    removeStudentIds = emptyList()
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidTargets.status)
+
+        val invalidTargetTask = client.post("/api/tasks/not-a-uuid/targets") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                TaskTargetsRequest(
+                    addStudentIds = emptyList(),
+                    removeStudentIds = emptyList()
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidTargetTask.status)
+
+        val invalidSubmissionStudent = client.post("/api/tasks/${task.id}/submissions") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskSubmissionRequest(
+                    studentId = "not-a-uuid",
+                    submissionType = TaskSubmissionType.FILE
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidSubmissionStudent.status)
+
+        val invalidInPerson = client.post("/api/tasks/not-a-uuid/submissions/in-person") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskSubmissionRequest(
+                    studentId = "not-a-uuid",
+                    submissionType = TaskSubmissionType.IN_PERSON
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidInPerson.status)
+
+        val invalidInPersonStudent = client.post("/api/tasks/${task.id}/submissions/in-person") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskSubmissionRequest(
+                    studentId = "not-a-uuid",
+                    submissionType = TaskSubmissionType.IN_PERSON
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidInPersonStudent.status)
+
+        val invalidPatch = client.patch("/api/submissions/not-a-uuid") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(UpdateTaskSubmissionRequest())
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidPatch.status)
+    }
+
+    @Test
+    fun `task route additional error branches`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) { json() }
+        }
+
+        val token = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "teacher@example.com",
+            role = UserRole.TEACHER,
+            schoolId = schoolId
+        )
+
+        val invalidClassId = client.post("/api/tasks") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = "not-a-uuid",
+                    title = "Invalid Class",
+                    description = null,
+                    dueAt = "2026-02-07"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidClassId.status)
+
+        val missingClass = client.post("/api/tasks") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = UUID.randomUUID().toString(),
+                    title = "Missing Class",
+                    description = null,
+                    dueAt = "2026-02-07"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, missingClass.status)
+
+        val task = client.post("/api/tasks") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = classId!!.toString(),
+                    title = "Error Branch Task",
+                    description = null,
+                    dueAt = "2026-02-07"
+                )
+            )
+        }.body<TaskDto>()
+
+        val blankUpdate = client.put("/api/tasks/${task.id}") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(UpdateTaskRequest(title = "", description = null, dueAt = ""))
+        }
+        assertEquals(HttpStatusCode.BadRequest, blankUpdate.status)
+
+        val missingUpdate = client.put("/api/tasks/${UUID.randomUUID()}") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(UpdateTaskRequest(title = "Missing", description = null, dueAt = "2026-02-07"))
+        }
+        assertEquals(HttpStatusCode.NotFound, missingUpdate.status)
+
+        val missingSummary = client.get("/api/tasks/${UUID.randomUUID()}/summary") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.NotFound, missingSummary.status)
+
+        val invalidTargetStudent = client.post("/api/tasks/${task.id}/targets") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                TaskTargetsRequest(
+                    addStudentIds = listOf(UUID.randomUUID().toString()),
+                    removeStudentIds = emptyList()
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidTargetStudent.status)
+
+        val missingTargetTask = client.post("/api/tasks/${UUID.randomUUID()}/targets") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(TaskTargetsRequest(addStudentIds = emptyList(), removeStudentIds = emptyList()))
+        }
+        assertEquals(HttpStatusCode.BadRequest, missingTargetTask.status)
+
+        val notTargetedSubmission = client.post("/api/tasks/${task.id}/submissions") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskSubmissionRequest(
+                    studentId = studentTwoId!!.toString(),
+                    submissionType = TaskSubmissionType.FILE
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, notTargetedSubmission.status)
+
+        val submission = client.post("/api/tasks/${task.id}/submissions") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskSubmissionRequest(
+                    studentId = studentId!!.toString(),
+                    submissionType = TaskSubmissionType.FILE
+                )
+            )
+        }.body<TaskSubmissionDto>()
+
+        val duplicateSubmission = client.post("/api/tasks/${task.id}/submissions") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskSubmissionRequest(
+                    studentId = studentId!!.toString(),
+                    submissionType = TaskSubmissionType.FILE
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Conflict, duplicateSubmission.status)
+
+        val emptyPatch = client.patch("/api/submissions/${submission.id}") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(UpdateTaskSubmissionRequest())
+        }
+        assertEquals(HttpStatusCode.BadRequest, emptyPatch.status)
+
+        val missingPatch = client.patch("/api/submissions/${UUID.randomUUID()}") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(UpdateTaskSubmissionRequest(grade = 2.0))
+        }
+        assertEquals(HttpStatusCode.NotFound, missingPatch.status)
     }
 }

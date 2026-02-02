@@ -2,11 +2,11 @@ package de.aarondietz.lehrerlog.ui.screens.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.AuthResult
 import de.aarondietz.lehrerlog.data.*
 import de.aarondietz.lehrerlog.data.repository.*
+import de.aarondietz.lehrerlog.logging.logger
 import de.aarondietz.lehrerlog.ui.util.PickedFile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -26,9 +26,9 @@ class TasksViewModel(
     private val taskRepository: TaskRepository,
     private val schoolClassRepository: SchoolClassRepository,
     private val studentRepository: StudentRepository,
-    private val authRepository: AuthRepository,
-    private val logger: Logger
+    private val authRepository: AuthRepository
 ) : ViewModel() {
+    private val logger by lazy { logger() }
     private val _schoolId = MutableStateFlow<String?>(null)
     private val _selectedClassId = MutableStateFlow<String?>(null)
     private val _tasks = MutableStateFlow<List<TaskDto>>(emptyList())

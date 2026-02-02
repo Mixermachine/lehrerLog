@@ -2,11 +2,11 @@ package de.aarondietz.lehrerlog.ui.screens.parent_management
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.data.ParentInviteCreateResponse
 import de.aarondietz.lehrerlog.data.ParentLinkDto
 import de.aarondietz.lehrerlog.data.repository.ParentInviteRepository
 import de.aarondietz.lehrerlog.data.repository.ParentLinksRepository
+import de.aarondietz.lehrerlog.logging.logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,9 +21,9 @@ data class ParentInviteManagementState(
 
 class ParentInviteManagementViewModel(
     private val parentInviteRepository: ParentInviteRepository,
-    private val parentLinksRepository: ParentLinksRepository,
-    private val logger: Logger
+    private val parentLinksRepository: ParentLinksRepository
 ) : ViewModel() {
+    private val logger by lazy { logger() }
     private val _state = MutableStateFlow(ParentInviteManagementState())
     val state: StateFlow<ParentInviteManagementState> = _state.asStateFlow()
 

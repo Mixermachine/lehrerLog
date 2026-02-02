@@ -2,9 +2,9 @@ package de.aarondietz.lehrerlog.ui.screens.late_periods
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import co.touchlab.kermit.Logger
 import de.aarondietz.lehrerlog.data.LatePeriodDto
 import de.aarondietz.lehrerlog.data.repository.LatePeriodRepository
+import de.aarondietz.lehrerlog.logging.logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,9 +17,9 @@ data class LatePeriodManagementState(
 )
 
 class LatePeriodManagementViewModel(
-    private val latePeriodRepository: LatePeriodRepository,
-    private val logger: Logger
+    private val latePeriodRepository: LatePeriodRepository
 ) : ViewModel() {
+    private val logger by lazy { logger() }
     private val _state = MutableStateFlow(LatePeriodManagementState())
     val state: StateFlow<LatePeriodManagementState> = _state.asStateFlow()
 

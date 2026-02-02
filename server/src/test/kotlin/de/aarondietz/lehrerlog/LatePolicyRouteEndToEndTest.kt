@@ -15,6 +15,8 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.*
 import kotlin.test.*
 
@@ -171,6 +173,14 @@ class LatePolicyRouteEndToEndTest {
         val stats = statsResponse.body<List<LateStudentStatsDto>>()
         assertTrue(stats.any { it.studentId == studentId!!.toString() })
 
+        val studentStatsResponse = client.get("/api/students/${studentId}/late-stats") {
+            header("Authorization", "Bearer $token")
+            url { parameters.append("periodId", periodId) }
+        }
+        assertEquals(HttpStatusCode.OK, studentStatsResponse.status)
+        val studentStats = studentStatsResponse.body<LateStudentStatsDto>()
+        assertEquals(studentId!!.toString(), studentStats.studentId)
+
         val punishmentsResponse = client.get("/api/punishments") {
             header("Authorization", "Bearer $token")
             url {
@@ -195,5 +205,63 @@ class LatePolicyRouteEndToEndTest {
             )
         }
         assertEquals(HttpStatusCode.OK, resolveResponse.status)
+    }
+
+    @Test
+    fun `create update activate and recalculate late periods`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) { json() }
+        }
+
+        val token = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "teacher@example.com",
+            role = de.aarondietz.lehrerlog.db.tables.UserRole.TEACHER,
+            schoolId = schoolId
+        )
+
+        val createResponse = client.post("/api/late-periods") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateLatePeriodRequest(
+                    name = "Semester Start",
+                    startsAt = OffsetDateTime.now(ZoneOffset.UTC).minusDays(10).toString(),
+                    endsAt = OffsetDateTime.now(ZoneOffset.UTC).plusDays(20).toString()
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, createResponse.status)
+        val period = createResponse.body<LatePeriodDto>()
+
+        val updateResponse = client.put("/api/late-periods/${period.id}") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                UpdateLatePeriodRequest(
+                    name = "Semester Kickoff"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.OK, updateResponse.status)
+
+        val activateResponse = client.post("/api/late-periods/${period.id}/activate") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.OK, activateResponse.status)
+
+        val recalcResponse = client.post("/api/late-periods/${period.id}/recalculate") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.NoContent, recalcResponse.status)
+
+        val summaryResponse = client.get("/api/late-stats/periods") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.OK, summaryResponse.status)
+        val summaries = summaryResponse.body<List<LatePeriodSummaryDto>>()
+        assertTrue(summaries.any { it.periodId == period.id })
     }
 }

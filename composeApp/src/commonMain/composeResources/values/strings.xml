@@ -65,6 +65,16 @@
     <string name="storage_quota_warning">Speicherplatz fast aufgebraucht</string>
     <string name="storage_quota_exceeded">Speicherplatz überschritten! Bitte Dateien löschen.</string>
     <string name="storage_quota_refresh">Aktualisieren</string>
+    <string name="logs_title">App-Protokolle</string>
+    <string name="logs_description">Teilen Sie Protokolle für Supportanfragen.</string>
+    <string name="logs_refresh">Aktualisieren</string>
+    <string name="logs_share">Protokolle teilen</string>
+    <string name="logs_clear">Protokolle löschen</string>
+    <string name="logs_files_count">%1$d Dateien</string>
+    <string name="logs_total_size">Gesamt: %1$s</string>
+    <string name="logs_current_size">Aktuell: %1$s</string>
+    <string name="logs_preview_title">Aktuelle Einträge</string>
+    <string name="logs_empty">Noch keine Protokolle.</string>
 
     <!-- Authentication -->
     <string name="login">Anmelden</string>

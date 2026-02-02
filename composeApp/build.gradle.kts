@@ -100,6 +100,26 @@ abstract class PrepareRobolectricAndroidAll : DefaultTask() {
     }
 }
 
+abstract class NormalizeUnitTestConfigPaths : DefaultTask() {
+    @get:InputDirectory
+    abstract val inputDir: DirectoryProperty
+
+    @TaskAction
+    fun normalize() {
+        val configDir = inputDir.get().asFile
+        if (!configDir.exists()) return
+        configDir.walkTopDown()
+            .filter { it.isFile && it.name == "test_config.properties" }
+            .forEach { file ->
+                val text = file.readText()
+                val normalized = text.replace("\\\\", "/")
+                if (normalized != text) {
+                    file.writeText(normalized)
+                }
+            }
+    }
+}
+
 val serverUrlProvider = providers.gradleProperty("serverUrl").orElse("http://localhost:8080")
 val serverConfigDir = layout.buildDirectory.dir("generated/source/serverConfig")
 
@@ -111,12 +131,20 @@ val generateServerConfig = tasks.register<GenerateServerConfig>("generateServerC
 val appVersionNameProvider = providers.gradleProperty("appVersionName").orElse("0.0.1-dev.local")
 val buildNumberProvider = providers.gradleProperty("buildNumber").orElse("1")
 
-val robolectricAndroidAllVersion = "13-robolectric-9030017-i7"
+val robolectricAndroidAllVersion = "16-robolectric-13921718-i7"
 val robolectricAndroidAllArtifact = "android-all-instrumented"
 val robolectricAndroidAllGroup = "org.robolectric"
 val robolectricAndroidAllRepo = providers.gradleProperty("robolectric.dependency.repo.url")
     .orElse("https://repo.maven.apache.org/maven2")
 val robolectricDepsDir = layout.buildDirectory.dir("robolectric-deps")
+val unitTestConfigDir = layout.buildDirectory.dir("intermediates/unit_test_config_directory")
+
+val normalizeUnitTestConfigPaths = tasks.register<NormalizeUnitTestConfigPaths>("normalizeUnitTestConfigPaths") {
+    inputDir.set(unitTestConfigDir)
+}
+normalizeUnitTestConfigPaths.configure {
+    mustRunAfter(tasks.matching { it.name.startsWith("generate") && it.name.endsWith("UnitTestConfig") })
+}
 
 fun parseSemVer(version: String): Triple<Int, Int, Int> {
     val parts = version.split(".")
@@ -284,6 +312,9 @@ android {
         versionCode = versionCodeValue
         versionName = appVersionName
     }
+    buildFeatures {
+        buildConfig = true
+    }
     flavorDimensions += "env"
     productFlavors {
         create("prod") {
@@ -369,9 +400,11 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     dependsOn(prepareRobolectricAndroidAll)
+    dependsOn(normalizeUnitTestConfigPaths)
     if (name.contains("Release", ignoreCase = true)) {
         filter {
             excludeTestsMatching("de.aarondietz.lehrerlog.ui.composables.RoborazziSmokeTest")
+            excludeTestsMatching("*Roborazzi*")
         }
     }
 }
@@ -407,18 +440,39 @@ kover {
                 // Exclude platform-specific entry points
                 classes("de.aarondietz.lehrerlog.MainKt")
                 classes("de.aarondietz.lehrerlog.App*")
+                classes("de.aarondietz.lehrerlog.MainActivity")
+
+                // Exclude synthetic/Compose-generated classes
+                classes("*\$*")
+                classes("*ComposableSingletons*")
+                classes("*ScreenKt*")
+                classes("*DialogKt*")
 
                 // Exclude data classes (DTOs) - same as server
                 packages("de.aarondietz.lehrerlog.data")
 
                 // Exclude generated resources
                 packages("de.aarondietz.lehrerlog.generated")
+                packages("lehrerlog.composeapp.generated")
 
                 // Exclude Koin modules (dependency injection configuration)
                 classes("*Module*Kt")
 
                 // Exclude preview functions (Compose previews)
                 annotatedBy("*Preview*")
+
+                // Exclude Compose UI packages (covered by snapshots)
+                packages("de.aarondietz.lehrerlog.ui.composables")
+                packages("de.aarondietz.lehrerlog.ui.components")
+                packages("de.aarondietz.lehrerlog.ui.navigation")
+                packages("de.aarondietz.lehrerlog.ui.theme")
+                packages("de.aarondietz.lehrerlog.ui.util")
+
+                // Exclude platform-specific actuals and non-testable UI helpers
+                classes("*_androidKt")
+                classes("de.aarondietz.lehrerlog.auth.AndroidTokenStorage")
+                classes("de.aarondietz.lehrerlog.InstallPrompt*")
+                classes("de.aarondietz.lehrerlog.ui.screens.tasks.SubmissionUploadTarget")
             }
         }
 

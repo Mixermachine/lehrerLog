@@ -36,16 +36,16 @@ class ObjectStorageClient private constructor(
 
     companion object {
         fun fromEnv(): ObjectStorageClient? {
-            val endpoint = System.getenv("OBJECT_STORAGE_ENDPOINT")?.trim().orEmpty()
-            val bucket = System.getenv("OBJECT_STORAGE_BUCKET")?.trim().orEmpty()
+            val endpoint = readConfig("OBJECT_STORAGE_ENDPOINT")
+            val bucket = readConfig("OBJECT_STORAGE_BUCKET")
             if (endpoint.isBlank() && bucket.isBlank()) {
                 return null
             }
 
-            val region = System.getenv("OBJECT_STORAGE_REGION")?.trim().orEmpty().ifBlank { "garage" }
-            val accessKey = System.getenv("OBJECT_STORAGE_ACCESS_KEY")?.trim().orEmpty()
-            val secretKey = System.getenv("OBJECT_STORAGE_SECRET_KEY")?.trim().orEmpty()
-            val pathStyle = System.getenv("OBJECT_STORAGE_PATH_STYLE")?.trim().orEmpty()
+            val region = readConfig("OBJECT_STORAGE_REGION").ifBlank { "garage" }
+            val accessKey = readConfig("OBJECT_STORAGE_ACCESS_KEY")
+            val secretKey = readConfig("OBJECT_STORAGE_SECRET_KEY")
+            val pathStyle = readConfig("OBJECT_STORAGE_PATH_STYLE")
                 .ifBlank { "true" }
                 .equals("true", ignoreCase = true)
 
@@ -69,6 +69,14 @@ class ObjectStorageClient private constructor(
                 .build()
 
             return ObjectStorageClient(client, bucket)
+        }
+
+        private fun readConfig(name: String): String {
+            val env = System.getenv(name)?.trim()
+            if (!env.isNullOrBlank()) {
+                return env
+            }
+            return System.getProperty(name)?.trim().orEmpty()
         }
     }
 }

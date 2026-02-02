@@ -9,6 +9,7 @@ import de.aarondietz.lehrerlog.db.tables.UserRole
 import de.aarondietz.lehrerlog.services.ParentService
 import io.ktor.http.*
 import io.ktor.server.auth.*
+import io.ktor.server.plugins.ratelimit.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -16,26 +17,34 @@ import java.util.*
 
 fun Route.parentRoute(parentService: ParentService = ParentService()) {
     route("/api/parent-invites") {
-        post("/redeem") {
-            val request = call.receive<ParentInviteRedeemRequest>()
-            val deviceInfo = call.request.headers["User-Agent"]
-            try {
-                val (tokens, user) = parentService.redeemInvite(request, deviceInfo)
-                call.respond(
-                    AuthResponseDto(
-                        accessToken = tokens.accessToken,
-                        refreshToken = tokens.refreshToken,
-                        expiresIn = tokens.expiresIn,
-                        user = user.toDto()
+        rateLimit(RateLimitName("public")) {
+            post("/redeem") {
+                val request = call.receive<ParentInviteRedeemRequest>()
+                val sanitized = request.copy(
+                    code = request.code.trim(),
+                    email = request.email.trim(),
+                    firstName = request.firstName.trim(),
+                    lastName = request.lastName.trim()
+                )
+                val deviceInfo = call.request.headers["User-Agent"]
+                try {
+                    val (tokens, user) = parentService.redeemInvite(sanitized, deviceInfo)
+                    call.respond(
+                        AuthResponseDto(
+                            accessToken = tokens.accessToken,
+                            refreshToken = tokens.refreshToken,
+                            expiresIn = tokens.expiresIn,
+                            user = user.toDto()
+                        )
                     )
-                )
-            } catch (e: AuthException) {
-                call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Invite redemption failed"))
-            } catch (e: Exception) {
-                call.respond(
-                    HttpStatusCode.InternalServerError,
-                    ErrorResponse("Invite redemption failed: ${e.message}")
-                )
+                } catch (e: AuthException) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Invite redemption failed"))
+                } catch (e: Exception) {
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Invite redemption failed: ${e.message}")
+                    )
+                }
             }
         }
     }
