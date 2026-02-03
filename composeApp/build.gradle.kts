@@ -519,3 +519,8 @@ tasks.register("checkCoverage") {
     description = "Run tests and verify code coverage meets thresholds"
     dependsOn("koverHtmlReport", "koverXmlReport", "koverVerify")
 }
+
+// Configure allTests to include Roborazzi snapshot verification
+tasks.named("allTests") {
+    dependsOn("verifyRoborazziDevDebug")
+}
