@@ -4,6 +4,7 @@ import de.aarondietz.lehrerlog.auth.AuthResult
 import de.aarondietz.lehrerlog.data.repository.FileUploadResult
 import io.ktor.client.plugins.*
 import io.ktor.utils.io.errors.*
+import kotlinx.io.IOException
 import lehrerlog.composeapp.generated.resources.*
 import lehrerlog.composeapp.generated.resources.Res
 import lehrerlog.composeapp.generated.resources.error_auth_email_exists
@@ -17,13 +18,7 @@ import org.jetbrains.compose.resources.StringResource
  */
 fun AuthResult.Error.toStringResource(): StringResource {
     return when {
-        // HTTP status codes
-        code == 401 -> Res.string.error_auth_invalid_credentials
-        code == 403 -> Res.string.error_resource_forbidden
-        code == 404 -> Res.string.error_resource_not_found
-        code == 409 -> Res.string.error_resource_conflict
-
-        // Known server error message patterns
+        // Known server error message patterns (check first for specificity)
         message.contains("Email and password are required", ignoreCase = true) ->
             Res.string.error_auth_email_required
         message.contains("Invalid credentials", ignoreCase = true) ->
@@ -41,7 +36,13 @@ fun AuthResult.Error.toStringResource(): StringResource {
         message.contains("Network error", ignoreCase = true) ->
             Res.string.error_network_general
 
-        // Fallback
+        // HTTP status codes (fallback when message doesn't match)
+        code == 401 -> Res.string.error_auth_invalid_credentials
+        code == 403 -> Res.string.error_resource_forbidden
+        code == 404 -> Res.string.error_resource_not_found
+        code == 409 -> Res.string.error_resource_conflict
+
+        // Generic fallback
         else -> Res.string.error_generic
     }
 }

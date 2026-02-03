@@ -5,6 +5,7 @@ import de.aarondietz.lehrerlog.data.repository.FileUploadResult
 import io.ktor.client.plugins.*
 import io.ktor.http.*
 import io.ktor.utils.io.errors.*
+import kotlinx.io.IOException
 import lehrerlog.composeapp.generated.resources.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -115,7 +116,7 @@ class ErrorMapperTest {
 
     @Test
     fun fileUploadResultFileTooLarge_mapsCorrectly() {
-        val result = FileUploadResult.FileTooLarge(100)
+        val result = FileUploadResult.FileTooLarge
         assertEquals(Res.string.error_file_too_large, result.toStringResource())
     }
 

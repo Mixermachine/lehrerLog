@@ -41,9 +41,11 @@ fun TasksScreen(
         }
     }
 
-    LaunchedEffect(error) {
-        error?.let { errorResource ->
-            snackbarHostState.showSnackbar(stringResource(errorResource))
+    val errorMessage = error?.let { stringResource(it) }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
             viewModel.clearError()
         }
     }

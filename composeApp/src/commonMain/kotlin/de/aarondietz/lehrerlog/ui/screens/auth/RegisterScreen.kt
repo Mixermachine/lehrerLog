@@ -444,7 +444,7 @@ private fun RegisterScreenErrorPreview() {
                 email = SharedTestFixtures.testLoginEmail,
                 password = SharedTestFixtures.testLoginPassword,
                 confirmPassword = SharedTestFixtures.testLoginPassword,
-                error = SharedTestFixtures.testRegisterError
+                errorResource = Res.string.error_validation_passwords_mismatch
             ),
             onNavigateToLogin = {},
             onFirstNameChange = {},

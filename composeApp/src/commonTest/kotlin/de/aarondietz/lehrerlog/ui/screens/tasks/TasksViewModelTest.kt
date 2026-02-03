@@ -84,8 +84,8 @@ class TasksViewModelTest {
             assertTrue(detailState.students.isNotEmpty())
 
             viewModel.markInPersonSubmission(task.id, student.id)
-            awaitUntil { viewModel.detailState.value.error == null }
-            assertTrue(viewModel.detailState.value.error == null)
+            awaitUntil { viewModel.detailState.value.errorResource == null }
+            assertTrue(viewModel.detailState.value.errorResource == null)
         } finally {
             viewModel.viewModelScope.cancel()
         }

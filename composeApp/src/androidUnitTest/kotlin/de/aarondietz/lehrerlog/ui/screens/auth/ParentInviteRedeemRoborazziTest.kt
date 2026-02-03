@@ -31,7 +31,7 @@ class ParentInviteRedeemRoborazziTest {
             firstName = SharedTestFixtures.testParentInviteFirstName,
             lastName = SharedTestFixtures.testParentInviteLastName,
             isLoading = false,
-            error = null
+            errorResource = null
         )
 
         composeTestRule.setContent {

@@ -100,8 +100,11 @@ internal fun TaskDetailDialog(
                     }
                 }
 
-                if (state.error != null) {
-                    Text(state.error, color = MaterialTheme.colorScheme.error)
+                state.errorResource?.let { errorResource ->
+                    Text(
+                        text = stringResource(errorResource),
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
 
                 HorizontalDivider()

@@ -304,6 +304,7 @@ class TasksViewModel(
         val submissions = submissionsResult.getOrElse { emptyList() }
         val assignmentFile = fileResult.getOrNull()
 
+        // Only treat students/submissions errors as critical, file errors are optional
         _detailState.value = TaskDetailState(
             task = task,
             students = students,
@@ -313,7 +314,6 @@ class TasksViewModel(
             isUploading = false,
             errorResource = studentsResult.getErrorResource()
                 ?: submissionsResult.getErrorResource()
-                ?: fileResult.getErrorResource()
         )
     }
 }
