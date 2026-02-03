@@ -53,6 +53,11 @@ Use `./gradlew` (macOS/Linux) or `.\gradlew.bat` (Windows).
 | **Check Coverage** | `:server:checkCoverage :composeApp:checkCoverage` |
 | Flyway Repair | `:server:flywayRepair` |
 
+## Long-Running Tasks
+
+- If the user explicitly says "do not stop" for a task, keep working for at least 3 hours before stopping, unless they
+  cancel or you encounter an unsolvable problem which requires user input.
+
 ## File Structure
 
 - **Business logic:** Always in `commonMain` unless platform-specific APIs are needed
