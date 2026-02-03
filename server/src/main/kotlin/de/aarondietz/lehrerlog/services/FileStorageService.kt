@@ -245,6 +245,33 @@ class FileStorageService(
         submissionFile
     }
 
+    fun getTaskFileMetadata(taskId: UUID, schoolId: UUID?): FileMetadataDto? {
+        return transaction {
+            TaskFiles.selectAll()
+                .where { TaskFiles.taskId eq taskId }
+                .firstOrNull()
+                ?.let { row ->
+                    // Verify task belongs to school if schoolId provided
+                    if (schoolId != null) {
+                        val taskBelongsToSchool = Tasks.selectAll()
+                            .where { (Tasks.id eq taskId) and (Tasks.schoolId eq schoolId) }
+                            .count() > 0
+                        if (!taskBelongsToSchool) {
+                            return@transaction null
+                        }
+                    }
+
+                    FileMetadataDto(
+                        id = row[TaskFiles.id].toString(),
+                        objectKey = row[TaskFiles.objectKey],
+                        sizeBytes = row[TaskFiles.sizeBytes],
+                        mimeType = row[TaskFiles.mimeType],
+                        createdAt = row[TaskFiles.createdAt].toString()
+                    )
+                }
+        }
+    }
+
     private fun ensureTaskInSchool(taskId: UUID, schoolId: UUID) {
         val exists = transaction {
             Tasks.selectAll()

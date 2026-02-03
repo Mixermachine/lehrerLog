@@ -330,10 +330,10 @@ private fun RegisterScreenContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        registerState.error?.let { error ->
+        registerState.errorResource?.let { errorResource ->
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = error,
+                text = stringResource(errorResource),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall
             )

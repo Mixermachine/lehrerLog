@@ -38,22 +38,24 @@ val commonModule = module {
     }
     single { LogRepository(get()) }
 
-    single { createHttpClient() }
     single<TokenStorage> { createTokenStorage() }
+    single { createHttpClient() }
     single { AuthRepository(get(), get()) }
 
     // Repositories
     single { StudentRepository(get(), get(), ServerConfig.SERVER_URL) }
     single { SchoolClassRepository(get(), get(), ServerConfig.SERVER_URL) }
     single { SchoolRepository(get(), ServerConfig.SERVER_URL) }
-    single { TaskRepository(get(), get(), ServerConfig.SERVER_URL) }
+    // TaskRepository with token refresh support
+    single { TaskRepository(get(), get(), ServerConfig.SERVER_URL, get()) }
     single { ParentRepository(get(), get(), ServerConfig.SERVER_URL) }
     single { ParentInviteRepository(get(), get(), ServerConfig.SERVER_URL) }
     single { ParentLinksRepository(get(), get(), ServerConfig.SERVER_URL) }
     single { ParentSelectionRepository() }
     single { LateStatsRepository(get(), get(), ServerConfig.SERVER_URL) }
     single { PunishmentRepository(get(), get(), ServerConfig.SERVER_URL) }
-    single { StorageRepository(get(), get(), ServerConfig.SERVER_URL) }
+    // StorageRepository with token refresh support
+    single { StorageRepository(get(), get(), ServerConfig.SERVER_URL, get()) }
     single { LatePeriodRepository(get(), get(), ServerConfig.SERVER_URL) }
 
     viewModel { AuthViewModel(get(), get()) }

@@ -145,6 +145,29 @@ fun Route.fileRoute(
                 }
             }
 
+            get("/tasks/{id}/file") {
+                val principal = call.getPrincipalOrRespond()
+                val schoolId = principal.schoolId
+                if (schoolId == null && principal.role != UserRole.PARENT) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
+                    return@get
+                }
+
+                val taskId = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                    ?: run {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid task ID"))
+                        return@get
+                    }
+
+                val fileMetadata = fileStorageService.getTaskFileMetadata(taskId, schoolId)
+                if (fileMetadata == null) {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("No assignment file found"))
+                    return@get
+                }
+
+                call.respond(fileMetadata)
+            }
+
             get("/files/{id}") {
                 val principal = call.getPrincipalOrRespond()
                 val fileId = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }

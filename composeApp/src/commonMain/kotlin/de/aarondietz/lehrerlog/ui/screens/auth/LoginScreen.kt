@@ -129,10 +129,10 @@ private fun LoginScreenContent(
             enabled = !loginState.isLoading
         )
 
-        loginState.error?.let { error ->
+        loginState.errorResource?.let { errorResource ->
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = error,
+                text = stringResource(errorResource),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -218,7 +218,7 @@ private fun LoginScreenErrorPreview() {
             loginState = LoginUiState(
                 email = SharedTestFixtures.testLoginEmail,
                 password = SharedTestFixtures.testLoginPassword,
-                error = SharedTestFixtures.testLoginError
+                errorResource = Res.string.error_auth_invalid_credentials
             ),
             onNavigateToRegister = {},
             onNavigateToParentInvite = {},

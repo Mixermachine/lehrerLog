@@ -1,7 +1,9 @@
 package de.aarondietz.lehrerlog.data.repository
 
+import de.aarondietz.lehrerlog.auth.AuthRepository
 import de.aarondietz.lehrerlog.auth.TokenStorage
 import de.aarondietz.lehrerlog.data.*
+import de.aarondietz.lehrerlog.network.withTokenRefresh
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -12,14 +14,17 @@ import io.ktor.http.*
 class TaskRepository(
     private val httpClient: HttpClient,
     private val tokenStorage: TokenStorage,
-    private val baseUrl: String
+    private val baseUrl: String,
+    private val authRepository: AuthRepository? = null
 ) {
     suspend fun getTasks(classId: String): Result<List<TaskDto>> {
         return try {
-            val tasks = httpClient.get("$baseUrl/api/tasks") {
-                parameter("classId", classId)
-                tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
-            }.body<List<TaskDto>>()
+            val tasks = withTokenRefresh(authRepository) {
+                httpClient.get("$baseUrl/api/tasks") {
+                    parameter("classId", classId)
+                    tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
+                }.body<List<TaskDto>>()
+            }
             Result.success(tasks)
         } catch (e: Exception) {
             Result.failure(e)
@@ -28,10 +33,12 @@ class TaskRepository(
 
     suspend fun getTasksByStudent(studentId: String): Result<List<TaskDto>> {
         return try {
-            val tasks = httpClient.get("$baseUrl/api/tasks") {
-                parameter("studentId", studentId)
-                tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
-            }.body<List<TaskDto>>()
+            val tasks = withTokenRefresh(authRepository) {
+                httpClient.get("$baseUrl/api/tasks") {
+                    parameter("studentId", studentId)
+                    tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
+                }.body<List<TaskDto>>()
+            }
             Result.success(tasks)
         } catch (e: Exception) {
             Result.failure(e)
@@ -149,9 +156,11 @@ class TaskRepository(
 
     suspend fun getSubmissions(taskId: String): Result<List<TaskSubmissionDto>> {
         return try {
-            val submissions = httpClient.get("$baseUrl/api/tasks/$taskId/submissions") {
-                tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
-            }.body<List<TaskSubmissionDto>>()
+            val submissions = withTokenRefresh(authRepository) {
+                httpClient.get("$baseUrl/api/tasks/$taskId/submissions") {
+                    tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
+                }.body<List<TaskSubmissionDto>>()
+            }
             Result.success(submissions)
         } catch (e: Exception) {
             Result.failure(e)
@@ -164,6 +173,25 @@ class TaskRepository(
 
     suspend fun uploadSubmissionFile(taskId: String, submissionId: String, file: UploadFilePayload): FileUploadResult {
         return uploadFile("$baseUrl/api/tasks/$taskId/submissions/$submissionId/files", file)
+    }
+
+    suspend fun getTaskFile(taskId: String): Result<FileMetadataDto?> {
+        return try {
+            val file = withTokenRefresh(authRepository) {
+                httpClient.get("$baseUrl/api/tasks/$taskId/file") {
+                    tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
+                }.body<FileMetadataDto>()
+            }
+            Result.success(file)
+        } catch (e: ClientRequestException) {
+            if (e.response.status == HttpStatusCode.NotFound) {
+                Result.success(null)
+            } else {
+                Result.failure(e)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     private suspend fun uploadFile(url: String, file: UploadFilePayload): FileUploadResult {

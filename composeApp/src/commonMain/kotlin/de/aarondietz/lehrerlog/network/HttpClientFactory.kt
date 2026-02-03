@@ -16,6 +16,16 @@ fun createHttpClient(): HttpClient {
                 ignoreUnknownKeys = true
             })
         }
+
+        // Add response validation to ensure proper error handling
+        expectSuccess = true
+
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30000
+            connectTimeoutMillis = 15000
+            socketTimeoutMillis = 30000
+        }
+
         defaultRequest {
             contentType(ContentType.Application.Json)
         }

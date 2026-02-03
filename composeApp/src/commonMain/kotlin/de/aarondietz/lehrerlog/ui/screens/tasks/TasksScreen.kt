@@ -42,8 +42,8 @@ fun TasksScreen(
     }
 
     LaunchedEffect(error) {
-        error?.let {
-            snackbarHostState.showSnackbar(it)
+        error?.let { errorResource ->
+            snackbarHostState.showSnackbar(stringResource(errorResource))
             viewModel.clearError()
         }
     }
@@ -139,8 +139,8 @@ fun TasksScreen(
         if (classId != null) {
             AddTaskDialog(
                 onDismiss = { showAddTaskDialog = false },
-                onConfirm = { title, description, dueAt ->
-                    viewModel.createTask(classId, title, description, dueAt)
+                onConfirm = { title, description, dueAt, file ->
+                    viewModel.createTask(classId, title, description, dueAt, file)
                     showAddTaskDialog = false
                 }
             )

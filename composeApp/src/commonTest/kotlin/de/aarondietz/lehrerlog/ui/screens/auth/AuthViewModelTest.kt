@@ -92,8 +92,8 @@ class AuthViewModelTest {
         try {
             viewModel.login()
 
-            val error = viewModel.loginState.value.error
-            assertNotNull(error)
+            val errorResource = viewModel.loginState.value.errorResource
+            assertNotNull(errorResource)
             assertTrue(
                 viewModel.authState.value is AuthState.Unauthenticated ||
                         viewModel.authState.value is AuthState.Initial

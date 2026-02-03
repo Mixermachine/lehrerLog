@@ -1,6 +1,8 @@
 package de.aarondietz.lehrerlog.ui.screens.settings
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Delete
@@ -58,31 +60,29 @@ internal fun SettingsContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(MaterialTheme.spacing.md),
         horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.SpaceBetween
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
     ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
-        ) {
-            Text(
-                text = stringResource(Res.string.nav_settings),
-                style = MaterialTheme.typography.headlineMedium
-            )
+        Text(
+            text = stringResource(Res.string.nav_settings),
+            style = MaterialTheme.typography.headlineMedium
+        )
 
-            StorageQuotaCard(
-                quotaState = quotaState,
-                onRefreshQuota = onRefreshQuota
-            )
+        StorageQuotaCard(
+            quotaState = quotaState,
+            onRefreshQuota = onRefreshQuota
+        )
 
-            LogsCard(
-                logState = logState,
-                onRefreshLogs = onRefreshLogs,
-                onShareLogs = onShareLogs,
-                onClearLogs = onClearLogs
-            )
-        }
+        LogsCard(
+            logState = logState,
+            onRefreshLogs = onRefreshLogs,
+            onShareLogs = onShareLogs,
+            onClearLogs = onClearLogs
+        )
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
         Button(
             onClick = onLogout,

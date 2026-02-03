@@ -106,19 +106,57 @@ internal fun TaskDetailDialog(
 
                 HorizontalDivider()
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(Res.string.task_upload_assignment),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                // Assignment file section
+                Text(
+                    text = stringResource(Res.string.task_upload_assignment),
+                    style = MaterialTheme.typography.titleSmall
+                )
+
+                if (state.assignmentFile != null) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.small,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(MaterialTheme.spacing.sm),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = state.assignmentFile.objectKey.substringAfterLast("/"),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = "${state.assignmentFile.sizeBytes / 1024} KB",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            TextButton(
+                                onClick = {
+                                    // TODO: Implement file viewing/download
+                                    // This would open the file using the device's file viewer
+                                }
+                            ) {
+                                Text(stringResource(Res.string.submission_upload_file))
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                    TextButton(onClick = { assignmentPicker() }) {
+                        Text("Replace file")
+                    }
+                } else {
                     TextButton(onClick = { assignmentPicker() }) {
                         Text(stringResource(Res.string.submission_upload_file))
                     }
                 }
+
+                HorizontalDivider()
 
                 if (state.students.isEmpty()) {
                     Text(stringResource(Res.string.task_students_empty))

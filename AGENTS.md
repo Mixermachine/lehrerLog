@@ -73,6 +73,7 @@ Use `./gradlew` (macOS/Linux) or `.\gradlew.bat` (Windows).
 - Prefer constructor injection; use `koinViewModel()` in UI
 - Dispatchers: `Main` for UI, `IO` for DB/Network
 - Bitwise operations: `if ((flags and (1 shl 30)) != 0)`
+- NEVER use java packages directly. This is a Compose Multiplatform project with non-JVM targets.
 
 ## Code Patterns
 

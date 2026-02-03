@@ -206,10 +206,10 @@ internal fun ParentInviteRedeemContent(
             enabled = !state.isLoading
         )
 
-        state.error?.let { error ->
+        state.errorResource?.let { errorResource ->
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
             Text(
-                text = error,
+                text = stringResource(errorResource),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall
             )

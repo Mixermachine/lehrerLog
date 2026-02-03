@@ -277,6 +277,9 @@ kotlin {
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
 
+            // DateTime
+            implementation(libs.kotlinx.datetime)
+
             // Logging
             implementation(libs.kermit)
         }

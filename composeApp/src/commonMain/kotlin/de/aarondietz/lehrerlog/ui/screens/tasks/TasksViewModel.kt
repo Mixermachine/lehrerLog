@@ -8,17 +8,22 @@ import de.aarondietz.lehrerlog.data.*
 import de.aarondietz.lehrerlog.data.repository.*
 import de.aarondietz.lehrerlog.logging.logger
 import de.aarondietz.lehrerlog.ui.util.PickedFile
+import de.aarondietz.lehrerlog.ui.util.getErrorResource
+import de.aarondietz.lehrerlog.ui.util.toStringResource
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import lehrerlog.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.StringResource
 
 data class TaskDetailState(
     val task: TaskDto? = null,
     val students: List<StudentDto> = emptyList(),
     val submissions: List<TaskSubmissionDto> = emptyList(),
+    val assignmentFile: FileMetadataDto? = null,
     val isLoading: Boolean = false,
     val isUploading: Boolean = false,
-    val error: String? = null
+    val errorResource: StringResource? = null
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -34,11 +39,11 @@ class TasksViewModel(
     private val _tasks = MutableStateFlow<List<TaskDto>>(emptyList())
     private val _summaries = MutableStateFlow<Map<String, TaskSubmissionSummaryDto>>(emptyMap())
     private val _isLoading = MutableStateFlow(false)
-    private val _error = MutableStateFlow<String?>(null)
+    private val _error = MutableStateFlow<StringResource?>(null)
     private val _detailState = MutableStateFlow(TaskDetailState())
 
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    val error: StateFlow<String?> = _error.asStateFlow()
+    val error: StateFlow<StringResource?> = _error.asStateFlow()
     val tasks: StateFlow<List<TaskDto>> = _tasks.asStateFlow()
     val summaries: StateFlow<Map<String, TaskSubmissionSummaryDto>> = _summaries.asStateFlow()
     val selectedClassId: StateFlow<String?> = _selectedClassId.asStateFlow()
@@ -63,13 +68,13 @@ class TasksViewModel(
                         refreshClasses()
                     } else {
                         logger.e { "User is not associated with a school." }
-                        _error.value = "User is not associated with a school."
+                        _error.value = Res.string.error_auth_session_expired
                     }
                 }
 
                 is AuthResult.Error -> {
                     logger.e { "Failed to load user: ${result.message}" }
-                    _error.value = "Failed to load user: ${result.message}"
+                    _error.value = result.toStringResource()
                 }
             }
             _isLoading.value = false
@@ -88,7 +93,7 @@ class TasksViewModel(
             schoolClassRepository.refreshClasses(schoolId)
                 .onFailure { e ->
                     logger.e(e) { "Failed to load classes" }
-                    _error.value = "Failed to load classes: ${e.message}"
+                    _error.value = e.toStringResource()
                 }
         }
     }
@@ -104,7 +109,7 @@ class TasksViewModel(
                 }
                 .onFailure { e ->
                     logger.e(e) { "Failed to load tasks" }
-                    _error.value = "Failed to load tasks: ${e.message}"
+                    _error.value = e.toStringResource()
                 }
             _isLoading.value = false
         }
@@ -114,17 +119,22 @@ class TasksViewModel(
         classId: String,
         title: String,
         description: String?,
-        dueAt: String
+        dueAt: String,
+        file: PickedFile? = null
     ) {
         viewModelScope.launch {
             _isLoading.value = true
             taskRepository.createTask(classId, title, description, dueAt)
-                .onSuccess {
+                .onSuccess { createdTask ->
+                    // Upload file if provided
+                    if (file != null) {
+                        uploadAssignmentFile(createdTask.id, file)
+                    }
                     loadTasks()
                 }
                 .onFailure { e ->
                     logger.e(e) { "Failed to create task" }
-                    _error.value = "Failed to create task: ${e.message}"
+                    _error.value = e.toStringResource()
                 }
             _isLoading.value = false
         }
@@ -137,7 +147,7 @@ class TasksViewModel(
         dueAt: String
     ) {
         viewModelScope.launch {
-            _detailState.value = _detailState.value.copy(isLoading = true, error = null)
+            _detailState.value = _detailState.value.copy(isLoading = true, errorResource = null)
             taskRepository.updateTask(taskId, title, description, dueAt)
                 .onSuccess { updatedTask ->
                     _detailState.value = _detailState.value.copy(task = updatedTask, isLoading = false)
@@ -147,7 +157,7 @@ class TasksViewModel(
                     logger.e(e) { "Failed to update task" }
                     _detailState.value = _detailState.value.copy(
                         isLoading = false,
-                        error = "Failed to update task: ${e.message}"
+                        errorResource = e.toStringResource()
                     )
                 }
         }
@@ -155,7 +165,7 @@ class TasksViewModel(
 
     fun deleteTask(taskId: String) {
         viewModelScope.launch {
-            _detailState.value = _detailState.value.copy(isLoading = true, error = null)
+            _detailState.value = _detailState.value.copy(isLoading = true, errorResource = null)
             taskRepository.deleteTask(taskId)
                 .onSuccess {
                     closeTask()
@@ -165,7 +175,7 @@ class TasksViewModel(
                     logger.e(e) { "Failed to delete task" }
                     _detailState.value = _detailState.value.copy(
                         isLoading = false,
-                        error = "Failed to delete task: ${e.message}"
+                        errorResource = e.toStringResource()
                     )
                 }
         }
@@ -215,7 +225,7 @@ class TasksViewModel(
                 refreshTaskDetails()
             }.onFailure { e ->
                 logger.e(e) { "Failed to create in-person submission" }
-                _detailState.value = _detailState.value.copy(error = "Failed to submit: ${e.message}")
+                _detailState.value = _detailState.value.copy(errorResource = e.toStringResource())
             }
         }
     }
@@ -228,25 +238,25 @@ class TasksViewModel(
                 }
                 .onFailure { e ->
                     logger.e(e) { "Failed to update submission" }
-                    _detailState.value = _detailState.value.copy(error = "Failed to update: ${e.message}")
+                    _detailState.value = _detailState.value.copy(errorResource = e.toStringResource())
                 }
         }
     }
 
     fun uploadAssignmentFile(taskId: String, file: PickedFile) {
-        _detailState.value = _detailState.value.copy(isUploading = true, error = null)
+        _detailState.value = _detailState.value.copy(isUploading = true, errorResource = null)
         viewModelScope.launch {
             when (val result = taskRepository.uploadTaskFile(taskId, file.toPayload())) {
                 is FileUploadResult.Success -> refreshTaskDetails()
-                is FileUploadResult.FileTooLarge -> showUploadError("File exceeds size limit.")
-                is FileUploadResult.QuotaExceeded -> showUploadError("Storage quota exceeded.")
-                is FileUploadResult.Error -> showUploadError(result.message)
+                is FileUploadResult.FileTooLarge -> showUploadError(result.toStringResource())
+                is FileUploadResult.QuotaExceeded -> showUploadError(result.toStringResource())
+                is FileUploadResult.Error -> showUploadError(result.toStringResource())
             }
         }
     }
 
     fun uploadSubmissionFile(taskId: String, studentId: String, submissionId: String?, file: PickedFile) {
-        _detailState.value = _detailState.value.copy(isUploading = true, error = null)
+        _detailState.value = _detailState.value.copy(isUploading = true, errorResource = null)
         viewModelScope.launch {
             val resolvedSubmissionId = submissionId ?: run {
                 val created = taskRepository.createSubmission(
@@ -256,7 +266,7 @@ class TasksViewModel(
                         submissionType = TaskSubmissionType.FILE
                     )
                 ).getOrElse { e ->
-                    showUploadError("Failed to create submission: ${e.message}")
+                    showUploadError(e.toStringResource())
                     return@launch
                 }
                 created.id
@@ -264,15 +274,15 @@ class TasksViewModel(
 
             when (val result = taskRepository.uploadSubmissionFile(taskId, resolvedSubmissionId, file.toPayload())) {
                 is FileUploadResult.Success -> refreshTaskDetails()
-                is FileUploadResult.FileTooLarge -> showUploadError("File exceeds size limit.")
-                is FileUploadResult.QuotaExceeded -> showUploadError("Storage quota exceeded.")
-                is FileUploadResult.Error -> showUploadError(result.message)
+                is FileUploadResult.FileTooLarge -> showUploadError(result.toStringResource())
+                is FileUploadResult.QuotaExceeded -> showUploadError(result.toStringResource())
+                is FileUploadResult.Error -> showUploadError(result.toStringResource())
             }
         }
     }
 
-    private fun showUploadError(message: String) {
-        _detailState.value = _detailState.value.copy(isUploading = false, error = message)
+    private fun showUploadError(errorResource: StringResource) {
+        _detailState.value = _detailState.value.copy(isUploading = false, errorResource = errorResource)
     }
 
     private suspend fun loadTaskDetails(task: TaskDto) {
@@ -280,25 +290,30 @@ class TasksViewModel(
         if (schoolId == null) {
             _detailState.value = _detailState.value.copy(
                 isLoading = false,
-                error = "User is not associated with a school."
+                errorResource = Res.string.error_auth_session_expired
             )
             return
         }
 
         val studentsResult = studentRepository.refreshStudents(schoolId)
         val submissionsResult = taskRepository.getSubmissions(task.id)
+        val fileResult = taskRepository.getTaskFile(task.id)
 
         val students = studentsResult.getOrElse { emptyList() }
             .filter { it.classIds.contains(task.schoolClassId) }
         val submissions = submissionsResult.getOrElse { emptyList() }
+        val assignmentFile = fileResult.getOrNull()
 
         _detailState.value = TaskDetailState(
             task = task,
             students = students,
             submissions = submissions,
+            assignmentFile = assignmentFile,
             isLoading = false,
             isUploading = false,
-            error = studentsResult.exceptionOrNull()?.message ?: submissionsResult.exceptionOrNull()?.message
+            errorResource = studentsResult.getErrorResource()
+                ?: submissionsResult.getErrorResource()
+                ?: fileResult.getErrorResource()
         )
     }
 }
