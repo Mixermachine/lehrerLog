@@ -9,9 +9,9 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import platform.Foundation.NSData
+import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 import platform.UIKit.UIDocumentPickerDelegateProtocol
-import platform.UIKit.UIDocumentPickerModeImport
 import platform.UIKit.UIDocumentPickerViewController
 import platform.UIKit.UINavigationControllerDelegateProtocol
 import platform.UIKit.UIViewController
@@ -19,6 +19,9 @@ import platform.UIKit.UIWindow
 import platform.UIKit.UIApplication
 import platform.UIKit.UINavigationController
 import platform.UIKit.UITabBarController
+import platform.UniformTypeIdentifiers.UTType
+import platform.UniformTypeIdentifiers.UTTypeItem
+import platform.UniformTypeIdentifiers.UTTypePDF
 import platform.darwin.NSObject
 import platform.posix.memcpy
 
@@ -35,15 +38,15 @@ actual fun rememberFilePickerLauncher(
         delegate.onPicked = currentOnPicked
         delegate.onCanceled = currentOnCanceled
     }
-    val documentTypes = remember(mimeTypes) { mimeTypesToDocumentTypes(mimeTypes) }
-    return {
-        val picker = UIDocumentPickerViewController(documentTypes = documentTypes, inMode = UIDocumentPickerModeImport)
+    val contentTypes = remember(mimeTypes) { mimeTypesToContentTypes(mimeTypes) }
+    return launch@{
+        val picker = UIDocumentPickerViewController(forOpeningContentTypes = contentTypes, asCopy = true)
         picker.delegate = delegate
         picker.allowsMultipleSelection = false
         val presenter = topViewController()
         if (presenter == null) {
             currentOnCanceled()
-            return@return
+            return@launch
         }
         presenter.presentViewController(picker, animated = true, completion = null)
     }
@@ -60,7 +63,7 @@ private class DocumentPickerDelegate : NSObject(), UIDocumentPickerDelegateProto
             return
         }
         val accessGranted = url.startAccessingSecurityScopedResource()
-        val data = NSData.dataWithContentsOfURL(url)
+        val data = url.path?.let { NSFileManager.defaultManager.contentsAtPath(it) }
         if (accessGranted) {
             url.stopAccessingSecurityScopedResource()
         }
@@ -83,13 +86,13 @@ private class DocumentPickerDelegate : NSObject(), UIDocumentPickerDelegateProto
     }
 }
 
-private fun mimeTypesToDocumentTypes(mimeTypes: List<String>): List<String> {
-    if (mimeTypes.isEmpty()) return listOf("public.item")
+private fun mimeTypesToContentTypes(mimeTypes: List<String>): List<UTType> {
+    if (mimeTypes.isEmpty()) return listOf(UTTypeItem)
     return mimeTypes.map { mime ->
         when (mime.lowercase()) {
-            "application/pdf" -> "com.adobe.pdf"
-            "*/*" -> "public.item"
-            else -> "public.item"
+            "application/pdf" -> UTTypePDF
+            "*/*" -> UTTypeItem
+            else -> UTTypeItem
         }
     }.distinct()
 }
@@ -103,7 +106,7 @@ private fun keyWindow(): UIWindow? {
     val app = UIApplication.sharedApplication
     val key = app.keyWindow
     if (key != null) return key
-    return app.windows.firstOrNull { it.isKeyWindow }
+    return app.windows.firstOrNull { (it as? UIWindow)?.isKeyWindow() == true } as? UIWindow
 }
 
 private fun findTopViewController(root: UIViewController?): UIViewController? {
