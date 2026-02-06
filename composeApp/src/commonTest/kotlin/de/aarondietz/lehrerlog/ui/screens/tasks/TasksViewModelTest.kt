@@ -71,7 +71,11 @@ class TasksViewModelTest {
 
         try {
             viewModel.selectClass(schoolClass.id)
-            awaitUntil { !viewModel.isLoading.value && viewModel.tasks.value.isNotEmpty() }
+            awaitUntil {
+                !viewModel.isLoading.value &&
+                    viewModel.tasks.value.isNotEmpty() &&
+                    viewModel.summaries.value.isNotEmpty()
+            }
             assertTrue(viewModel.tasks.value.isNotEmpty())
             assertTrue(viewModel.summaries.value.isNotEmpty())
 
