@@ -51,14 +51,16 @@ fun AddTaskDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text(stringResource(Res.string.task_title)) },
-                    singleLine = true
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(Res.string.task_description)) },
-                    minLines = 2
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 OutlinedTextField(
@@ -74,23 +76,25 @@ fun AddTaskDialog(
                             )
                         }
                     },
-                    modifier = Modifier.clickable { showDatePicker = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true },
                     singleLine = true
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
                 // File upload section
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = stringResource(Res.string.task_upload_assignment),
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    OutlinedButton(onClick = { filePicker() }) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                    OutlinedButton(
+                        onClick = { filePicker() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Icon(
                             imageVector = Icons.Default.AttachFile,
                             contentDescription = null,
@@ -103,6 +107,7 @@ fun AddTaskDialog(
 
                 // Show selected file
                 selectedFile?.let { file ->
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         shape = MaterialTheme.shapes.small,
