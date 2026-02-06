@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.SharedTestFixtures
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import lehrerlog.composeapp.generated.resources.*
@@ -47,7 +49,7 @@ fun LoginScreen(
 }
 
 @Composable
-private fun LoginScreenContent(
+internal fun LoginScreenContent(
     loginState: LoginUiState,
     onNavigateToRegister: () -> Unit,
     onNavigateToParentInvite: () -> Unit,
@@ -94,7 +96,9 @@ private fun LoginScreenContent(
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(UiTestTags.loginEmailField),
             enabled = !loginState.isLoading
         )
 
@@ -125,7 +129,9 @@ private fun LoginScreenContent(
                     onLoginClick()
                 }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(UiTestTags.loginPasswordField),
             enabled = !loginState.isLoading
         )
 
@@ -142,7 +148,9 @@ private fun LoginScreenContent(
 
         Button(
             onClick = onLoginClick,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(UiTestTags.loginSubmitButton),
             enabled = !loginState.isLoading
         ) {
             if (loginState.isLoading) {
@@ -157,7 +165,10 @@ private fun LoginScreenContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TextButton(onClick = onNavigateToRegister) {
+        TextButton(
+            onClick = onNavigateToRegister,
+            modifier = Modifier.testTag(UiTestTags.loginRegisterButton)
+        ) {
             Text(stringResource(Res.string.no_account) + " ")
             Text(
                 text = stringResource(Res.string.register),
@@ -167,7 +178,10 @@ private fun LoginScreenContent(
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-        TextButton(onClick = onNavigateToParentInvite) {
+        TextButton(
+            onClick = onNavigateToParentInvite,
+            modifier = Modifier.testTag(UiTestTags.loginParentInviteButton)
+        ) {
             Text(stringResource(Res.string.parent_invite_redeem))
         }
     }

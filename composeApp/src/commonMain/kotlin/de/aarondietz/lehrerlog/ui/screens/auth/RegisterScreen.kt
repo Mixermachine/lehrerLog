@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -22,6 +23,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.SharedTestFixtures
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -48,7 +50,7 @@ fun RegisterScreen(
 }
 
 @Composable
-private fun RegisterScreenContent(
+internal fun RegisterScreenContent(
     registerState: RegisterUiState,
     onNavigateToLogin: () -> Unit,
     onFirstNameChange: (String) -> Unit,
@@ -119,7 +121,8 @@ private fun RegisterScreenContent(
                 .focusRequester(schoolFocus)
                 .focusProperties {
                     next = firstNameFocus
-                },
+                }
+                .testTag(UiTestTags.registerSchoolQueryField),
             enabled = !registerState.isLoading
         )
 
@@ -155,6 +158,7 @@ private fun RegisterScreenContent(
                                 ) {
                                     onSchoolSelected(school)
                                 }
+                                .testTag(UiTestTags.registerSchoolSuggestion(school.code))
                                 .padding(horizontal = 16.dp, vertical = 12.dp)
                         ) {
                             Text(text = displayLabel, style = MaterialTheme.typography.bodyMedium)
@@ -209,7 +213,8 @@ private fun RegisterScreenContent(
                 .focusProperties {
                     previous = schoolFocus
                     next = lastNameFocus
-                },
+                }
+                .testTag(UiTestTags.registerFirstNameField),
             enabled = !registerState.isLoading
         )
 
@@ -231,7 +236,8 @@ private fun RegisterScreenContent(
                 .focusProperties {
                     previous = firstNameFocus
                     next = emailFocus
-                },
+                }
+                .testTag(UiTestTags.registerLastNameField),
             enabled = !registerState.isLoading
         )
 
@@ -256,7 +262,8 @@ private fun RegisterScreenContent(
                 .focusProperties {
                     previous = lastNameFocus
                     next = passwordFocus
-                },
+                }
+                .testTag(UiTestTags.registerEmailField),
             enabled = !registerState.isLoading
         )
 
@@ -290,7 +297,8 @@ private fun RegisterScreenContent(
                 .focusProperties {
                     previous = emailFocus
                     next = confirmPasswordFocus
-                },
+                }
+                .testTag(UiTestTags.registerPasswordField),
             enabled = !registerState.isLoading
         )
 
@@ -324,7 +332,8 @@ private fun RegisterScreenContent(
                 .focusProperties {
                     previous = passwordFocus
                     next = registerButtonFocus
-                },
+                }
+                .testTag(UiTestTags.registerConfirmPasswordField),
             enabled = !registerState.isLoading
         )
 
@@ -349,7 +358,8 @@ private fun RegisterScreenContent(
                 .focusProperties {
                     previous = confirmPasswordFocus
                     next = loginButtonFocus
-                },
+                }
+                .testTag(UiTestTags.registerSubmitButton),
             enabled = !registerState.isLoading
         ) {
             if (registerState.isLoading) {
@@ -371,6 +381,7 @@ private fun RegisterScreenContent(
                 .focusProperties {
                     previous = registerButtonFocus
                 }
+                .testTag(UiTestTags.registerLoginButton)
         ) {
             Text(stringResource(Res.string.have_account) + " ")
             Text(

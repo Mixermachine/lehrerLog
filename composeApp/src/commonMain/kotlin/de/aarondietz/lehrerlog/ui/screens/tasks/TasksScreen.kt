@@ -10,10 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.data.TaskDto
 import de.aarondietz.lehrerlog.ui.composables.AddTaskDialog
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import lehrerlog.composeapp.generated.resources.*
@@ -56,6 +58,7 @@ fun TasksScreen(
             val canAddTask = selectedClassId != null
             FloatingActionButton(
                 onClick = { if (canAddTask) showAddTaskDialog = true },
+                modifier = Modifier.testTag(UiTestTags.tasksAddFab),
                 containerColor = if (canAddTask) {
                     MaterialTheme.colorScheme.primary
                 } else {
@@ -82,7 +85,10 @@ fun TasksScreen(
                     onValueChange = { },
                     label = { Text(stringResource(Res.string.select_class)) },
                     trailingIcon = {
-                        IconButton(onClick = { classMenuExpanded = !classMenuExpanded }) {
+                        IconButton(
+                            onClick = { classMenuExpanded = !classMenuExpanded },
+                            modifier = Modifier.testTag(UiTestTags.tasksClassSelectorToggle)
+                        ) {
                             Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                         }
                     },
@@ -98,6 +104,7 @@ fun TasksScreen(
                     classes.forEach { schoolClass ->
                         DropdownMenuItem(
                             text = { Text(schoolClass.name) },
+                            modifier = Modifier.testTag(UiTestTags.tasksClassMenuItem(schoolClass.id)),
                             onClick = {
                                 classMenuExpanded = false
                                 viewModel.selectClass(schoolClass.id)
@@ -180,7 +187,9 @@ private fun TaskCard(
 ) {
     val dueDate = task.dueAt.substringBefore("T")
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(UiTestTags.tasksCard(task.id)),
         onClick = onClick
     ) {
         Column(modifier = Modifier.padding(MaterialTheme.spacing.md)) {

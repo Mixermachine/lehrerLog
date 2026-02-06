@@ -10,7 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import de.aarondietz.lehrerlog.ui.util.PickedFile
@@ -52,7 +54,9 @@ fun AddTaskDialog(
                     onValueChange = { title = it },
                     label = { Text(stringResource(Res.string.task_title)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(UiTestTags.addTaskDialogTitleField)
                 )
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 OutlinedTextField(
@@ -156,7 +160,10 @@ fun AddTaskDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.testTag(UiTestTags.addTaskDialogCancelButton)
+            ) {
                 Text(stringResource(Res.string.action_cancel))
             }
         }

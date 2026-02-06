@@ -14,8 +14,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import de.aarondietz.lehrerlog.SharedTestFixtures
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import lehrerlog.composeapp.generated.resources.Res
@@ -129,6 +131,7 @@ fun ParentStudentsScreenContent(
                                 )
                                 .clickable { onSelectStudent(student.id) }
                                 .padding(spacing.sm)
+                                .testTag(UiTestTags.parentStudentItem(student.id))
                         )
                     }
                 }

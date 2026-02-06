@@ -10,10 +10,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.data.StudentDto
 import de.aarondietz.lehrerlog.ui.components.StudentLateStatsChart
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import lehrerlog.composeapp.generated.resources.*
@@ -162,7 +164,10 @@ internal fun StudentLateStatsRow(
         }
         if (stats.punishmentRequired) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-            TextButton(onClick = onResolvePunishment) {
+            TextButton(
+                onClick = onResolvePunishment,
+                modifier = Modifier.testTag(UiTestTags.homeResolvePunishmentButton(stats.studentId))
+            ) {
                 Text(stringResource(Res.string.punishment_resolve))
             }
         }

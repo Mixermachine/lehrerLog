@@ -14,11 +14,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.logging.LogOverview
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import lehrerlog.composeapp.generated.resources.*
@@ -88,7 +90,8 @@ internal fun SettingsContent(
             onClick = onLogout,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = MaterialTheme.spacing.md),
+                .padding(bottom = MaterialTheme.spacing.md)
+                .testTag(UiTestTags.settingsLogoutButton),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.error
             )
@@ -127,7 +130,10 @@ private fun StorageQuotaCard(
                     text = stringResource(Res.string.storage_quota_title),
                     style = MaterialTheme.typography.titleMedium
                 )
-                IconButton(onClick = onRefreshQuota) {
+                IconButton(
+                    onClick = onRefreshQuota,
+                    modifier = Modifier.testTag(UiTestTags.settingsRefreshQuotaButton)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = stringResource(Res.string.storage_quota_refresh)
@@ -224,7 +230,10 @@ private fun LogsCard(
                     text = stringResource(Res.string.logs_title),
                     style = MaterialTheme.typography.titleMedium
                 )
-                IconButton(onClick = onRefreshLogs) {
+                IconButton(
+                    onClick = onRefreshLogs,
+                    modifier = Modifier.testTag(UiTestTags.settingsRefreshLogsButton)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = stringResource(Res.string.logs_refresh)
@@ -350,7 +359,9 @@ private fun LogsActions(
         Button(
             onClick = onShareLogs,
             enabled = actionsEnabled,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .testTag(UiTestTags.settingsShareLogsButton)
         ) {
             Icon(
                 imageVector = Icons.Default.Share,
@@ -364,7 +375,9 @@ private fun LogsActions(
         OutlinedButton(
             onClick = onClearLogs,
             enabled = actionsEnabled && hasLogs,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .testTag(UiTestTags.settingsClearLogsButton)
         ) {
             Icon(
                 imageVector = Icons.Default.Delete,

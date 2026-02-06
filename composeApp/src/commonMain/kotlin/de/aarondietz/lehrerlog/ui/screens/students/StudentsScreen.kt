@@ -9,11 +9,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.data.SchoolClassDto
 import de.aarondietz.lehrerlog.ui.composables.AddClassDialog
 import de.aarondietz.lehrerlog.ui.composables.AddStudentDialog
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.layoutMetrics
 import de.aarondietz.lehrerlog.ui.theme.spacing
@@ -230,7 +232,10 @@ internal fun ClassCard(
                     text = schoolClass.name,
                     style = MaterialTheme.typography.titleMedium
                 )
-                IconButton(onClick = onExpandClick) {
+                IconButton(
+                    onClick = onExpandClick,
+                    modifier = Modifier.testTag(UiTestTags.studentsClassExpandButton(schoolClass.id))
+                ) {
                     Icon(
                         imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = if (isExpanded) {
@@ -254,19 +259,28 @@ internal fun ClassCard(
                     ) {
                         Text("${student.firstName} ${student.lastName}")
                         Row {
-                            IconButton(onClick = { onInviteParent(student) }) {
+                            IconButton(
+                                onClick = { onInviteParent(student) },
+                                modifier = Modifier.testTag(UiTestTags.studentsInviteParentButton(student.id))
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.PersonAdd,
                                     contentDescription = stringResource(Res.string.invite_parent)
                                 )
                             }
-                            IconButton(onClick = { onViewParentLinks(student) }) {
+                            IconButton(
+                                onClick = { onViewParentLinks(student) },
+                                modifier = Modifier.testTag(UiTestTags.studentsParentLinksButton(student.id))
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.Link,
                                     contentDescription = stringResource(Res.string.parent_links_title)
                                 )
                             }
-                            IconButton(onClick = { onDeleteStudent(student) }) {
+                            IconButton(
+                                onClick = { onDeleteStudent(student) },
+                                modifier = Modifier.testTag(UiTestTags.studentsDeleteStudentButton(student.id))
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = stringResource(Res.string.delete_student)
@@ -286,7 +300,9 @@ internal fun ClassCard(
                         ) {
                             Button(
                                 onClick = onAddStudent,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag(UiTestTags.studentsAddStudentButton(schoolClass.id))
                             ) {
                                 Text(stringResource(Res.string.add_student))
                             }
@@ -296,7 +312,9 @@ internal fun ClassCard(
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.error
                                 ),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag(UiTestTags.studentsDeleteClassButton(schoolClass.id))
                             ) {
                                 Text(stringResource(Res.string.delete_class))
                             }
@@ -308,7 +326,9 @@ internal fun ClassCard(
                         ) {
                             Button(
                                 onClick = onAddStudent,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag(UiTestTags.studentsAddStudentButton(schoolClass.id))
                             ) {
                                 Text(stringResource(Res.string.add_student))
                             }
@@ -318,7 +338,9 @@ internal fun ClassCard(
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.error
                                 ),
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag(UiTestTags.studentsDeleteClassButton(schoolClass.id))
                             ) {
                                 Text(stringResource(Res.string.delete_class))
                             }

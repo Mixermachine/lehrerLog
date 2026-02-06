@@ -13,12 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import de.aarondietz.lehrerlog.SharedTestFixtures
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import lehrerlog.composeapp.generated.resources.*
@@ -120,7 +122,9 @@ internal fun ParentInviteRedeemContent(
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(UiTestTags.parentInviteCodeField),
             enabled = !state.isLoading
         )
 
@@ -136,7 +140,9 @@ internal fun ParentInviteRedeemContent(
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(UiTestTags.parentInviteFirstNameField),
             enabled = !state.isLoading
         )
 
@@ -152,7 +158,9 @@ internal fun ParentInviteRedeemContent(
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(UiTestTags.parentInviteLastNameField),
             enabled = !state.isLoading
         )
 
@@ -171,7 +179,9 @@ internal fun ParentInviteRedeemContent(
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(UiTestTags.parentInviteEmailField),
             enabled = !state.isLoading
         )
 
@@ -202,7 +212,9 @@ internal fun ParentInviteRedeemContent(
                     onRedeemClick()
                 }
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(UiTestTags.parentInvitePasswordField),
             enabled = !state.isLoading
         )
 
@@ -219,7 +231,9 @@ internal fun ParentInviteRedeemContent(
 
         Button(
             onClick = onRedeemClick,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(UiTestTags.parentInviteSubmitButton),
             enabled = !state.isLoading
         ) {
             if (state.isLoading) {
@@ -234,7 +248,11 @@ internal fun ParentInviteRedeemContent(
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-        TextButton(onClick = onNavigateToLogin, enabled = !state.isLoading) {
+        TextButton(
+            onClick = onNavigateToLogin,
+            enabled = !state.isLoading,
+            modifier = Modifier.testTag(UiTestTags.parentInviteBackButton)
+        ) {
             Text(stringResource(Res.string.parent_invite_to_login))
         }
     }
