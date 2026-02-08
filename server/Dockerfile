@@ -3,7 +3,7 @@ WORKDIR /workspace
 COPY . .
 RUN chmod +x ./gradlew && ./gradlew :server:installDist --no-daemon
 
-FROM eclipse-temurin:21.0.9_9-jre
+FROM eclipse-temurin:21-jre
 RUN apt-get update \
     && apt-get install -y curl \
     && rm -rf /var/lib/apt/lists/*
