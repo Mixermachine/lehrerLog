@@ -100,6 +100,10 @@ jacoco {
 }
 
 tasks.test {
+    if (System.getenv("GITHUB_ACTIONS") == "true") {
+        // Hosted runners can be slow enough that Ktor testApplication cleanup exceeds the default 60s runTest timeout.
+        systemProperty("kotlinx.coroutines.test.default_timeout", "180s")
+    }
     finalizedBy(tasks.jacocoTestReport) // Generate report after tests run
 }
 
