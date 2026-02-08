@@ -84,43 +84,43 @@ class ClassStudentRouteEndToEndTest {
     fun `add and remove student from class`() = testApplication {
         application { module() }
 
-        val client = createClient {
+        createClient {
             install(ContentNegotiation) { json() }
-        }
+        }.use { client ->
+            val token = tokenService.generateAccessToken(
+                userId = userId!!,
+                email = "teacher@example.com",
+                role = de.aarondietz.lehrerlog.db.tables.UserRole.TEACHER,
+                schoolId = schoolId
+            )
 
-        val token = tokenService.generateAccessToken(
-            userId = userId!!,
-            email = "teacher@example.com",
-            role = de.aarondietz.lehrerlog.db.tables.UserRole.TEACHER,
-            schoolId = schoolId
-        )
+            val addResponse = client.post("/api/classes/${classId}/students/${studentId}") {
+                header("Authorization", "Bearer $token")
+            }
+            assertEquals(HttpStatusCode.OK, addResponse.status)
+            val addedStudent = addResponse.body<StudentDto>()
+            assertTrue(addedStudent.classIds.contains(classId!!.toString()))
 
-        val addResponse = client.post("/api/classes/${classId}/students/${studentId}") {
-            header("Authorization", "Bearer $token")
-        }
-        assertEquals(HttpStatusCode.OK, addResponse.status)
-        val addedStudent = addResponse.body<StudentDto>()
-        assertTrue(addedStudent.classIds.contains(classId!!.toString()))
+            val fetchResponse = client.get("/api/students/${studentId}") {
+                header("Authorization", "Bearer $token")
+            }
+            assertEquals(HttpStatusCode.OK, fetchResponse.status)
+            val fetchedStudent = fetchResponse.body<StudentDto>()
+            assertTrue(fetchedStudent.classIds.contains(classId!!.toString()))
 
-        val fetchResponse = client.get("/api/students/${studentId}") {
-            header("Authorization", "Bearer $token")
-        }
-        assertEquals(HttpStatusCode.OK, fetchResponse.status)
-        val fetchedStudent = fetchResponse.body<StudentDto>()
-        assertTrue(fetchedStudent.classIds.contains(classId!!.toString()))
+            val removeResponse = client.delete("/api/classes/${classId}/students/${studentId}") {
+                header("Authorization", "Bearer $token")
+            }
+            assertEquals(HttpStatusCode.OK, removeResponse.status)
+            val removedStudent = removeResponse.body<StudentDto>()
+            assertTrue(removedStudent.classIds.none { it == classId!!.toString() })
 
-        val removeResponse = client.delete("/api/classes/${classId}/students/${studentId}") {
-            header("Authorization", "Bearer $token")
+            val finalResponse = client.get("/api/students/${studentId}") {
+                header("Authorization", "Bearer $token")
+            }
+            assertEquals(HttpStatusCode.OK, finalResponse.status)
+            val finalStudent = finalResponse.body<StudentDto>()
+            assertTrue(finalStudent.classIds.none { it == classId!!.toString() })
         }
-        assertEquals(HttpStatusCode.OK, removeResponse.status)
-        val removedStudent = removeResponse.body<StudentDto>()
-        assertTrue(removedStudent.classIds.none { it == classId!!.toString() })
-
-        val finalResponse = client.get("/api/students/${studentId}") {
-            header("Authorization", "Bearer $token")
-        }
-        assertEquals(HttpStatusCode.OK, finalResponse.status)
-        val finalStudent = finalResponse.body<StudentDto>()
-        assertTrue(finalStudent.classIds.none { it == classId!!.toString() })
     }
 }
