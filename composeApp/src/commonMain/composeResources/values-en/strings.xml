@@ -190,6 +190,7 @@
     <string name="error_resource_not_found">Resource not found</string>
     <string name="error_resource_conflict">Data was already modified. Please refresh.</string>
     <string name="error_resource_forbidden">Access denied</string>
+    <string name="error_task_student_not_targeted">Student is not assigned to this task</string>
 
     <!-- Error messages: File Upload -->
     <string name="error_file_too_large">File too large (max %1$d MB)</string>

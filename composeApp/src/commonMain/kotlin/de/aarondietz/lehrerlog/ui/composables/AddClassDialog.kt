@@ -5,7 +5,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -26,13 +29,15 @@ fun AddClassDialog(
                 onValueChange = { className = it },
                 label = { Text(stringResource(Res.string.class_name)) },
                 placeholder = { Text(stringResource(Res.string.class_name_placeholder)) },
-                singleLine = true
+                singleLine = true,
+                modifier = Modifier.testTag(UiTestTags.addClassDialogNameField)
             )
         },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(className.trim()) },
-                enabled = className.isNotBlank()
+                enabled = className.isNotBlank(),
+                modifier = Modifier.testTag(UiTestTags.addClassDialogConfirmButton)
             ) {
                 Text(stringResource(Res.string.action_add))
             }

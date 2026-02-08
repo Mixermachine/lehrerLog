@@ -62,7 +62,7 @@ jobs:
       - name: Run unit tests + verify snapshots (qa)
         run: |
           chmod +x ./gradlew
-          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug
+          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug :composeApp:jvmTest :composeApp:wasmJsTest
 
       - name: Reset Kotlin/JS toolchain cache (qa)
         run: |
@@ -150,7 +150,7 @@ jobs:
       - name: Run unit tests + verify snapshots (prod)
         run: |
           chmod +x ./gradlew
-          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug
+          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug :composeApp:jvmTest :composeApp:wasmJsTest
 
       - name: Reset Kotlin/JS toolchain cache (prod)
         run: |

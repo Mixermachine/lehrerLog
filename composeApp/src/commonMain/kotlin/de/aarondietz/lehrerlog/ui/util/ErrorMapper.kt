@@ -2,6 +2,7 @@ package de.aarondietz.lehrerlog.ui.util
 
 import de.aarondietz.lehrerlog.auth.AuthResult
 import de.aarondietz.lehrerlog.data.repository.FileUploadResult
+import de.aarondietz.lehrerlog.data.repository.TaskStudentNotTargetedException
 import io.ktor.client.plugins.*
 import io.ktor.utils.io.errors.*
 import kotlinx.io.IOException
@@ -52,6 +53,10 @@ fun AuthResult.Error.toStringResource(): StringResource {
  * Used with Result<T>.exceptionOrNull()
  */
 fun Throwable.toStringResource(): StringResource {
+    if (this is TaskStudentNotTargetedException || message?.contains("not targeted", ignoreCase = true) == true) {
+        return Res.string.error_task_student_not_targeted
+    }
+
     return when (this) {
         is ClientRequestException -> {
             when (response.status.value) {

@@ -171,6 +171,20 @@ class TaskService {
         }
     }
 
+    fun getTargetStudentIds(taskId: UUID, schoolId: UUID): List<UUID> = transaction {
+        val taskExists = Tasks.selectAll()
+            .where { (Tasks.id eq taskId) and (Tasks.schoolId eq schoolId) }
+            .any()
+        if (!taskExists) {
+            throw IllegalArgumentException("Task not found")
+        }
+
+        TaskTargets
+            .select(TaskTargets.studentId)
+            .where { TaskTargets.taskId eq taskId }
+            .map { it[TaskTargets.studentId].value }
+    }
+
     private fun parseDueAt(dueAt: String): OffsetDateTime {
         return try {
             OffsetDateTime.parse(dueAt)

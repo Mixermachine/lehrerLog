@@ -37,6 +37,12 @@ data class TaskTargetsRequest(
 )
 
 @Serializable
+data class TaskTargetsResponse(
+    val taskId: String,
+    val studentIds: List<String>
+)
+
+@Serializable
 data class TaskSubmissionDto(
     val id: String,
     val taskId: String,

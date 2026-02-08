@@ -239,6 +239,11 @@ kotlin {
         val iosMain by creating {
             dependsOn(nativeMain)
         }
+        val jvmTest by getting {
+            dependsOn(commonTest)
+            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+            dependencies { implementation(libs.compose.ui.test) }
+        }
 
         androidMain.get().dependsOn(nonWasmMain)
         jvmMain.get().dependsOn(nonWasmMain)
@@ -410,6 +415,26 @@ tasks.withType<Test>().configureEach {
             excludeTestsMatching("*Roborazzi*")
         }
     }
+}
+
+tasks.register<Test>("desktopUiScaffoldTestVisible") {
+    description = "Runs desktop Compose UI scaffold tests with a visible window."
+    group = "verification"
+    val jvmTestTask = tasks.named<Test>("jvmTest")
+    testClassesDirs = jvmTestTask.get().testClassesDirs
+    classpath = jvmTestTask.get().classpath
+    include("**/*DesktopComposeUiScaffoldTest*")
+    systemProperty("java.awt.headless", "false")
+}
+
+tasks.register<Test>("desktopUiTestVisible") {
+    description = "Runs desktop Compose UI workflow tests with a visible window."
+    group = "verification"
+    val jvmTestTask = tasks.named<Test>("jvmTest")
+    testClassesDirs = jvmTestTask.get().testClassesDirs
+    classpath = jvmTestTask.get().classpath
+    include("**/*Desktop*UiTest*")
+    systemProperty("java.awt.headless", "false")
 }
 
 compose.desktop {

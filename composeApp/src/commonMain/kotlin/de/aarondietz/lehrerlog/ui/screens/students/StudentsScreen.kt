@@ -47,7 +47,8 @@ fun StudentsScreen(
             FloatingActionButton(
                 onClick = {
                     showAddClassDialog = true
-                }
+                },
+                modifier = Modifier.testTag(UiTestTags.studentsAddClassFab)
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_class))
             }
@@ -168,7 +169,8 @@ fun StudentsScreen(
                     onClick = {
                         viewModel.deleteStudent(student.id)
                         confirmDeleteStudent = null
-                    }
+                    },
+                    modifier = Modifier.testTag(UiTestTags.studentsDeleteStudentConfirmButton)
                 ) {
                     Text(stringResource(Res.string.delete_student))
                 }

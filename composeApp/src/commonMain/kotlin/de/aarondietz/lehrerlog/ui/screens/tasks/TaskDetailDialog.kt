@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import de.aarondietz.lehrerlog.SharedTestFixtures
 import de.aarondietz.lehrerlog.data.LateStatus
@@ -12,6 +13,7 @@ import de.aarondietz.lehrerlog.data.StudentDto
 import de.aarondietz.lehrerlog.data.TaskSubmissionDto
 import de.aarondietz.lehrerlog.data.TaskSubmissionType
 import de.aarondietz.lehrerlog.ui.composables.EditTaskDialog
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import de.aarondietz.lehrerlog.ui.theme.spacing
 import de.aarondietz.lehrerlog.ui.util.PickedFile
@@ -150,11 +152,17 @@ internal fun TaskDetailDialog(
                         }
                     }
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                    TextButton(onClick = { assignmentPicker() }) {
+                    TextButton(
+                        onClick = { assignmentPicker() },
+                        modifier = Modifier.testTag(UiTestTags.taskDetailAssignmentUploadButton)
+                    ) {
                         Text("Replace file")
                     }
                 } else {
-                    TextButton(onClick = { assignmentPicker() }) {
+                    TextButton(
+                        onClick = { assignmentPicker() },
+                        modifier = Modifier.testTag(UiTestTags.taskDetailAssignmentUploadButton)
+                    ) {
                         Text(stringResource(Res.string.submission_upload_file))
                     }
                 }
@@ -267,7 +275,10 @@ private fun SubmissionRow(
                     TextButton(onClick = { onUploadFile(student.id, null) }) {
                         Text(stringResource(Res.string.submission_upload_file))
                     }
-                    TextButton(onClick = { onMarkInPerson(student.id) }) {
+                    TextButton(
+                        onClick = { onMarkInPerson(student.id) },
+                        modifier = Modifier.testTag(UiTestTags.taskDetailMarkInPersonButton(student.id))
+                    ) {
                         Text(stringResource(Res.string.submission_mark_in_person))
                     }
                 }

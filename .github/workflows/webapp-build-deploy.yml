@@ -86,7 +86,7 @@ jobs:
       - name: Run unit tests + verify snapshots (qa)
         run: |
           chmod +x ./gradlew
-          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug
+          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug :composeApp:jvmTest :composeApp:wasmJsTest
 
       - name: Build and push (qa)
         uses: docker/build-push-action@v6.18.0
@@ -145,7 +145,7 @@ jobs:
       - name: Run unit tests + verify snapshots (prod)
         run: |
           chmod +x ./gradlew
-          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug
+          ./gradlew :composeApp:testDevDebugUnitTest :composeApp:verifyRoborazziDevDebug :composeApp:jvmTest :composeApp:wasmJsTest
 
       - name: Build and push (prod)
         uses: docker/build-push-action@v6.18.0

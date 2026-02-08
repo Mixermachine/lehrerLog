@@ -64,7 +64,9 @@ fun AddTaskDialog(
                     onValueChange = { description = it },
                     label = { Text(stringResource(Res.string.task_description)) },
                     minLines = 2,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(UiTestTags.addTaskDialogDescriptionField)
                 )
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 OutlinedTextField(
@@ -73,7 +75,10 @@ fun AddTaskDialog(
                     label = { Text(stringResource(Res.string.due_date)) },
                     readOnly = true,
                     trailingIcon = {
-                        IconButton(onClick = { showDatePicker = true }) {
+                        IconButton(
+                            onClick = { showDatePicker = true },
+                            modifier = Modifier.testTag(UiTestTags.addTaskDialogOpenDatePickerButton)
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.CalendarToday,
                                 contentDescription = stringResource(Res.string.due_date)
@@ -82,7 +87,8 @@ fun AddTaskDialog(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showDatePicker = true },
+                        .clickable { showDatePicker = true }
+                        .testTag(UiTestTags.addTaskDialogDateField),
                     singleLine = true
                 )
 
@@ -97,7 +103,9 @@ fun AddTaskDialog(
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                     OutlinedButton(
                         onClick = { filePicker() },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(UiTestTags.addTaskDialogUploadButton)
                     ) {
                         Icon(
                             imageVector = Icons.Default.AttachFile,
@@ -154,7 +162,8 @@ fun AddTaskDialog(
                         )
                     }
                 },
-                enabled = title.isNotBlank() && selectedDate != null
+                enabled = title.isNotBlank() && selectedDate != null,
+                modifier = Modifier.testTag(UiTestTags.addTaskDialogConfirmButton)
             ) {
                 Text(stringResource(Res.string.action_add))
             }

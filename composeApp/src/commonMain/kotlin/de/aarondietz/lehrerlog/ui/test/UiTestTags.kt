@@ -33,6 +33,13 @@ object UiTestTags {
     const val settingsShareLogsButton = "settings_share_logs_button"
     const val settingsClearLogsButton = "settings_clear_logs_button"
     const val settingsLogoutButton = "settings_logout_button"
+    const val studentsAddClassFab = "students_add_class_fab"
+    const val addClassDialogNameField = "add_class_dialog_name_field"
+    const val addClassDialogConfirmButton = "add_class_dialog_confirm_button"
+    const val addStudentDialogFirstNameField = "add_student_dialog_first_name_field"
+    const val addStudentDialogLastNameField = "add_student_dialog_last_name_field"
+    const val addStudentDialogConfirmButton = "add_student_dialog_confirm_button"
+    const val studentsDeleteStudentConfirmButton = "students_delete_student_confirm_button"
 
     fun homeResolvePunishmentButton(studentId: String): String {
         return "home_resolve_punishment_$studentId"
@@ -69,7 +76,13 @@ object UiTestTags {
     const val tasksAddFab = "tasks_add_fab"
     const val tasksClassSelectorToggle = "tasks_class_selector_toggle"
     const val addTaskDialogTitleField = "add_task_dialog_title_field"
+    const val addTaskDialogDescriptionField = "add_task_dialog_description_field"
+    const val addTaskDialogDateField = "add_task_dialog_date_field"
+    const val addTaskDialogOpenDatePickerButton = "add_task_dialog_open_date_picker_button"
+    const val addTaskDialogUploadButton = "add_task_dialog_upload_button"
+    const val addTaskDialogConfirmButton = "add_task_dialog_confirm_button"
     const val addTaskDialogCancelButton = "add_task_dialog_cancel_button"
+    const val taskDetailAssignmentUploadButton = "task_detail_assignment_upload_button"
 
     fun tasksClassMenuItem(classId: String): String {
         return "tasks_class_menu_item_$classId"
@@ -77,5 +90,9 @@ object UiTestTags {
 
     fun tasksCard(taskId: String): String {
         return "tasks_card_$taskId"
+    }
+
+    fun taskDetailMarkInPersonButton(studentId: String): String {
+        return "task_detail_mark_in_person_$studentId"
     }
 }

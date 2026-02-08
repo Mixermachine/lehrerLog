@@ -18,6 +18,7 @@ private val testJson = Json {
 }
 
 fun createTestHttpClient(
+    expectSuccess: Boolean = false,
     handler: suspend MockRequestHandleScope.(io.ktor.client.request.HttpRequestData) -> HttpResponseData
 ): HttpClient {
     val config = MockEngineConfig().apply {
@@ -28,6 +29,7 @@ fun createTestHttpClient(
         install(ContentNegotiation) {
             json(testJson)
         }
+        this.expectSuccess = expectSuccess
     }
 }
 

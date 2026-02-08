@@ -191,12 +191,62 @@ class FileRouteEndToEndTest {
         val metadata = uploadResponse.body<FileMetadataDto>()
         assertNotNull(metadata.id)
 
+        val metadataResponse = client.get("/api/tasks/${task.id}/file") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.OK, metadataResponse.status)
+        val resolvedMetadata = metadataResponse.body<FileMetadataDto>()
+        assertEquals(metadata.id, resolvedMetadata.id)
+
         val downloadResponse = client.get("/api/files/${metadata.id}") {
             header("Authorization", "Bearer $token")
         }
         assertEquals(HttpStatusCode.OK, downloadResponse.status)
         val downloadedBytes = downloadResponse.body<ByteArray>()
         assertEquals(fileBytes.size, downloadedBytes.size)
+    }
+
+    @Test
+    fun `task file metadata endpoint returns invalid and missing errors`() = testApplication {
+        application { module() }
+
+        val client = createClient {
+            install(ContentNegotiation) {
+                json()
+            }
+        }
+
+        val token = tokenService.generateAccessToken(
+            userId = userId!!,
+            email = "test@example.com",
+            role = UserRole.TEACHER,
+            schoolId = schoolId
+        )
+
+        val createTaskResponse = client.post("/api/tasks") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskRequest(
+                    schoolClassId = classId!!.toString(),
+                    title = "No file yet",
+                    description = null,
+                    dueAt = "2026-01-20"
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, createTaskResponse.status)
+        val task = createTaskResponse.body<TaskDto>()
+
+        val missing = client.get("/api/tasks/${task.id}/file") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.NotFound, missing.status)
+
+        val invalid = client.get("/api/tasks/not-a-uuid/file") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalid.status)
     }
 
     @Test

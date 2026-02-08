@@ -9,6 +9,8 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
 
 class TaskRepository(
@@ -120,6 +122,20 @@ class TaskRepository(
                 tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
             }.body<TaskSubmissionDto>()
             Result.success(submission)
+        } catch (e: ClientRequestException) {
+            val responseText = e.response.readBodyTextSafely()
+            val isInPersonNotTargetedCase = e.response.status == HttpStatusCode.BadRequest &&
+                request.submissionType == TaskSubmissionType.IN_PERSON
+            if (
+                isInPersonNotTargetedCase ||
+                responseText.contains("not targeted", ignoreCase = true) ||
+                e.message.contains("not targeted", ignoreCase = true)
+            ) {
+                Result.failure(TaskStudentNotTargetedException("Student not targeted for this task"))
+            } else {
+                val message = parseApiErrorMessage(responseText) ?: e.message
+                Result.failure(IllegalStateException(message, e))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -149,6 +165,19 @@ class TaskRepository(
             }
                 .body<TaskSubmissionSummaryDto>()
             Result.success(summary)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getTaskTargets(taskId: String): Result<TaskTargetsResponse> {
+        return try {
+            val targets = withTokenRefresh(authRepository) {
+                httpClient.get("$baseUrl/api/tasks/$taskId/targets") {
+                    tokenStorage.getAccessToken()?.let { header("Authorization", "Bearer $it") }
+                }.body<TaskTargetsResponse>()
+            }
+            Result.success(targets)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -225,6 +254,19 @@ class TaskRepository(
         }
     }
 }
+
+private suspend fun HttpResponse.readBodyTextSafely(): String {
+    return runCatching { bodyAsText() }.getOrDefault("")
+}
+
+private fun parseApiErrorMessage(rawText: String): String? {
+    val text = rawText.trim()
+    if (text.isBlank()) return null
+    val errorMatch = Regex(""""error"\s*:\s*"([^"]+)"""").find(text)
+    return errorMatch?.groupValues?.getOrNull(1) ?: text
+}
+
+class TaskStudentNotTargetedException(message: String) : IllegalStateException(message)
 
 data class UploadFilePayload(
     val fileName: String,

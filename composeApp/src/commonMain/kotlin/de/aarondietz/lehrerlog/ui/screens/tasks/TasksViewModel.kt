@@ -99,18 +99,9 @@ class TasksViewModel(
     }
 
     fun loadTasks() {
-        val classId = _selectedClassId.value ?: return
         viewModelScope.launch {
             _isLoading.value = true
-            taskRepository.getTasks(classId)
-                .onSuccess { tasks ->
-                    _tasks.value = tasks
-                    loadSummaries(tasks)
-                }
-                .onFailure { e ->
-                    logger.e(e) { "Failed to load tasks" }
-                    _error.value = e.toStringResource()
-                }
+            refreshTasksForSelectedClass()
             _isLoading.value = false
         }
     }
@@ -126,11 +117,15 @@ class TasksViewModel(
             _isLoading.value = true
             taskRepository.createTask(classId, title, description, dueAt)
                 .onSuccess { createdTask ->
-                    // Upload file if provided
                     if (file != null) {
-                        uploadAssignmentFile(createdTask.id, file)
+                        when (val uploadResult = taskRepository.uploadTaskFile(createdTask.id, file.toPayload())) {
+                            is FileUploadResult.Success -> Unit
+                            is FileUploadResult.FileTooLarge -> _error.value = uploadResult.toStringResource()
+                            is FileUploadResult.QuotaExceeded -> _error.value = uploadResult.toStringResource()
+                            is FileUploadResult.Error -> _error.value = uploadResult.toStringResource()
+                        }
                     }
-                    loadTasks()
+                    refreshTasksForSelectedClass()
                 }
                 .onFailure { e ->
                     logger.e(e) { "Failed to create task" }
@@ -296,15 +291,24 @@ class TasksViewModel(
         }
 
         val studentsResult = studentRepository.refreshStudents(schoolId)
+        val taskTargetsResult = taskRepository.getTaskTargets(task.id)
         val submissionsResult = taskRepository.getSubmissions(task.id)
         val fileResult = taskRepository.getTaskFile(task.id)
 
-        val students = studentsResult.getOrElse { emptyList() }
+        val classStudents = studentsResult.getOrElse { emptyList() }
             .filter { it.classIds.contains(task.schoolClassId) }
         val submissions = submissionsResult.getOrElse { emptyList() }
+        val targetStudentIds = taskTargetsResult.getOrNull()?.studentIds?.toSet()
+        val students = if (targetStudentIds != null) {
+            classStudents.filter { targetStudentIds.contains(it.id) }
+        } else {
+            // Fail closed when target lookup fails: keep only students already tied to submissions.
+            val submittedStudentIds = submissions.map { it.studentId }.toSet()
+            classStudents.filter { submittedStudentIds.contains(it.id) }
+        }
         val assignmentFile = fileResult.getOrNull()
 
-        // Only treat students/submissions errors as critical, file errors are optional
+        // Only treat students/targets/submissions errors as critical, file errors are optional.
         _detailState.value = TaskDetailState(
             task = task,
             students = students,
@@ -313,8 +317,22 @@ class TasksViewModel(
             isLoading = false,
             isUploading = false,
             errorResource = studentsResult.getErrorResource()
+                ?: taskTargetsResult.getErrorResource()
                 ?: submissionsResult.getErrorResource()
         )
+    }
+
+    private suspend fun refreshTasksForSelectedClass() {
+        val classId = _selectedClassId.value ?: return
+        taskRepository.getTasks(classId)
+            .onSuccess { tasks ->
+                _tasks.value = tasks
+                loadSummaries(tasks)
+            }
+            .onFailure { e ->
+                logger.e(e) { "Failed to load tasks" }
+                _error.value = e.toStringResource()
+            }
     }
 }
 

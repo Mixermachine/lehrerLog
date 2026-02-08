@@ -7,9 +7,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.aarondietz.lehrerlog.data.Student
+import de.aarondietz.lehrerlog.ui.test.UiTestTags
 import de.aarondietz.lehrerlog.ui.theme.LehrerLogTheme
 import lehrerlog.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -31,13 +34,15 @@ fun AddStudentDialog(
                     value = firstName,
                     onValueChange = { firstName = it },
                     label = { Text(stringResource(Res.string.first_name)) },
-                    singleLine = true
+                    singleLine = true,
+                    modifier = Modifier.testTag(UiTestTags.addStudentDialogFirstNameField)
                 )
                 OutlinedTextField(
                     value = lastName,
                     onValueChange = { lastName = it },
                     label = { Text(stringResource(Res.string.last_name)) },
-                    singleLine = true
+                    singleLine = true,
+                    modifier = Modifier.testTag(UiTestTags.addStudentDialogLastNameField)
                 )
             }
         },
@@ -51,7 +56,8 @@ fun AddStudentDialog(
                         )
                     )
                 },
-                enabled = firstName.isNotBlank() && lastName.isNotBlank()
+                enabled = firstName.isNotBlank() && lastName.isNotBlank(),
+                modifier = Modifier.testTag(UiTestTags.addStudentDialogConfirmButton)
             ) {
                 Text(stringResource(Res.string.action_add))
             }

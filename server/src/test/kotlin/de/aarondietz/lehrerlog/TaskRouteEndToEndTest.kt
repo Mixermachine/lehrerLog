@@ -183,6 +183,15 @@ class TaskRouteEndToEndTest {
         assertEquals(HttpStatusCode.Created, createTaskResponse.status)
         val task = createTaskResponse.body<TaskDto>()
 
+        val initialTargetsResponse = client.get("/api/tasks/${task.id}/targets") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.OK, initialTargetsResponse.status)
+        val initialTargets = initialTargetsResponse.body<TaskTargetsResponse>()
+        assertEquals(task.id, initialTargets.taskId)
+        assertTrue(initialTargets.studentIds.contains(studentId!!.toString()))
+        assertTrue(initialTargets.studentIds.none { it == studentTwoId!!.toString() })
+
         val addTargets = client.post("/api/tasks/${task.id}/targets") {
             header("Authorization", "Bearer $token")
             contentType(ContentType.Application.Json)
@@ -212,6 +221,14 @@ class TaskRouteEndToEndTest {
             )
         }
         assertEquals(HttpStatusCode.NoContent, removeTargets.status)
+
+        val targetsAfterRemoveResponse = client.get("/api/tasks/${task.id}/targets") {
+            header("Authorization", "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.OK, targetsAfterRemoveResponse.status)
+        val targetsAfterRemove = targetsAfterRemoveResponse.body<TaskTargetsResponse>()
+        assertTrue(targetsAfterRemove.studentIds.contains(studentId!!.toString()))
+        assertTrue(targetsAfterRemove.studentIds.none { it == studentTwoId!!.toString() })
 
         val bySecondStudentAfter = client.get("/api/tasks?studentId=${studentTwoId!!}") {
             header("Authorization", "Bearer $token")
@@ -597,6 +614,18 @@ class TaskRouteEndToEndTest {
             )
         }
         assertEquals(HttpStatusCode.BadRequest, notTargetedSubmission.status)
+
+        val notTargetedInPersonSubmission = client.post("/api/tasks/${task.id}/submissions/in-person") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTaskSubmissionRequest(
+                    studentId = studentTwoId!!.toString(),
+                    submissionType = TaskSubmissionType.IN_PERSON
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, notTargetedInPersonSubmission.status)
 
         val submission = client.post("/api/tasks/${task.id}/submissions") {
             header("Authorization", "Bearer $token")

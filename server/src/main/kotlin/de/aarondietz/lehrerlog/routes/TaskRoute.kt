@@ -162,6 +162,38 @@ fun Route.taskRoute(
                 }
             }
 
+            get("/{id}/targets") {
+                val principal = call.getPrincipalOrRespond()
+                val schoolId = principal.schoolId
+                if (schoolId == null) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse("User not associated with a school"))
+                    return@get
+                }
+
+                val taskId = call.parameters["id"]?.let {
+                    try {
+                        UUID.fromString(it)
+                    } catch (e: Exception) {
+                        null
+                    }
+                } ?: run {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid task ID"))
+                    return@get
+                }
+
+                try {
+                    val targetStudentIds = taskService.getTargetStudentIds(taskId, schoolId)
+                    call.respond(
+                        TaskTargetsResponse(
+                            taskId = taskId.toString(),
+                            studentIds = targetStudentIds.map(UUID::toString)
+                        )
+                    )
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse(e.message ?: "Task not found"))
+                }
+            }
+
             post("/{id}/targets") {
                 val principal = call.getPrincipalOrRespond()
                 val schoolId = principal.schoolId
