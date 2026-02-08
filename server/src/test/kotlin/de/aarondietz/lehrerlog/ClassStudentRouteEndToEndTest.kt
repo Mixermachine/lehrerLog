@@ -81,9 +81,8 @@ class ClassStudentRouteEndToEndTest {
     }
 
     @Test
-    fun `add and remove student from class`() = testApplication {
+    fun `add and remove student from class`() = testApplicationWithTimeout {
         application { module() }
-
         createClient {
             install(ContentNegotiation) { json() }
         }.use { client ->

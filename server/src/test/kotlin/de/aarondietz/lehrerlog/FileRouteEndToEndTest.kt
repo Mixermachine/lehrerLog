@@ -207,9 +207,8 @@ class FileRouteEndToEndTest {
     }
 
     @Test
-    fun `task file metadata endpoint returns invalid and missing errors`() = testApplication {
+    fun `task file metadata endpoint returns invalid and missing errors`() = testApplicationWithTimeout {
         application { module() }
-
         createClient {
             install(ContentNegotiation) {
                 json()
@@ -834,7 +833,7 @@ class FileRouteEndToEndTest {
     }
 
     @Test
-    fun `download task file from object storage`() = testApplication {
+    fun `download task file from object storage`() {
         val objectStorage = startObjectStorageStub()
         System.setProperty("OBJECT_STORAGE_ENDPOINT", objectStorage.endpoint)
         System.setProperty("OBJECT_STORAGE_BUCKET", objectStorage.bucket)
@@ -844,60 +843,61 @@ class FileRouteEndToEndTest {
         System.setProperty("OBJECT_STORAGE_PATH_STYLE", "true")
 
         try {
-            application { module() }
-
-            createClient {
-                install(ContentNegotiation) { json() }
-            }.use { client ->
-                val token = tokenService.generateAccessToken(
-                    userId = userId!!,
-                    email = "test@example.com",
-                    role = UserRole.TEACHER,
-                    schoolId = schoolId
-                )
-
-                val createTaskResponse = client.post("/api/tasks") {
-                    header("Authorization", "Bearer $token")
-                    contentType(ContentType.Application.Json)
-                    setBody(
-                        CreateTaskRequest(
-                            schoolClassId = classId!!.toString(),
-                            title = "Object Storage Homework",
-                            description = "Upload",
-                            dueAt = "2026-02-10"
-                        )
+            testApplicationWithTimeout {
+                application { module() }
+                createClient {
+                    install(ContentNegotiation) { json() }
+                }.use { client ->
+                    val token = tokenService.generateAccessToken(
+                        userId = userId!!,
+                        email = "test@example.com",
+                        role = UserRole.TEACHER,
+                        schoolId = schoolId
                     )
-                }
-                assertEquals(HttpStatusCode.Created, createTaskResponse.status)
-                val task = createTaskResponse.body<TaskDto>()
 
-                val fileBytes = "object-storage-content".encodeToByteArray()
-                val uploadResponse = client.post("/api/tasks/${task.id}/files") {
-                    header("Authorization", "Bearer $token")
-                    setBody(
-                        MultiPartFormDataContent(
-                            formData {
-                                append(
-                                    "file",
-                                    fileBytes,
-                                    Headers.build {
-                                        append(HttpHeaders.ContentType, "application/pdf")
-                                        append(HttpHeaders.ContentDisposition, "filename=\"storage.pdf\"")
-                                    }
-                                )
-                            }
+                    val createTaskResponse = client.post("/api/tasks") {
+                        header("Authorization", "Bearer $token")
+                        contentType(ContentType.Application.Json)
+                        setBody(
+                            CreateTaskRequest(
+                                schoolClassId = classId!!.toString(),
+                                title = "Object Storage Homework",
+                                description = "Upload",
+                                dueAt = "2026-02-10"
+                            )
                         )
-                    )
-                }
-                assertEquals(HttpStatusCode.Created, uploadResponse.status)
-                val metadata = uploadResponse.body<FileMetadataDto>()
+                    }
+                    assertEquals(HttpStatusCode.Created, createTaskResponse.status)
+                    val task = createTaskResponse.body<TaskDto>()
 
-                val downloadResponse = client.get("/api/files/${metadata.id}") {
-                    header("Authorization", "Bearer $token")
+                    val fileBytes = "object-storage-content".encodeToByteArray()
+                    val uploadResponse = client.post("/api/tasks/${task.id}/files") {
+                        header("Authorization", "Bearer $token")
+                        setBody(
+                            MultiPartFormDataContent(
+                                formData {
+                                    append(
+                                        "file",
+                                        fileBytes,
+                                        Headers.build {
+                                            append(HttpHeaders.ContentType, "application/pdf")
+                                            append(HttpHeaders.ContentDisposition, "filename=\"storage.pdf\"")
+                                        }
+                                    )
+                                }
+                            )
+                        )
+                    }
+                    assertEquals(HttpStatusCode.Created, uploadResponse.status)
+                    val metadata = uploadResponse.body<FileMetadataDto>()
+
+                    val downloadResponse = client.get("/api/files/${metadata.id}") {
+                        header("Authorization", "Bearer $token")
+                    }
+                    assertEquals(HttpStatusCode.OK, downloadResponse.status)
+                    val downloadedBytes = downloadResponse.body<ByteArray>()
+                    assertEquals(fileBytes.size, downloadedBytes.size)
                 }
-                assertEquals(HttpStatusCode.OK, downloadResponse.status)
-                val downloadedBytes = downloadResponse.body<ByteArray>()
-                assertEquals(fileBytes.size, downloadedBytes.size)
             }
         } finally {
             System.clearProperty("OBJECT_STORAGE_ENDPOINT")
